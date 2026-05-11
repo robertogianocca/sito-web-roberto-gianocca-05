@@ -1,64 +1,72 @@
-import Image from "next/image";
+import { HorizontalSection } from "../components/home/HorizontalSection";
+import { PlaceholderGrid } from "../components/home/PlaceholderGrid";
+import { LOREM_MEDIUM, LOREM_SHORT } from "../components/home/constants";
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            Roberto Gianocca Website.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="relative flex min-h-0 flex-1 flex-col bg-zinc-50 dark:bg-zinc-950 lg:min-h-0">
+      <div className="pointer-events-none fixed inset-y-0 right-0 z-20 hidden w-40 lg:block">
+        <div className="absolute inset-y-0 right-0 w-40 bg-linear-to-l from-background to-transparent" />
+        <div className="absolute right-6 top-1/2 -translate-y-1/2">
+          <div className="flex items-center gap-2 rounded-full border border-zinc-300/60 bg-background/80 px-3 py-1 text-xs font-medium text-zinc-700 backdrop-blur dark:border-zinc-700/60 dark:bg-zinc-950/70 dark:text-zinc-200 motion-safe:animate-pulse">
+            <span>Scroll</span>
+            <span aria-hidden>→</span>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+      </div>
+      <main
+        className="flex min-h-0 flex-1 flex-col lg:snap-x lg:snap-mandatory lg:flex-row lg:flex-nowrap lg:overflow-x-auto lg:overflow-y-hidden"
+        aria-label="Sezioni portfolio"
+      >
+        <HorizontalSection id="intro" eyebrow="Overview" title="Roberto Gianocca" span={9}>
+          <div className="flex min-h-0 flex-1 flex-col gap-6">
+            <div className="grid gap-6 lg:grid-cols-12 lg:items-start lg:gap-10">
+              <div className="lg:col-span-6">
+                <p className="text-lg leading-relaxed text-zinc-600 dark:text-zinc-400">
+                  {LOREM_SHORT} {LOREM_MEDIUM}
+                </p>
+              </div>
+              <div className="lg:col-span-6">
+                <PlaceholderGrid variant="hero" />
+              </div>
+            </div>
+          </div>
+        </HorizontalSection>
+
+        <HorizontalSection id="photography" eyebrow="Sezione" title="Photography" span={8}>
+          <div className="flex h-full flex-col gap-6">
+            <p className="max-w-prose text-zinc-600 dark:text-zinc-400">{LOREM_SHORT}</p>
+            <PlaceholderGrid variant="mixed" />
+          </div>
+        </HorizontalSection>
+
+        <HorizontalSection id="video" eyebrow="Sezione" title="Video" span={6}>
+          <div className="flex h-full flex-col gap-6">
+            <p className="max-w-prose text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
+              {LOREM_MEDIUM}
+            </p>
+            <PlaceholderGrid variant="row" />
+          </div>
+        </HorizontalSection>
+
+        <HorizontalSection id="graphic-design" eyebrow="Sezione" title="Graphic design" span={10}>
+          <div className="flex h-full flex-col gap-6">
+            <p className="max-w-prose text-zinc-600 dark:text-zinc-400">{LOREM_SHORT}</p>
+            <PlaceholderGrid variant="mixed" />
+          </div>
+        </HorizontalSection>
+
+        <HorizontalSection id="contact" eyebrow="Prossimo passo" title="Contatti" span={4}>
+          <div className="flex h-full flex-col justify-between gap-8">
+            <p className="text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
+              {LOREM_SHORT}
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="aspect-square rounded-lg border border-dashed border-zinc-400/60 bg-zinc-200/80 dark:border-zinc-600 dark:bg-zinc-800/80" />
+              <div className="aspect-square rounded-lg border border-dashed border-zinc-400/60 bg-zinc-200/80 dark:border-zinc-600 dark:bg-zinc-800/80" />
+            </div>
+          </div>
+        </HorizontalSection>
       </main>
     </div>
   );

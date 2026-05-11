@@ -1,0 +1,17 @@
+---
+description: Cloudinary assets, next/image, and balanced CDN usage (Vercel + Cloudinary)
+globs: "**/*.{js,jsx,ts,tsx}"
+alwaysApply: false
+---
+
+Context: portfolio on **Vercel** with media on **Cloudinary**. Aim for strong **quality and LCP** while keeping **reasonable** use of bandwidth and transformations across **both** platforms—not “everything through Vercel” or “everything through Cloudinary” by default.
+
+- For photographic content: use **`next/image`** (or `CldImage` / an equivalent aligned with the stack) with correct **`sizes`** and dimensions close to the rendered size.
+- Cloudinary delivery: generally use **`f_auto`** and **`q_auto`** on served variants unless a task explicitly needs manual quality control.
+- Never serve more pixels than needed: grids and previews should use **smaller variants** or dedicated crops, not the full-resolution master.
+- Above the fold: use **`priority`** only where it matters; everything else stays **lazy** by default.
+- **CLS**: known width/height, stable aspect ratio, avoid layout jumps.
+- **Accessibility and SEO**: descriptive `alt` text; decorative images use `alt=""`.
+- **Cache**: keep transformation URLs **stable** (same parameters for the same use case); avoid unnecessary transform combinations that multiply variants and requests.
+- **Requests**: no accidental double loads of the same asset from unstable keys or markup; avoid regenerating identical URLs in a loop.
+- After meaningful changes, sanity-check the Network tab so the mix of `/_next/image` vs `res.cloudinary.com` matches the project’s chosen pattern (no accidental spike on one side).

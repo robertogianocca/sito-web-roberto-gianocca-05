@@ -1,0 +1,16 @@
+---
+description: Next.js App Router, data loading, and project architecture
+globs: "**/*.{js,jsx,ts,tsx,mjs}"
+alwaysApply: false
+---
+
+- App Router: follow current project conventions; if something is unclear or deprecated, check the guide under `node_modules/next/dist/docs/`.
+- Default to **Server Components**; use `"use client"` only for interactivity (state, events, browser-only APIs).
+- Data: prefer server-side fetching; avoid redundant client fetching and polling.
+- Rendering: prefer **static** output when content is stable; use **ISR** only when content changes on a known schedule.
+- Navigation: use `next/link` for internal links.
+- Fonts: use `next/font` where applicable.
+- SEO: use the Metadata API for title, description, and Open Graph when needed.
+- Imports: use the `@/` absolute import alias when it is already configured in the project.
+- Structure: separate UI, data (fetch/loaders), utilities, and types without pointless abstractions.
+- Bundles: use dynamic imports only when they clearly reduce initial JS; avoid large client trees without a good reason.

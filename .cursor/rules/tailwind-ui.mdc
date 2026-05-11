@@ -1,0 +1,11 @@
+---
+description: Tailwind-first UI and semantic HTML
+globs: "**/*.{js,jsx,ts,tsx}"
+alwaysApply: false
+---
+
+- Styling: **Tailwind as the default**; add plain CSS only when it clearly helps (complex motion, print styles, edge cases).
+- Layout: **mobile-first**; prefer **flex** and **grid**; use **max-width** containers for long reading sections.
+- HTML: prefer **semantic** elements; ensure color contrast and **hover/focus** states for interactive controls.
+- Classes: keep spacing and typography patterns consistent; for conditional classes, use **`clsx`** or **`cn`** only if the project already includes them—do not add a dependency just for that.
+- Avoid pointless wrapper elements; keep motion subtle and cheap to run.

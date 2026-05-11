@@ -1,0 +1,10 @@
+---
+description: General code style and discipline for this repo
+alwaysApply: true
+---
+
+- Prefer explicit, readable code and early returns.
+- One responsibility per component; avoid deep nesting.
+- Do not duplicate logic—extract reusable helpers when patterns repeat.
+- Change only what the task requires; do not rewrite unrelated code.
+- Do not add dependencies unless the benefit is clear.
