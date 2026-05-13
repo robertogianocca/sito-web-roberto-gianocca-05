@@ -53,7 +53,7 @@ Qui si decide **quanto ogni notch della rotella** si traduce in impulso orizzont
 ## Comportamento non numerico (senza cambiare costanti)
 
 - **Desktop**: l’handler è pensato per viewport `min-width: 1024px` (allineato al breakpoint `lg` del layout orizzontale).
-- **Hover**: la conversione scatta solo quando il puntatore è sopra il track (enter/leave sul `<main>` del container).
+- **Hover**: `pointerenter` / `pointerleave` sul `<main>` aggiornano lo stato; in più, ogni `wheel` controlla se `clientX` / `clientY` cadono dentro il rettangolo del track (così dopo navigazione client verso la home il puntatore può essere già sopra il track senza un nuovo `pointerenter` e la rotella funziona lo stesso).
 - **`Shift` + rotella**: non viene intercettato; resta il comportamento nativo del browser (spesso scroll orizzontale “classico”).
 - **`prefers-reduced-motion: reduce`**: niente inerzia; viene applicato solo uno `scrollBy` immediato per tick (accessibilità).
 - **Trackpad (gesto orizzontale)**: se `\|dy\| <= \|dx\|` (dominanza orizzontale), l’evento **non** viene convertito: resta lo scroll orizzontale nativo sul contenitore, utile al trackpad.

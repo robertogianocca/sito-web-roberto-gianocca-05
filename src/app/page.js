@@ -34,7 +34,14 @@ export default function Home() {
           </div>
         </HorizontalSection>
 
-        <HorizontalSection id="photography" eyebrow="Sezione" title="Photography" span={8}>
+        <HorizontalSection
+          id="photography"
+          eyebrow="Sezione"
+          title="Photography"
+          span={8}
+          titleHref="/photography"
+          titleHrefAriaLabel="Apri la pagina Photography"
+        >
           <div className="flex h-full flex-col gap-6">
             <p className="max-w-prose text-zinc-600 dark:text-zinc-400">{LOREM_SHORT}</p>
             <PlaceholderGrid variant="mixed" />

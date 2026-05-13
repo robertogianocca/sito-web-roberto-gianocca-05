@@ -44,13 +44,28 @@ export function HorizontalScrollContainer({ className = "", children, ...props }
       lastTs = 0;
     };
 
+    const setHovering = (next) => {
+      if (next === isHovering) return;
+      isHovering = next;
+      if (!next) stopMomentum();
+    };
+
+    const pointInsideEl = (clientX, clientY) => {
+      const r = el.getBoundingClientRect();
+      return (
+        clientX >= r.left &&
+        clientX < r.right &&
+        clientY >= r.top &&
+        clientY < r.bottom
+      );
+    };
+
     const onEnter = () => {
-      isHovering = true;
+      setHovering(true);
     };
 
     const onLeave = () => {
-      isHovering = false;
-      stopMomentum();
+      setHovering(false);
     };
 
     const tick = (ts) => {
@@ -111,11 +126,19 @@ export function HorizontalScrollContainer({ className = "", children, ...props }
     };
 
     const onWheel = (e) => {
-      if (!isHovering) return;
       if (!isDesktop()) return;
       if (e.shiftKey) return;
 
       if (el.scrollWidth <= el.clientWidth) return;
+
+      // Soft navigation (e.g. back from /photography): the pointer can sit over the
+      // track without a new pointerenter, so derive "inside" from the wheel event.
+      if (pointInsideEl(e.clientX, e.clientY)) {
+        setHovering(true);
+      } else {
+        setHovering(false);
+        return;
+      }
 
       const impulse = impulseFromWheel(e);
       if (!impulse) return;
