@@ -1,3 +1,4 @@
+import { HorizontalScrollContainer } from "../components/home/HorizontalScrollContainer.client";
 import { HorizontalSection } from "../components/home/HorizontalSection";
 import { PlaceholderGrid } from "../components/home/PlaceholderGrid";
 import { LOREM_MEDIUM, LOREM_SHORT } from "../components/home/constants";
@@ -14,8 +15,8 @@ export default function Home() {
           </div>
         </div>
       </div>
-      <main
-        className="flex min-h-0 flex-1 flex-col lg:snap-x lg:snap-mandatory lg:flex-row lg:flex-nowrap lg:overflow-x-auto lg:overflow-y-hidden"
+      <HorizontalScrollContainer
+        className="flex min-h-0 flex-1 flex-col lg:flex-row lg:flex-nowrap lg:overflow-x-auto lg:overflow-y-hidden"
         aria-label="Sezioni portfolio"
       >
         <HorizontalSection id="intro" eyebrow="Overview" title="Roberto Gianocca" span={9}>
@@ -67,7 +68,7 @@ export default function Home() {
             </div>
           </div>
         </HorizontalSection>
-      </main>
+      </HorizontalScrollContainer>
     </div>
   );
 }

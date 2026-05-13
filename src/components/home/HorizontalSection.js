@@ -12,7 +12,7 @@ export function HorizontalSection({
   return (
     <section
       id={id}
-      className="horizontal-section flex flex-col border-b border-zinc-200/80 bg-background snap-start dark:border-zinc-800/80 lg:border-b-0 lg:border-r"
+      className="horizontal-section flex flex-col border-b border-zinc-200/80 bg-background dark:border-zinc-800/80 lg:border-b-0 lg:border-r"
       style={{ "--span": String(span) }}
     >
       <div className="flex min-h-0 flex-1 flex-col gap-6 p-6 md:gap-8 md:p-10">
