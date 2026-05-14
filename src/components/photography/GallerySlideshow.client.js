@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { GalleryThumbnails } from "./GalleryThumbnails.client";
 
 const PRELOAD_ATTR = "data-photography-slide-preload";
 
@@ -10,7 +11,14 @@ const PRELOAD_ATTR = "data-photography-slide-preload";
  * @param {{
  *   title: string;
  *   description: string;
- *   slides: Array<{ src: string; thumbSrc: string; alt: string; publicId: string }>;
+ *   slides: Array<{
+ *     src: string;
+ *     thumbSrc: string;
+ *     alt: string;
+ *     publicId: string;
+ *     width: number;
+ *     height: number;
+ *   }>;
  *   backHref: string;
  * }} props
  */
@@ -59,6 +67,10 @@ export function GallerySlideshow({ title, description, slides, backHref }) {
     setIndex((i) => (total <= 0 ? 0 : (i + 1) % total));
   }, [total]);
 
+  const selectIndex = useCallback((i) => {
+    setIndex(Math.max(0, Math.min(i, total - 1)));
+  }, [total]);
+
   useEffect(() => {
     function onKeyDown(e) {
       if (e.key === "ArrowLeft") {
@@ -80,7 +92,7 @@ export function GallerySlideshow({ title, description, slides, backHref }) {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col bg-zinc-50 md:flex-row md:overflow-hidden dark:bg-zinc-950">
-      <aside className="flex w-full shrink-0 flex-col gap-6 border-zinc-200/80 bg-background p-6 md:w-[min(100%,20rem)] md:border-r dark:border-zinc-800/80 lg:w-96 lg:p-8">
+      <aside className="flex w-full shrink-0 flex-col gap-6 border-zinc-200/80 bg-background p-6 md:w-[min(100%,22rem)] md:border-r dark:border-zinc-800/80 lg:w-96 lg:p-8">
         <Link
           href={backHref}
           className="text-sm font-medium text-zinc-600 underline-offset-4 hover:text-foreground hover:underline dark:text-zinc-400"
@@ -93,6 +105,9 @@ export function GallerySlideshow({ title, description, slides, backHref }) {
           </h1>
           <p className="text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">{description}</p>
         </div>
+
+        <GalleryThumbnails slides={slides} currentIndex={safeIndex} onSelectIndex={selectIndex} />
+
         <div className="mt-auto flex flex-col gap-4 border-t border-zinc-200/80 pt-6 dark:border-zinc-800/80">
           <p className="text-xs font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
             {safeIndex + 1} / {total}
@@ -120,16 +135,16 @@ export function GallerySlideshow({ title, description, slides, backHref }) {
         </div>
       </aside>
 
-      <div className="relative flex min-h-[50vh] flex-1 bg-zinc-900 md:min-h-0">
-        <div className="relative h-[min(70vh,900px)] w-full md:absolute md:inset-0 md:h-full md:min-h-[320px]">
+      <div className="relative flex min-h-[50vh] flex-1 items-center justify-center bg-zinc-900 p-3 md:min-h-0 md:p-4">
+        <div className="relative flex h-[min(70vh,900px)] w-full max-w-full items-center justify-center md:absolute md:inset-0 md:h-full md:min-h-[320px]">
           <Image
             src={current.src}
             alt={current.alt}
-            fill
-            className="object-contain"
+            width={current.width}
+            height={current.height}
+            className="max-h-full max-w-full object-contain"
             sizes="(min-width: 768px) 75vw, 100vw"
             priority={safeIndex === 0}
-            key={current.publicId}
           />
         </div>
       </div>

@@ -64,6 +64,25 @@ function isCoverPublicId(publicId) {
   return publicIdLastSegment(publicId) === COVER_BASENAME;
 }
 
+/**
+ * Inserisce il segmento trasformazioni subito dopo `/upload/`, mantenendo versione e public_id.
+ * @param {string} secureUrl
+ * @param {string} transformsSegment es. "f_auto,q_auto,w_1920,h_1280,c_limit"
+ */
+function buildUrlFromSecureUrl(secureUrl, transformsSegment) {
+  const marker = "/upload/";
+  const i = secureUrl.indexOf(marker);
+  if (i === -1) {
+    return null;
+  }
+  const prefix = secureUrl.slice(0, i + marker.length);
+  const rest = secureUrl.slice(i + marker.length);
+  if (!rest) {
+    return null;
+  }
+  return `${prefix}${transformsSegment}/${rest}`;
+}
+
 async function fetchFolderAssetsUncached(folder) {
   const cloudName = configureCloudinary();
   if (!cloudName) {
@@ -97,20 +116,40 @@ async function fetchFolderAssetsUncached(folder) {
     : null;
 
   const slideResources = resources.filter((r) => !isCoverPublicId(r.public_id));
-  const slides = slideResources.map((r) => ({
-    publicId: r.public_id,
-    src: buildCloudinaryImageUrl(cloudName, r.public_id, {
-      width: 1920,
-      height: 1280,
-      crop: "limit",
-    }),
-    thumbSrc: buildCloudinaryImageUrl(cloudName, r.public_id, {
-      width: 320,
-      height: 240,
-      crop: "limit",
-    }),
-    alt: slideAltFromPublicId(r.public_id),
-  }));
+  const slides = slideResources.map((r) => {
+    const intrinsicW = typeof r.width === "number" && r.width > 0 ? r.width : 1920;
+    const intrinsicH = typeof r.height === "number" && r.height > 0 ? r.height : 1280;
+    const mainTransforms = ["f_auto", "q_auto", "w_1920", "h_1280", "c_limit"].join(",");
+    const thumbTransforms = ["f_auto", "q_auto", "w_320", "h_240", "c_limit"].join(",");
+
+    const secure = typeof r.secure_url === "string" ? r.secure_url : null;
+    const srcFromApi = secure ? buildUrlFromSecureUrl(secure, mainTransforms) : null;
+    const thumbFromApi = secure ? buildUrlFromSecureUrl(secure, thumbTransforms) : null;
+
+    const src =
+      srcFromApi ??
+      buildCloudinaryImageUrl(cloudName, r.public_id, {
+        width: 1920,
+        height: 1280,
+        crop: "limit",
+      });
+    const thumbSrc =
+      thumbFromApi ??
+      buildCloudinaryImageUrl(cloudName, r.public_id, {
+        width: 320,
+        height: 240,
+        crop: "limit",
+      });
+
+    return {
+      publicId: r.public_id,
+      width: intrinsicW,
+      height: intrinsicH,
+      src,
+      thumbSrc,
+      alt: slideAltFromPublicId(r.public_id),
+    };
+  });
 
   return {
     ok: true,
@@ -121,7 +160,7 @@ async function fetchFolderAssetsUncached(folder) {
   };
 }
 
-export const fetchFolderAssets = unstable_cache(fetchFolderAssetsUncached, ["cloudinary-folder-assets-v5"], {
+export const fetchFolderAssets = unstable_cache(fetchFolderAssetsUncached, ["cloudinary-folder-assets-v6"], {
   revalidate: false,
   tags: [PHOTOGRAPHY_CLOUDINARY_CACHE_TAG],
 });
