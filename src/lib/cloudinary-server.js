@@ -1,6 +1,12 @@
 import { unstable_cache } from "next/cache";
 import cloudinary from "cloudinary";
 
+/**
+ * Tag per `revalidateTag`: invalida la cache dati Cloudinary senza scadenza automatica.
+ * Usa la pagina `/photography/revalidate-cache` dopo modifiche su Cloudinary.
+ */
+export const PHOTOGRAPHY_CLOUDINARY_CACHE_TAG = "photography-cloudinary";
+
 /** Ultimo segmento del public_id deve essere esattamente questo (es. `…/Photography/cover` o `cover`). */
 const COVER_BASENAME = "cover";
 
@@ -72,22 +78,23 @@ async function fetchFolderAssetsUncached(folder) {
     .execute();
 
   const resources = result.resources ?? [];
-  const coverResource = resources.find((r) => isCoverPublicId(r.public_id));
 
-  if (!coverResource) {
+  if (resources.length === 0) {
     return {
       ok: false,
-      reason: "no_cover",
+      reason: "empty_folder",
       folder,
-      slideCount: resources.filter((r) => !isCoverPublicId(r.public_id)).length,
     };
   }
 
-  const coverSrc = buildCloudinaryImageUrl(cloudName, coverResource.public_id, {
-    width: 800,
-    height: 600,
-    crop: "fill",
-  });
+  const coverResource = resources.find((r) => isCoverPublicId(r.public_id));
+  const coverSrc = coverResource
+    ? buildCloudinaryImageUrl(cloudName, coverResource.public_id, {
+        width: 800,
+        height: 600,
+        crop: "fill",
+      })
+    : null;
 
   const slideResources = resources.filter((r) => !isCoverPublicId(r.public_id));
   const slides = slideResources.map((r) => ({
@@ -97,6 +104,11 @@ async function fetchFolderAssetsUncached(folder) {
       height: 1280,
       crop: "limit",
     }),
+    thumbSrc: buildCloudinaryImageUrl(cloudName, r.public_id, {
+      width: 320,
+      height: 240,
+      crop: "limit",
+    }),
     alt: slideAltFromPublicId(r.public_id),
   }));
 
@@ -104,13 +116,14 @@ async function fetchFolderAssetsUncached(folder) {
     ok: true,
     cloudName,
     coverSrc,
-    coverPublicId: coverResource.public_id,
+    coverPublicId: coverResource?.public_id ?? null,
     slides,
   };
 }
 
-export const fetchFolderAssets = unstable_cache(fetchFolderAssetsUncached, ["cloudinary-folder-assets-v2"], {
-  revalidate: 600,
+export const fetchFolderAssets = unstable_cache(fetchFolderAssetsUncached, ["cloudinary-folder-assets-v5"], {
+  revalidate: false,
+  tags: [PHOTOGRAPHY_CLOUDINARY_CACHE_TAG],
 });
 
 /**
@@ -130,7 +143,7 @@ export async function fetchFolderGallery(folder) {
 }
 
 /**
- * Dettaglio galleria: cover + slide (cover esclusa dal carosello).
+ * Dettaglio galleria: cover opzionale + slide (eventuale cover esclusa dal carosello).
  */
 export async function fetchFolderGalleryDetail(folder) {
   return fetchFolderAssets(folder);

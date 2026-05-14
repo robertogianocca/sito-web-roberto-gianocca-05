@@ -2,13 +2,15 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+
+const PRELOAD_ATTR = "data-photography-slide-preload";
 
 /**
  * @param {{
  *   title: string;
  *   description: string;
- *   slides: Array<{ src: string; alt: string; publicId: string }>;
+ *   slides: Array<{ src: string; thumbSrc: string; alt: string; publicId: string }>;
  *   backHref: string;
  * }} props
  */
@@ -17,6 +19,37 @@ export function GallerySlideshow({ title, description, slides, backHref }) {
   const total = slides.length;
   const safeIndex = total > 0 ? Math.min(index, total - 1) : 0;
   const current = slides[safeIndex] ?? null;
+
+  const prevSrc = useMemo(() => {
+    if (total < 2) return null;
+    return slides[(safeIndex - 1 + total) % total]?.src ?? null;
+  }, [slides, safeIndex, total]);
+
+  const nextSrc = useMemo(() => {
+    if (total < 2) return null;
+    return slides[(safeIndex + 1) % total]?.src ?? null;
+  }, [slides, safeIndex, total]);
+
+  const next2Src = useMemo(() => {
+    if (total < 3) return null;
+    return slides[(safeIndex + 2) % total]?.src ?? null;
+  }, [slides, safeIndex, total]);
+
+  useEffect(() => {
+    const hrefs = [prevSrc, nextSrc, next2Src].filter(Boolean);
+    const links = hrefs.map((href) => {
+      const link = document.createElement("link");
+      link.rel = "preload";
+      link.as = "image";
+      link.href = href;
+      link.setAttribute(PRELOAD_ATTR, "1");
+      document.head.appendChild(link);
+      return link;
+    });
+    return () => {
+      links.forEach((el) => el.remove());
+    };
+  }, [prevSrc, nextSrc, next2Src]);
 
   const goPrev = useCallback(() => {
     setIndex((i) => (total <= 0 ? 0 : (i - 1 + total) % total));

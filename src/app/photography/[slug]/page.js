@@ -1,13 +1,20 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { GallerySlideshow } from "../../../components/photography/GallerySlideshow.client";
-import { getPhotographyGalleryBySlug } from "../../../data/photography-galleries";
+import {
+  getPhotographyGalleryBySlug,
+  getPhotographyGalleryStaticParams,
+} from "../../../data/photography-galleries";
 import {
   fetchFolderGalleryDetail,
   isCloudinaryConfigured,
 } from "../../../lib/cloudinary-server";
 
-export const dynamic = "force-dynamic";
+export const dynamicParams = false;
+
+export function generateStaticParams() {
+  return getPhotographyGalleryStaticParams();
+}
 
 export async function generateMetadata({ params }) {
   const { slug } = await params;
@@ -68,11 +75,11 @@ export default async function PhotographyGalleryPage({ params }) {
   }
 
   if (!detail.ok) {
-    if (detail.reason === "no_cover") {
+    if (detail.reason === "empty_folder") {
       return (
         <ErrorPanel
-          title="Copertina mancante"
-          body={`Nella cartella serve un’immagine il cui public id termina con il segmento “cover” (in Media Library il nome file/public id è di solito solo cover).`}
+          title="Cartella senza immagini"
+          body="Non ci sono immagini in questa cartella su Cloudinary, oppure il valore `folder` nel manifest non coincide con il percorso reale."
         />
       );
     }
@@ -87,8 +94,8 @@ export default async function PhotographyGalleryPage({ params }) {
   if (detail.slides.length === 0) {
     return (
       <ErrorPanel
-        title="Nessuna slide"
-        body="Nella cartella ci sono solo la copertina o nessuna immagine oltre a quella con nome “cover”. Aggiungi altre foto nella stessa cartella su Cloudinary."
+        title="Nessuna immagine nella galleria"
+        body="Nella cartella c’è solo l’eventuale copertina (nome “cover”) e nessun’altra foto, oppure la cartella non contiene immagini da mostrare."
       />
     );
   }
