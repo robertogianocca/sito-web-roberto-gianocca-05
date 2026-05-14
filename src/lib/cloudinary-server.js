@@ -124,29 +124,13 @@ function deliveryUrlFromResource(r, cloudName) {
   });
 }
 
-async function fetchFolderAssetsUncached(folder) {
-  const { cloudName, apiKey, apiSecret } = readEnv();
-  if (!cloudName || !apiKey || !apiSecret) {
-    return { ok: false, reason: "missing_env" };
-  }
-
-  configureCloudinary();
-
-  let resources;
-  try {
-    resources = await fetchAllResourcesByPrefix(cloudName, folder, apiKey, apiSecret);
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    return { ok: false, reason: "api_error", message, folder };
-  }
-
-  const folderExact = folder.replace(/\/$/, "");
-  /**
-   * Stessa idea di Search `folder:"…"`: solo file direttamente in quella cartella (no sottocartelle).
-   * Usiamo prima `public_id` (fonte di verità); il campo `folder` dell’Admin API a volte non coincide
-   * col path completo del manifest — se lo controllassimo da soli escluderemmo tutto per errore.
-   */
-  resources = resources.filter((r) => {
+/**
+ * Solo asset con public_id direttamente sotto `folderExact` (un segmento dopo il path).
+ * @param {Array<Record<string, unknown>>} resources
+ * @param {string} folderExact
+ */
+function filterResourcesToDirectFolder(resources, folderExact) {
+  return resources.filter((r) => {
     const pid = String(r.public_id ?? "");
     if (pid.startsWith(`${folderExact}/`)) {
       const rest = pid.slice(folderExact.length + 1);
@@ -159,10 +143,68 @@ async function fetchFolderAssetsUncached(folder) {
     }
     return false;
   });
+}
 
-  resources.sort((a, b) => String(a.public_id).localeCompare(String(b.public_id)));
+/**
+ * Search API: stesso criterio cartella che funzionava prima del passaggio a Resources.
+ * Usato come fallback se l’Admin Resources list non restituisce risorse utilizzabili.
+ */
+async function fetchImagesBySearch(folder) {
+  const escapedFolder = folder.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+  const result = await cloudinary.v2.search
+    .expression(`resource_type:image AND folder:"${escapedFolder}"`)
+    .max_results(500)
+    .sort_by("public_id", "asc")
+    .execute();
+  return result.resources ?? [];
+}
 
-  if (resources.length === 0) {
+async function fetchFolderAssetsUncached(folder) {
+  const { cloudName, apiKey, apiSecret } = readEnv();
+  if (!cloudName || !apiKey || !apiSecret) {
+    return { ok: false, reason: "missing_env" };
+  }
+
+  configureCloudinary();
+
+  const folderExact = folder.replace(/\/$/, "");
+
+  let resources = [];
+  let resourcesFetchError = null;
+  try {
+    resources = await fetchAllResourcesByPrefix(cloudName, folder, apiKey, apiSecret);
+  } catch (err) {
+    resourcesFetchError = err instanceof Error ? err.message : String(err);
+  }
+
+  let working = filterResourcesToDirectFolder(resources, folderExact);
+
+  if (working.length === 0) {
+    try {
+      const viaSearch = await fetchImagesBySearch(folder);
+      if (viaSearch.length > 0) {
+        working = viaSearch;
+      }
+    } catch (searchErr) {
+      const searchMsg = searchErr instanceof Error ? searchErr.message : String(searchErr);
+      if (resourcesFetchError) {
+        return {
+          ok: false,
+          reason: "api_error",
+          message: `${resourcesFetchError} | search: ${searchMsg}`,
+          folder,
+        };
+      }
+      return { ok: false, reason: "api_error", message: searchMsg, folder };
+    }
+  }
+
+  working.sort((a, b) => String(a.public_id).localeCompare(String(b.public_id)));
+
+  if (working.length === 0) {
+    if (resourcesFetchError) {
+      return { ok: false, reason: "api_error", message: resourcesFetchError, folder };
+    }
     return {
       ok: false,
       reason: "empty_folder",
@@ -170,7 +212,7 @@ async function fetchFolderAssetsUncached(folder) {
     };
   }
 
-  const coverResource = resources.find((r) => isCoverPublicId(r.public_id));
+  const coverResource = working.find((r) => isCoverPublicId(r.public_id));
   const coverSrc = coverResource
     ? buildCloudinaryImageUrl(cloudName, coverResource.public_id, {
         width: 800,
@@ -179,7 +221,7 @@ async function fetchFolderAssetsUncached(folder) {
       })
     : null;
 
-  const slideResources = resources.filter((r) => !isCoverPublicId(r.public_id));
+  const slideResources = working.filter((r) => !isCoverPublicId(r.public_id));
   const slides = slideResources.map((r) => {
     const intrinsicW = typeof r.width === "number" && r.width > 0 ? r.width : 1920;
     const intrinsicH = typeof r.height === "number" && r.height > 0 ? r.height : 1280;
@@ -203,13 +245,13 @@ async function fetchFolderAssetsUncached(folder) {
   };
 }
 
-export const fetchFolderAssets = unstable_cache(fetchFolderAssetsUncached, ["cloudinary-folder-assets-v8"], {
+export const fetchFolderAssets = unstable_cache(fetchFolderAssetsUncached, ["cloudinary-folder-assets-v9"], {
   revalidate: false,
   tags: [PHOTOGRAPHY_CLOUDINARY_CACHE_TAG],
 });
 
 /**
- * Dati lista: cover + conteggio slide (stessa fetch Resources in cache di {@link fetchFolderGalleryDetail}).
+ * Dati lista: cover + conteggio slide (Resources + fallback Search, vedi {@link fetchFolderAssetsUncached}).
  */
 export async function fetchFolderGallery(folder) {
   const data = await fetchFolderAssets(folder);
