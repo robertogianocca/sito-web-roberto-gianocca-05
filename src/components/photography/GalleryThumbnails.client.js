@@ -54,9 +54,9 @@ export function GalleryThumbnails({ slides, currentIndex, onSelectIndex }) {
               <Image
                 src={item.src}
                 alt=""
-                width={64}
-                height={64}
-                sizes="64px"
+                width={30}
+                height={30}
+                sizes="30px"
                 quality={30}
                 loading="eager"
                 className="h-full w-full object-cover"

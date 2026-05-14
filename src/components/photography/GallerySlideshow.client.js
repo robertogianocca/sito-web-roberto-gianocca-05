@@ -5,6 +5,30 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { GalleryThumbnails } from "./GalleryThumbnails.client";
 
+const MAIN_QUALITY_INITIAL = 1;
+const MAIN_QUALITY_LOADED = 70;
+
+/**
+ * Immagina-style: quality bassa al mount, poi 70 dopo load. `key` sul parent
+ * resetta lo stato a ogni slide senza useEffect (compatibile con lint React 19).
+ */
+function GalleryMainSlideImage({ src, alt, width, height }) {
+  const [quality, setQuality] = useState(MAIN_QUALITY_INITIAL);
+  return (
+    <Image
+      src={src}
+      alt={alt}
+      width={width}
+      height={height}
+      className="max-h-full max-w-full object-contain"
+      sizes="(max-width: 1400px) 100vw, 70vw"
+      priority
+      quality={quality}
+      onLoad={() => setQuality(MAIN_QUALITY_LOADED)}
+    />
+  );
+}
+
 /**
  * @param {{
  *   title: string;
@@ -103,14 +127,12 @@ export function GallerySlideshow({ title, description, slides, backHref }) {
 
       <div className="relative flex min-h-[50vh] flex-1 items-center justify-center bg-zinc-900 p-3 md:min-h-0 md:p-4">
         <div className="relative flex h-[min(70vh,900px)] w-full max-w-full items-center justify-center md:absolute md:inset-0 md:h-full md:min-h-[320px]">
-          <Image
+          <GalleryMainSlideImage
+            key={current.publicId}
             src={current.src}
             alt={current.alt}
             width={current.width}
             height={current.height}
-            className="max-h-full max-w-full object-contain"
-            sizes="(min-width: 768px) 75vw, 100vw"
-            priority={safeIndex === 0}
           />
         </div>
       </div>
