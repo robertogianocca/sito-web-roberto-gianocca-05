@@ -245,7 +245,7 @@ async function fetchFolderAssetsUncached(folder) {
   };
 }
 
-export const fetchFolderAssets = unstable_cache(fetchFolderAssetsUncached, ["cloudinary-folder-assets-v9"], {
+export const fetchFolderAssets = unstable_cache(fetchFolderAssetsUncached, ["cloudinary-folder-assets-v11"], {
   revalidate: false,
   tags: [PHOTOGRAPHY_CLOUDINARY_CACHE_TAG],
 });

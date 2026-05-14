@@ -7,13 +7,64 @@ import { GalleryThumbnails } from "./GalleryThumbnails.client";
 
 const MAIN_QUALITY_INITIAL = 1;
 const MAIN_QUALITY_LOADED = 70;
+const PRELOAD_ATTR = "data-photography-adjacent-preload";
+const REVEAL_DURATION_MS = 420;
+
+const imageSizes = "(max-width: 1400px) 100vw, 70vw";
+
+function SlideLoadingSpinner({ className = "" }) {
+  return (
+    <div
+      className={`pointer-events-none flex items-center justify-center ${className}`}
+      aria-hidden
+    >
+      <div className="h-9 w-9 animate-spin rounded-full border-2 border-white/25 border-t-white" />
+    </div>
+  );
+}
 
 /**
- * Immagina-style: quality bassa al mount, poi 70 dopo load. `key` sul parent
- * resetta lo stato a ogni slide senza useEffect (compatibile con lint React 19).
+ * Qualità bassa al mount (`quality` 1), poi 70 dopo `onLoadingComplete` (stile Immagina).
+ * Spinner finché l’immagine non è pronta; poi dissolvenza leggera in opacità.
  */
-function GalleryMainSlideImage({ src, alt, width, height }) {
+function GalleryMainSlideImage({ src, alt, width, height, priority = true, onReady }) {
   const [quality, setQuality] = useState(MAIN_QUALITY_INITIAL);
+  const [revealed, setRevealed] = useState(false);
+
+  return (
+    <div className="relative flex h-full w-full max-h-full max-w-full items-center justify-center">
+      {!revealed ? (
+        <>
+          <SlideLoadingSpinner className="absolute inset-0 z-10" />
+          <span className="sr-only">Caricamento immagine</span>
+        </>
+      ) : null}
+      <Image
+        src={src}
+        alt={alt}
+        width={width}
+        height={height}
+        className={`max-h-full max-w-full object-contain transition-opacity ease-out ${
+          revealed ? "opacity-100" : "opacity-0"
+        }`}
+        style={{ transitionDuration: `${REVEAL_DURATION_MS}ms` }}
+        sizes={imageSizes}
+        priority={priority}
+        quality={quality}
+        onLoadingComplete={() => {
+          setQuality(MAIN_QUALITY_LOADED);
+          setRevealed(true);
+          onReady?.();
+        }}
+      />
+    </div>
+  );
+}
+
+/**
+ * Slide già mostrata: qualità alta fissa, niente rampa (evita flash in transizione).
+ */
+function GalleryMainSlideImageStable({ src, alt, width, height }) {
   return (
     <Image
       src={src}
@@ -21,10 +72,9 @@ function GalleryMainSlideImage({ src, alt, width, height }) {
       width={width}
       height={height}
       className="max-h-full max-w-full object-contain"
-      sizes="(max-width: 1400px) 100vw, 70vw"
-      priority
-      quality={quality}
-      onLoad={() => setQuality(MAIN_QUALITY_LOADED)}
+      sizes={imageSizes}
+      priority={false}
+      quality={MAIN_QUALITY_LOADED}
     />
   );
 }
@@ -45,9 +95,17 @@ function GalleryMainSlideImage({ src, alt, width, height }) {
  */
 export function GallerySlideshow({ title, description, slides, backHref }) {
   const [index, setIndex] = useState(0);
+  const [displayedIndex, setDisplayedIndex] = useState(0);
   const total = slides.length;
   const safeIndex = total > 0 ? Math.min(index, total - 1) : 0;
+  const displayedIdx = total > 0 ? Math.min(displayedIndex, total - 1) : 0;
   const current = slides[safeIndex] ?? null;
+  const displayed = slides[displayedIdx] ?? null;
+  const isTransitioning = total > 0 && safeIndex !== displayedIdx;
+
+  const handleIncomingReady = useCallback(() => {
+    setDisplayedIndex(safeIndex);
+  }, [safeIndex]);
 
   const goPrev = useCallback(() => {
     setIndex((i) => (total <= 0 ? 0 : (i - 1 + total) % total));
@@ -76,7 +134,48 @@ export function GallerySlideshow({ title, description, slides, backHref }) {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [goPrev, goNext]);
 
-  if (!current || total === 0) {
+  /** Preload soft prev/next (URL Cloudinary) in idle. */
+  useEffect(() => {
+    if (total < 2 || slides.length === 0) {
+      return undefined;
+    }
+
+    const created = [];
+
+    const run = () => {
+      const prevHref = slides[(displayedIdx - 1 + total) % total]?.src;
+      const nextHref = slides[(displayedIdx + 1) % total]?.src;
+      const hrefs = [...new Set([prevHref, nextHref].filter(Boolean))];
+      hrefs.forEach((href) => {
+        const link = document.createElement("link");
+        link.rel = "preload";
+        link.as = "image";
+        link.href = href;
+        link.setAttribute(PRELOAD_ATTR, "1");
+        document.head.appendChild(link);
+        created.push(link);
+      });
+    };
+
+    let idleId;
+    const useIdle = typeof window.requestIdleCallback === "function";
+    if (useIdle) {
+      idleId = window.requestIdleCallback(run, { timeout: 1200 });
+    } else {
+      idleId = setTimeout(run, 300);
+    }
+
+    return () => {
+      if (useIdle) {
+        window.cancelIdleCallback(idleId);
+      } else {
+        clearTimeout(idleId);
+      }
+      created.forEach((el) => el.remove());
+    };
+  }, [displayedIdx, slides, total]);
+
+  if (!current || total === 0 || !displayed) {
     return null;
   }
 
@@ -127,13 +226,52 @@ export function GallerySlideshow({ title, description, slides, backHref }) {
 
       <div className="relative flex min-h-[50vh] flex-1 items-center justify-center bg-zinc-900 p-3 md:min-h-0 md:p-4">
         <div className="relative flex h-[min(70vh,900px)] w-full max-w-full items-center justify-center md:absolute md:inset-0 md:h-full md:min-h-[320px]">
-          <GalleryMainSlideImage
-            key={current.publicId}
-            src={current.src}
-            alt={current.alt}
-            width={current.width}
-            height={current.height}
-          />
+          {isTransitioning ? (
+            <>
+              <div
+                className="pointer-events-none absolute bottom-4 right-4 z-3 flex items-center justify-center rounded-full bg-black/35 p-2.5 backdrop-blur-sm md:bottom-5 md:right-5"
+                role="status"
+                aria-live="polite"
+              >
+                <span className="sr-only">Caricamento immagine successiva</span>
+                <div
+                  className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white"
+                  aria-hidden
+                />
+              </div>
+              <div className="absolute inset-0 z-1 flex items-center justify-center">
+                <GalleryMainSlideImageStable
+                  src={displayed.src}
+                  alt={displayed.alt}
+                  width={displayed.width}
+                  height={displayed.height}
+                />
+              </div>
+              <div
+                className="pointer-events-none absolute inset-0 z-2 flex items-center justify-center opacity-0"
+                aria-hidden
+              >
+                <GalleryMainSlideImage
+                  key={current.publicId}
+                  src={current.src}
+                  alt={current.alt}
+                  width={current.width}
+                  height={current.height}
+                  priority={false}
+                  onReady={handleIncomingReady}
+                />
+              </div>
+            </>
+          ) : (
+            <GalleryMainSlideImage
+              key={current.publicId}
+              src={current.src}
+              alt={current.alt}
+              width={current.width}
+              height={current.height}
+              priority
+            />
+          )}
         </div>
       </div>
     </div>
