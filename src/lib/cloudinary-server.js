@@ -141,17 +141,23 @@ async function fetchFolderAssetsUncached(folder) {
   }
 
   const folderExact = folder.replace(/\/$/, "");
-  /** Allinea a Search `folder:"…"`: solo asset con `folder` esatto, non sottocartelle. */
+  /**
+   * Stessa idea di Search `folder:"…"`: solo file direttamente in quella cartella (no sottocartelle).
+   * Usiamo prima `public_id` (fonte di verità); il campo `folder` dell’Admin API a volte non coincide
+   * col path completo del manifest — se lo controllassimo da soli escluderemmo tutto per errore.
+   */
   resources = resources.filter((r) => {
-    if (typeof r.folder === "string" && r.folder.length > 0) {
-      return r.folder === folderExact;
-    }
     const pid = String(r.public_id ?? "");
-    if (!pid.startsWith(`${folderExact}/`)) {
-      return false;
+    if (pid.startsWith(`${folderExact}/`)) {
+      const rest = pid.slice(folderExact.length + 1);
+      if (!rest.includes("/")) {
+        return true;
+      }
     }
-    const rest = pid.slice(folderExact.length + 1);
-    return !rest.includes("/");
+    if (typeof r.folder === "string" && r.folder.length > 0 && r.folder === folderExact) {
+      return true;
+    }
+    return false;
   });
 
   resources.sort((a, b) => String(a.public_id).localeCompare(String(b.public_id)));
@@ -197,7 +203,7 @@ async function fetchFolderAssetsUncached(folder) {
   };
 }
 
-export const fetchFolderAssets = unstable_cache(fetchFolderAssetsUncached, ["cloudinary-folder-assets-v7"], {
+export const fetchFolderAssets = unstable_cache(fetchFolderAssetsUncached, ["cloudinary-folder-assets-v8"], {
   revalidate: false,
   tags: [PHOTOGRAPHY_CLOUDINARY_CACHE_TAG],
 });
