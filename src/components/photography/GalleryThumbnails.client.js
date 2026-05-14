@@ -30,11 +30,11 @@ export function GalleryThumbnails({ slides, currentIndex, onSelectIndex }) {
   }
 
   return (
-    <div className="flex min-h-0 max-h-[260px] flex-col gap-2">
-      <p className="text-xs font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-        Galleria
-      </p>
-      <div className="grid min-h-0 grid-cols-5 gap-2 overflow-y-auto pr-1">
+    <div
+      className="flex w-full flex-col gap-2 select-none"
+      onContextMenu={(e) => e.preventDefault()}
+    >
+      <div className="grid grid-cols-5 gap-1.5 overflow-hidden">
         {pageSlice.map((item, i) => {
           const globalIndex = (pageFromIndex - 1) * ITEMS_PER_PAGE + i;
           const active = globalIndex === currentIndex;
@@ -56,28 +56,43 @@ export function GalleryThumbnails({ slides, currentIndex, onSelectIndex }) {
                 alt=""
                 width={30}
                 height={30}
+                draggable={false}
                 sizes="30px"
                 quality={30}
                 loading="eager"
-                className="h-full w-full object-cover"
+                className="pointer-events-none h-full w-full object-cover select-none [-webkit-user-drag:none]"
               />
             </button>
           );
         })}
       </div>
       {totalPages > 1 ? (
-        <div className="flex shrink-0 justify-center gap-1.5 pt-1">
-          {Array.from({ length: totalPages }, (_, p) => (
-            <button
-              key={p}
-              type="button"
-              aria-label={`Vai alla pagina miniature ${p + 1} di ${totalPages}`}
-              onClick={() => onSelectIndex(p * ITEMS_PER_PAGE)}
-              className={`h-2.5 w-2.5 rounded-full transition ${
-                pageFromIndex === p + 1 ? "bg-zinc-700 dark:bg-zinc-300" : "bg-zinc-300 dark:bg-zinc-600"
-              }`}
-            />
-          ))}
+        <div
+          className="flex shrink-0 flex-wrap justify-center gap-1.5 pt-1.5"
+          role="tablist"
+          aria-label="Pagine miniature"
+        >
+          {Array.from({ length: totalPages }, (_, i) => {
+            const n = i + 1;
+            const active = pageFromIndex === n;
+            return (
+              <button
+                key={n}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                aria-label={`Vai alla pagina miniature ${n} di ${totalPages}`}
+                onClick={() => onSelectIndex((n - 1) * ITEMS_PER_PAGE)}
+                className={`flex min-h-10 min-w-10 items-center justify-center rounded-md border text-sm font-medium transition ${
+                  active
+                    ? "border-foreground bg-foreground/10 text-foreground ring-2 ring-foreground/20"
+                    : "border-zinc-300/90 bg-zinc-50 text-zinc-700 hover:border-zinc-400 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:border-zinc-500"
+                }`}
+              >
+                {n}
+              </button>
+            );
+          })}
         </div>
       ) : null}
     </div>
