@@ -70,7 +70,7 @@ function isCoverPublicId(publicId) {
  * Lista immagini per prefisso cartella (stesso modello di immagina-website-03:
  * Admin Resources API + fetch force-cache), con paginazione next_cursor.
  * @param {string} cloudName
- * @param {string} folder es. "Photography/sicilia" (senza slash iniziale)
+ * @param {string} folder es. "Roberto Gianocca/Portfolio/Photography/nome-galleria" (senza slash iniziale)
  * @param {string} apiKey
  * @param {string} apiSecret
  */

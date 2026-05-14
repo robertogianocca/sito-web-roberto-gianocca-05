@@ -7,10 +7,10 @@
  */
 export const PHOTOGRAPHY_GALLERIES = [
   {
-    slug: "sicilia",
-    title: "Sicilia",
-    shortDescription: "Notturni e paesaggi costieri.",
-    folder: "TALETE/Portfolio/Photography",
+    slug: "slava-snowshow",
+    title: "Slava's Snowshow",
+    shortDescription: "Immagini dalla produzione.",
+    folder: "Roberto Gianocca/Portfolio/Photography/Slava's Snowshow",
   },
 ];
 
