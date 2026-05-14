@@ -6,10 +6,11 @@ import { useMemo } from "react";
 const ITEMS_PER_PAGE = 20;
 
 /**
- * Griglia miniature (stile immagina-website-03): carica thumb piccole in eager per warm-up cache.
+ * Griglia miniature (stesso approccio di immagina-website-03): stesso `src` della
+ * slide principale; Next/Image ridimensiona con width/height piccoli.
  *
  * @param {{
- *   slides: Array<{ publicId: string; thumbSrc: string }>;
+ *   slides: Array<{ publicId: string; src: string }>;
  *   currentIndex: number;
  *   onSelectIndex: (index: number) => void;
  * }} props
@@ -51,13 +52,14 @@ export function GalleryThumbnails({ slides, currentIndex, onSelectIndex }) {
               }`}
             >
               <Image
-                src={item.thumbSrc}
+                src={item.src}
                 alt=""
-                fill
+                width={64}
+                height={64}
                 sizes="64px"
-                quality={40}
+                quality={30}
                 loading="eager"
-                className="object-cover"
+                className="h-full w-full object-cover"
               />
             </button>
           );

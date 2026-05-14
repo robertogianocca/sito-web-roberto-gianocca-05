@@ -10,6 +10,8 @@ export const PHOTOGRAPHY_CLOUDINARY_CACHE_TAG = "photography-cloudinary";
 /** Ultimo segmento del public_id deve essere esattamente questo (es. `…/Photography/cover` o `cover`). */
 const COVER_BASENAME = "cover";
 
+const RESOURCES_MAX = 500;
+
 function readEnv() {
   return {
     cloudName: process.env.CLOUDINARY_CLOUD_NAME,
@@ -65,38 +67,94 @@ function isCoverPublicId(publicId) {
 }
 
 /**
- * Inserisce il segmento trasformazioni subito dopo `/upload/`, mantenendo versione e public_id.
- * @param {string} secureUrl
- * @param {string} transformsSegment es. "f_auto,q_auto,w_1920,h_1280,c_limit"
+ * Lista immagini per prefisso cartella (stesso modello di immagina-website-03:
+ * Admin Resources API + fetch force-cache), con paginazione next_cursor.
+ * @param {string} cloudName
+ * @param {string} folder es. "Photography/sicilia" (senza slash iniziale)
+ * @param {string} apiKey
+ * @param {string} apiSecret
  */
-function buildUrlFromSecureUrl(secureUrl, transformsSegment) {
-  const marker = "/upload/";
-  const i = secureUrl.indexOf(marker);
-  if (i === -1) {
-    return null;
+async function fetchAllResourcesByPrefix(cloudName, folder, apiKey, apiSecret) {
+  const prefix = folder.endsWith("/") ? folder : `${folder}/`;
+  const auth = `Basic ${Buffer.from(`${apiKey}:${apiSecret}`).toString("base64")}`;
+  const all = [];
+  let nextCursor;
+
+  do {
+    const params = new URLSearchParams({
+      type: "upload",
+      prefix,
+      max_results: String(RESOURCES_MAX),
+      metadata: "true",
+    });
+    if (nextCursor) {
+      params.set("next_cursor", nextCursor);
+    }
+    const url = `https://api.cloudinary.com/v1_1/${cloudName}/resources/image?${params.toString()}`;
+    const response = await fetch(url, {
+      headers: { Authorization: auth },
+      cache: "force-cache",
+    });
+
+    if (!response.ok) {
+      const text = await response.text().catch(() => "");
+      throw new Error(`Cloudinary resources ${response.status}: ${text.slice(0, 200)}`);
+    }
+
+    const data = await response.json();
+    const batch = data.resources ?? [];
+    all.push(...batch);
+    nextCursor = typeof data.next_cursor === "string" ? data.next_cursor : undefined;
+  } while (nextCursor);
+
+  return all;
+}
+
+function deliveryUrlFromResource(r, cloudName) {
+  if (typeof r.secure_url === "string" && r.secure_url.length > 0) {
+    return r.secure_url;
   }
-  const prefix = secureUrl.slice(0, i + marker.length);
-  const rest = secureUrl.slice(i + marker.length);
-  if (!rest) {
-    return null;
+  if (typeof r.url === "string" && r.url.length > 0) {
+    return r.url;
   }
-  return `${prefix}${transformsSegment}/${rest}`;
+  return buildCloudinaryImageUrl(cloudName, r.public_id, {
+    width: 1920,
+    height: 1280,
+    crop: "limit",
+  });
 }
 
 async function fetchFolderAssetsUncached(folder) {
-  const cloudName = configureCloudinary();
-  if (!cloudName) {
+  const { cloudName, apiKey, apiSecret } = readEnv();
+  if (!cloudName || !apiKey || !apiSecret) {
     return { ok: false, reason: "missing_env" };
   }
 
-  const escapedFolder = folder.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
-  const result = await cloudinary.v2.search
-    .expression(`resource_type:image AND folder:"${escapedFolder}"`)
-    .max_results(500)
-    .sort_by("public_id", "asc")
-    .execute();
+  configureCloudinary();
 
-  const resources = result.resources ?? [];
+  let resources;
+  try {
+    resources = await fetchAllResourcesByPrefix(cloudName, folder, apiKey, apiSecret);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    return { ok: false, reason: "api_error", message, folder };
+  }
+
+  const folderExact = folder.replace(/\/$/, "");
+  /** Allinea a Search `folder:"…"`: solo asset con `folder` esatto, non sottocartelle. */
+  resources = resources.filter((r) => {
+    if (typeof r.folder === "string" && r.folder.length > 0) {
+      return r.folder === folderExact;
+    }
+    const pid = String(r.public_id ?? "");
+    if (!pid.startsWith(`${folderExact}/`)) {
+      return false;
+    }
+    const rest = pid.slice(folderExact.length + 1);
+    return !rest.includes("/");
+  });
+
+  resources.sort((a, b) => String(a.public_id).localeCompare(String(b.public_id)));
 
   if (resources.length === 0) {
     return {
@@ -119,34 +177,13 @@ async function fetchFolderAssetsUncached(folder) {
   const slides = slideResources.map((r) => {
     const intrinsicW = typeof r.width === "number" && r.width > 0 ? r.width : 1920;
     const intrinsicH = typeof r.height === "number" && r.height > 0 ? r.height : 1280;
-    const mainTransforms = ["f_auto", "q_auto", "w_1920", "h_1280", "c_limit"].join(",");
-    const thumbTransforms = ["f_auto", "q_auto", "w_320", "h_240", "c_limit"].join(",");
-
-    const secure = typeof r.secure_url === "string" ? r.secure_url : null;
-    const srcFromApi = secure ? buildUrlFromSecureUrl(secure, mainTransforms) : null;
-    const thumbFromApi = secure ? buildUrlFromSecureUrl(secure, thumbTransforms) : null;
-
-    const src =
-      srcFromApi ??
-      buildCloudinaryImageUrl(cloudName, r.public_id, {
-        width: 1920,
-        height: 1280,
-        crop: "limit",
-      });
-    const thumbSrc =
-      thumbFromApi ??
-      buildCloudinaryImageUrl(cloudName, r.public_id, {
-        width: 320,
-        height: 240,
-        crop: "limit",
-      });
+    const src = deliveryUrlFromResource(r, cloudName);
 
     return {
       publicId: r.public_id,
       width: intrinsicW,
       height: intrinsicH,
       src,
-      thumbSrc,
       alt: slideAltFromPublicId(r.public_id),
     };
   });
@@ -160,13 +197,13 @@ async function fetchFolderAssetsUncached(folder) {
   };
 }
 
-export const fetchFolderAssets = unstable_cache(fetchFolderAssetsUncached, ["cloudinary-folder-assets-v6"], {
+export const fetchFolderAssets = unstable_cache(fetchFolderAssetsUncached, ["cloudinary-folder-assets-v7"], {
   revalidate: false,
   tags: [PHOTOGRAPHY_CLOUDINARY_CACHE_TAG],
 });
 
 /**
- * Dati lista: cover + conteggio slide (stessa Search in cache di {@link fetchFolderGalleryDetail}).
+ * Dati lista: cover + conteggio slide (stessa fetch Resources in cache di {@link fetchFolderGalleryDetail}).
  */
 export async function fetchFolderGallery(folder) {
   const data = await fetchFolderAssets(folder);

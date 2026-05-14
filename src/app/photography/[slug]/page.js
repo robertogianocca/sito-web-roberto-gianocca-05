@@ -83,12 +83,13 @@ export default async function PhotographyGalleryPage({ params }) {
         />
       );
     }
-    return (
-      <ErrorPanel
-        title="Galleria non disponibile"
-        body="Non è stato possibile leggere le immagini da Cloudinary. Controlla cartella e permessi API."
-      />
-    );
+    const fallback =
+      "Non è stato possibile leggere le immagini da Cloudinary. Controlla cartella e permessi API.";
+    const body =
+      detail.reason === "api_error" && "message" in detail && detail.message
+        ? String(detail.message)
+        : fallback;
+    return <ErrorPanel title="Galleria non disponibile" body={body} />;
   }
 
   if (detail.slides.length === 0) {
