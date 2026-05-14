@@ -1,10 +1,19 @@
 "use client";
 
+/**
+ * Slideshow galleria photography: sidebar (titolo, testo, controlli, miniature) + pannello
+ * immagine principale. Sotto-componenti per qualità immagine e transizione tra slide.
+ */
+
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { GalleryThumbnails } from "./GalleryThumbnails.client";
+import { PhotographyRichDescription } from "./PhotographyRichDescription";
 
+// ---------------------------------------------------------------------------
+// Costanti (qualità Cloudinary, preload, dimensioni `sizes` Next/Image)
+// ---------------------------------------------------------------------------
 const MAIN_QUALITY_INITIAL = 1;
 const MAIN_QUALITY_LOADED = 70;
 const PRELOAD_ATTR = "data-photography-adjacent-preload";
@@ -12,10 +21,14 @@ const REVEAL_DURATION_MS = 420;
 
 const imageSizes = "(max-width: 1400px) 100vw, 70vw";
 
+// Classi condivise slide principale (object-fit, anti-drag / anti-selezione)
 /** Limita salvataggio da clic destro e trascinamento (mitigazione lato UI, non sicurezza). */
 const galleryImageClass =
   "max-h-full max-w-full select-none object-contain [-webkit-user-drag:none]";
 
+// ---------------------------------------------------------------------------
+// Spinner overlay sulla slide principale (in attesa di `onLoadingComplete`)
+// ---------------------------------------------------------------------------
 function SlideLoadingSpinner({ className = "" }) {
   return (
     <div
@@ -27,6 +40,9 @@ function SlideLoadingSpinner({ className = "" }) {
   );
 }
 
+// ---------------------------------------------------------------------------
+// Slide principale — rampa qualità (bassa → alta) + dissolvenza in opacità
+// ---------------------------------------------------------------------------
 /**
  * Qualità bassa al mount (`quality` 1), poi 70 dopo `onLoadingComplete` (stile Immagina).
  * Spinner finché l’immagine non è pronta; poi dissolvenza leggera in opacità.
@@ -69,6 +85,9 @@ function GalleryMainSlideImage({ src, alt, width, height, priority = true, onRea
   );
 }
 
+// ---------------------------------------------------------------------------
+// Slide principale — versione “stabile” (slide già visibile durante la transizione)
+// ---------------------------------------------------------------------------
 /**
  * Slide già mostrata: qualità alta fissa, niente rampa (evita flash in transizione).
  */
@@ -89,6 +108,9 @@ function GalleryMainSlideImageStable({ src, alt, width, height }) {
   );
 }
 
+// ---------------------------------------------------------------------------
+// GallerySlideshow — layout sidebar + area slide, stato e navigazione
+// ---------------------------------------------------------------------------
 /**
  * @param {{
  *   title: string;
@@ -104,6 +126,7 @@ function GalleryMainSlideImageStable({ src, alt, width, height }) {
  * }} props
  */
 export function GallerySlideshow({ title, description, slides, backHref }) {
+  // --- Stato: indice richiesto vs indice effettivamente mostrato (transizione slide) ---
   const [index, setIndex] = useState(0);
   const [displayedIndex, setDisplayedIndex] = useState(0);
   const total = slides.length;
@@ -113,10 +136,12 @@ export function GallerySlideshow({ title, description, slides, backHref }) {
   const displayed = slides[displayedIdx] ?? null;
   const isTransitioning = total > 0 && safeIndex !== displayedIdx;
 
+  // --- Allineamento indice mostrato quando la nuova immagine è pronta ---
   const handleIncomingReady = useCallback(() => {
     setDisplayedIndex(safeIndex);
   }, [safeIndex]);
 
+  // --- Navigazione slide principale (frecce / tastiera) + scelta da miniature ---
   const goPrev = useCallback(() => {
     setIndex((i) => (total <= 0 ? 0 : (i - 1 + total) % total));
   }, [total]);
@@ -132,6 +157,7 @@ export function GallerySlideshow({ title, description, slides, backHref }) {
     [total],
   );
 
+  // --- Scorciatoie tastiera (← / →) ---
   useEffect(() => {
     function onKeyDown(e) {
       if (e.key === "ArrowLeft") {
@@ -147,7 +173,7 @@ export function GallerySlideshow({ title, description, slides, backHref }) {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [goPrev, goNext]);
 
-  /** Preload soft prev/next (URL Cloudinary) in idle. */
+  // --- Preload leggero prev/next (link in `<head>`, in idle; URL Cloudinary) ---
   useEffect(() => {
     if (total < 2 || slides.length === 0) {
       return undefined;
@@ -188,26 +214,32 @@ export function GallerySlideshow({ title, description, slides, backHref }) {
     };
   }, [displayedIdx, slides, total]);
 
+  // Nessuna slide valida (es. array vuoto lato parent)
   if (!current || total === 0 || !displayed) {
     return null;
   }
 
   return (
+    // --- Shell: colonna sidebar (sinistra) + area slide (destra) ---
     <div className="flex min-h-0 flex-1 flex-col bg-zinc-50 md:flex-row md:overflow-hidden dark:bg-zinc-950">
+      {/* ========== Sidebar ========== */}
       <aside className="flex w-full shrink-0 flex-col gap-4 border-zinc-200/80 bg-background p-4 md:h-full md:min-h-0 md:w-[min(100%,15rem)] md:border-r md:self-stretch dark:border-zinc-800/80 lg:w-64 lg:p-5">
+        {/* Link torna all’indice photography */}
         <Link
           href={backHref}
           className="text-sm font-medium text-zinc-600 underline-offset-4 hover:text-foreground hover:underline dark:text-zinc-400"
         >
           ← Photography
         </Link>
+        {/* Titolo galleria + didascalia (markdown) */}
         <div className="shrink-0 space-y-1.5">
           <h1 className="text-lg font-semibold tracking-tight text-foreground md:text-xl">
             {title}
           </h1>
-          <p className="text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">{description}</p>
+          <PhotographyRichDescription markdown={description} />
         </div>
 
+        {/* Contatore slide (es. 3 / 12) + pulsanti Indietro / Avanti */}
         <div className="flex shrink-0 flex-col gap-3 border-t border-zinc-200/80 pt-4 dark:border-zinc-800/80">
           <p className="text-xs font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
             {safeIndex + 1} / {total}
@@ -234,18 +266,22 @@ export function GallerySlideshow({ title, description, slides, backHref }) {
           </div>
         </div>
 
+        {/* Griglia miniature + paginazione (ancorata in basso nella sidebar) */}
         <div className="mt-auto min-h-0 w-full shrink-0">
           <GalleryThumbnails slides={slides} currentIndex={safeIndex} onSelectIndex={selectIndex} />
         </div>
       </aside>
 
+      {/* ========== Area slide principale (sfondo scuro) ========== */}
       <div
         className="relative flex min-h-[50vh] flex-1 flex-col bg-zinc-900 p-3 select-none md:min-h-0 md:p-4 lg:p-5"
         onContextMenu={(e) => e.preventDefault()}
       >
         <div className="relative flex min-h-0 w-full max-w-full flex-1 items-center justify-center">
           {isTransitioning ? (
+            // --- Crossfade: slide corrente (stabile) + nuova in caricamento (invisibile fino a ready) ---
             <>
+              {/* Spinner “caricamento prossima slide” (angolo) */}
               <div
                 className="pointer-events-none absolute bottom-4 right-4 z-3 flex items-center justify-center rounded-full bg-black/35 p-2.5 backdrop-blur-sm md:bottom-5 md:right-5"
                 role="status"
@@ -257,6 +293,7 @@ export function GallerySlideshow({ title, description, slides, backHref }) {
                   aria-hidden
                 />
               </div>
+              {/* Layer visibile: slide già confermata */}
               <div className="absolute inset-0 z-1 flex items-center justify-center">
                 <GalleryMainSlideImageStable
                   src={displayed.src}
@@ -265,6 +302,7 @@ export function GallerySlideshow({ title, description, slides, backHref }) {
                   height={displayed.height}
                 />
               </div>
+              {/* Layer preload: nuova slide (opacità 0, sblocca `onReady` → aggiorna displayedIndex) */}
               <div
                 className="pointer-events-none absolute inset-0 z-2 flex items-center justify-center opacity-0"
                 aria-hidden
@@ -281,6 +319,7 @@ export function GallerySlideshow({ title, description, slides, backHref }) {
               </div>
             </>
           ) : (
+            // --- Nessuna transizione: una sola slide ---
             <GalleryMainSlideImage
               key={current.publicId}
               src={current.src}

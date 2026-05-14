@@ -48,7 +48,14 @@ export default function Home() {
           </div>
         </HorizontalSection>
 
-        <HorizontalSection id="video" eyebrow="Sezione" title="Video" span={6}>
+        <HorizontalSection
+          id="video"
+          eyebrow="Sezione"
+          title="Video"
+          span={6}
+          titleHref="/video"
+          titleHrefAriaLabel="Apri la pagina Video"
+        >
           <div className="flex h-full flex-col gap-6">
             <p className="max-w-prose text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
               {LOREM_MEDIUM}

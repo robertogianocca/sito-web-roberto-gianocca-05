@@ -62,7 +62,7 @@ export default async function PhotographyPage() {
 
   return (
     <div className="min-h-full flex-1 bg-zinc-50 dark:bg-zinc-950">
-      <header className="border-b border-zinc-200/80 bg-background/80 px-6 py-6 backdrop-blur dark:border-zinc-800/80 md:px-10">
+      <header className="border-b border-zinc-200/80 bg-background/80 px-6 py-6 backdrop-blur dark:border-zinc-800/80 md:px-0">
         <div className="mx-auto flex max-w-6xl flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div className="space-y-2">
             <Link
@@ -76,10 +76,13 @@ export default async function PhotographyPage() {
             </h1>
             <p className="max-w-prose text-sm text-zinc-600 dark:text-zinc-400">
               Gallerie su Cloudinary. Opzionale: un’immagine il cui{" "}
-              <strong className="font-medium text-foreground">nome</strong> (ultimo segmento del public id) è{" "}
-              <code className="rounded bg-zinc-200/80 px-1 py-0.5 text-xs dark:bg-zinc-800/80">cover</code>{" "}
-              per la card; non entra nel carosello. Senza cover, sulla card compare un segnaposto e le altre foto
-              restano comunque nella galleria. Dopo modifiche su Cloudinary usa{" "}
+              <strong className="font-medium text-foreground">nome</strong> (ultimo segmento del
+              public id) è{" "}
+              <code className="rounded bg-zinc-200/80 px-1 py-0.5 text-xs dark:bg-zinc-800/80">
+                cover
+              </code>{" "}
+              per la card; non entra nel carosello. Senza cover, sulla card compare un segnaposto e
+              le altre foto restano comunque nella galleria. Dopo modifiche su Cloudinary usa{" "}
               <Link
                 href="/photography/revalidate-cache"
                 className="font-medium text-foreground underline-offset-4 hover:underline"
@@ -92,7 +95,7 @@ export default async function PhotographyPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-6 py-10 md:px-10 md:py-12">
+      <main className="mx-auto max-w-6xl px-6 py-10 md:px-0 md:py-12">
         <div
           className={
             SHOW_CLOUDINARY_PROBE && probe
@@ -137,8 +140,14 @@ export default async function PhotographyPage() {
                   </div>
                   <p className="text-xs text-zinc-500 dark:text-zinc-400">
                     Abilita con{" "}
-                    <code className="rounded bg-zinc-100 px-1 py-0.5 dark:bg-zinc-900">PHOTOGRAPHY_ENABLE_PROBE=1</code>
-                    . Opzionale: <code className="rounded bg-zinc-100 px-1 py-0.5 dark:bg-zinc-900">PHOTOGRAPHY_PROBE_PUBLIC_ID</code>.
+                    <code className="rounded bg-zinc-100 px-1 py-0.5 dark:bg-zinc-900">
+                      PHOTOGRAPHY_ENABLE_PROBE=1
+                    </code>
+                    . Opzionale:{" "}
+                    <code className="rounded bg-zinc-100 px-1 py-0.5 dark:bg-zinc-900">
+                      PHOTOGRAPHY_PROBE_PUBLIC_ID
+                    </code>
+                    .
                   </p>
                 </>
               ) : (
@@ -147,7 +156,7 @@ export default async function PhotographyPage() {
                   <p className="mt-1 text-xs opacity-90">
                     {probe.reason === "missing_env"
                       ? "Variabili CLOUDINARY_* mancanti."
-                      : probe.message ?? probe.reason}
+                      : (probe.message ?? probe.reason)}
                   </p>
                 </div>
               )}
@@ -164,12 +173,14 @@ export default async function PhotographyPage() {
                     src/data/photography-galleries.js
                   </code>{" "}
                   (slug, titolo, descrizione, cartella Cloudinary). Imposta{" "}
-                  <code className="rounded bg-zinc-100 px-1 py-0.5 text-xs dark:bg-zinc-900">CLOUDINARY_*</code> per
-                  il build e il deploy.
+                  <code className="rounded bg-zinc-100 px-1 py-0.5 text-xs dark:bg-zinc-900">
+                    CLOUDINARY_*
+                  </code>{" "}
+                  per il build e il deploy.
                 </p>
               </div>
             ) : (
-              <ul className="grid gap-8 sm:grid-cols-2">
+              <ul className="grid gap-8 md:grid-cols-3">
                 {entries.map(({ gallery, coverSrc, footnote }) => (
                   <li key={gallery.slug}>
                     <PhotographyGalleryCard

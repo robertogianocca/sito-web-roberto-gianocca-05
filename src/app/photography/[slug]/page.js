@@ -9,6 +9,7 @@ import {
   fetchFolderGalleryDetail,
   isCloudinaryConfigured,
 } from "../../../lib/cloudinary-server";
+import { plainTextFromMarkdown } from "../../../lib/plain-text-from-markdown";
 
 export const dynamicParams = false;
 
@@ -24,7 +25,7 @@ export async function generateMetadata({ params }) {
   }
   return {
     title: `${gallery.title} | Photography | Roberto Gianocca`,
-    description: gallery.shortDescription,
+    description: plainTextFromMarkdown(gallery.shortDescription),
   };
 }
 

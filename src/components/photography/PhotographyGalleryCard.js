@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { PhotographyRichDescription } from "./PhotographyRichDescription";
 
 /**
  * @param {{
@@ -19,9 +20,9 @@ export function PhotographyGalleryCard({
   footnote,
   href,
 }) {
-  const inner = (
-    <article className="flex h-full flex-col overflow-hidden rounded-xl border border-zinc-200/90 bg-background shadow-sm transition-[box-shadow,transform] dark:border-zinc-800/90">
-      <div className="relative aspect-[4/3] w-full bg-zinc-100 dark:bg-zinc-900">
+  const imageSection = (
+    <div className="px-5 pt-5">
+      <div className="relative aspect-4/3 w-full overflow-hidden rounded-sm bg-zinc-100 dark:bg-zinc-900">
         {coverSrc ? (
           <Image
             src={coverSrc}
@@ -36,30 +37,50 @@ export function PhotographyGalleryCard({
           </div>
         )}
       </div>
-      <div className="flex flex-1 flex-col gap-2 p-5">
-        <h2 className="text-lg font-semibold tracking-tight text-foreground">{title}</h2>
-        <p className="text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
-          {shortDescription}
-        </p>
-        {footnote ? (
-          <p className="text-xs text-amber-700 dark:text-amber-400/90">{footnote}</p>
-        ) : null}
-      </div>
-    </article>
+    </div>
   );
+
+  const titleBlock = (
+    <h2 className="text-lg font-semibold tracking-tight text-foreground">{title}</h2>
+  );
+
+  const footnoteBlock = footnote ? (
+    <p className="text-xs text-amber-700 dark:text-amber-400/90">{footnote}</p>
+  ) : null;
+
+  const articleClassName =
+    "flex h-full flex-col overflow-hidden rounded-sm border border-zinc-200/90 bg-background shadow-sm transition-[box-shadow,transform] dark:border-zinc-800/90";
 
   if (href) {
     return (
-      <Link
-        href={href}
-        className="group block h-full rounded-xl outline-offset-2 focus-visible:outline-2 focus-visible:outline-zinc-400 dark:focus-visible:outline-zinc-500"
-      >
-        <div className="h-full group-hover:[&_article]:shadow-md group-hover:[&_article]:ring-1 group-hover:[&_article]:ring-zinc-300/80 dark:group-hover:[&_article]:ring-zinc-600/80">
-          {inner}
-        </div>
-      </Link>
+      <div className="group block h-full rounded-sm outline-offset-2 focus-within:outline-2 focus-within:outline-zinc-400 dark:focus-within:outline-zinc-500">
+        <article
+          className={`${articleClassName} group-hover:shadow-md group-hover:ring-1 group-hover:ring-zinc-300/80 dark:group-hover:ring-zinc-600/80`}
+        >
+          <Link
+            href={href}
+            className="block shrink-0 text-left outline-offset-2 focus-visible:outline-2 focus-visible:outline-zinc-400 dark:focus-visible:outline-zinc-500"
+          >
+            {imageSection}
+            <div className="px-5 pt-5">{titleBlock}</div>
+          </Link>
+          <div className="flex flex-1 flex-col gap-2 px-5 pb-5 pt-2">
+            <PhotographyRichDescription markdown={shortDescription} />
+            {footnoteBlock}
+          </div>
+        </article>
+      </div>
     );
   }
 
-  return inner;
+  return (
+    <article className={articleClassName}>
+      {imageSection}
+      <div className="px-5 pt-5">{titleBlock}</div>
+      <div className="flex flex-1 flex-col gap-2 px-5 pb-5 pt-2">
+        <PhotographyRichDescription markdown={shortDescription} />
+        {footnoteBlock}
+      </div>
+    </article>
+  );
 }
