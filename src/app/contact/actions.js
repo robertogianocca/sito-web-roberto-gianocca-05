@@ -4,12 +4,6 @@ import { Resend } from "resend";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-export const initialContactState = {
-  ok: false,
-  resetKey: 0,
-  errors: {},
-};
-
 function field(value) {
   return String(value ?? "").trim();
 }
@@ -66,9 +60,9 @@ export async function submitContactAction(prevState, formData) {
     return { ok: false, resetKey: prevState?.resetKey ?? 0, errors: fieldErrors };
   }
 
-  const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.RESEND_FROM_EMAIL;
-  const to = process.env.CONTACT_TO_EMAIL;
+  const apiKey = process.env.RESEND_API_KEY?.trim();
+  const from = process.env.RESEND_FROM_EMAIL?.trim();
+  const to = process.env.CONTACT_TO_EMAIL?.trim();
 
   if (!apiKey || !from || !to) {
     if (process.env.NODE_ENV === "development") {
@@ -87,24 +81,37 @@ export async function submitContactAction(prevState, formData) {
   const resend = new Resend(apiKey);
   const safeSubject = subject.replace(/[\r\n]+/g, " ").slice(0, 200);
 
-  const { error } = await resend.emails.send({
-    from,
-    to: [to],
-    replyTo: email,
-    subject: `Contatto sito: ${safeSubject}`,
-    text: [
-      `Nome: ${name}`,
-      `Email: ${email}`,
-      `Oggetto: ${subject}`,
-      "",
-      "Messaggio:",
-      message,
-    ].join("\n"),
-  });
+  try {
+    const { error } = await resend.emails.send({
+      from,
+      to: [to],
+      replyTo: email,
+      subject: `Contatto sito: ${safeSubject}`,
+      text: [
+        `Nome: ${name}`,
+        `Email: ${email}`,
+        `Oggetto: ${subject}`,
+        "",
+        "Messaggio:",
+        message,
+      ].join("\n"),
+    });
 
-  if (error) {
+    if (error) {
+      if (process.env.NODE_ENV === "development") {
+        console.error("[contact] Resend error:", error);
+      }
+      return {
+        ok: false,
+        resetKey: prevState?.resetKey ?? 0,
+        errors: {
+          submission: "Invio non riuscito. Riprova tra qualche minuto.",
+        },
+      };
+    }
+  } catch (err) {
     if (process.env.NODE_ENV === "development") {
-      console.error("[contact] Resend error:", error);
+      console.error("[contact] Resend threw:", err);
     }
     return {
       ok: false,

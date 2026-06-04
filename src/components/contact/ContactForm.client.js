@@ -2,10 +2,13 @@
 
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
-import {
-  initialContactState,
-  submitContactAction,
-} from "@/app/contact/actions";
+import { submitContactAction } from "@/app/contact/actions";
+
+const initialContactState = {
+  ok: false,
+  resetKey: 0,
+  errors: {},
+};
 
 const inputClassName =
   "w-full rounded-lg border border-zinc-300/90 bg-background px-3 py-2 text-sm text-foreground outline-none ring-zinc-400 focus:ring-2 dark:border-zinc-700/90 dark:ring-zinc-500";
