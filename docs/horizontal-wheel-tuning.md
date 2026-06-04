@@ -1,5 +1,7 @@
 # Tuning: scroll orizzontale con rotella (inerzia)
 
+Architettura layout homepage, sezioni e comportamento generale: [homepage-horizontal-scroll.md](./homepage-horizontal-scroll.md).
+
 Questa guida descrive **solo i numeri e le soglie** che controllano sensibilità, coasting e limiti dello scroll orizzontale mappato dalla rotella verticale. La logica vive in un unico file client.
 
 ## Dove modificare

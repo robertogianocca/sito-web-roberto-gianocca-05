@@ -1,7 +1,8 @@
 "use client";
 
 /**
- * Tuning guide (friction, speed, clamps, scroll hints): docs/horizontal-wheel-tuning.md
+ * Homepage horizontal scroll: docs/homepage-horizontal-scroll.md
+ * Tuning (friction, speed, clamps, scroll hints): docs/horizontal-wheel-tuning.md
  */
 
 import { useEffect, useRef, useState } from "react";

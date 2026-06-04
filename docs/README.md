@@ -1,0 +1,9 @@
+# Documentazione progetto
+
+| Argomento | File |
+|-----------|------|
+| Gallerie Photography su Cloudinary | [cloudinary-photography.md](./cloudinary-photography.md) |
+| Rivalidazione cache Photography | [revalidazione-cache-photography.md](./revalidazione-cache-photography.md) |
+| Scroll orizzontale homepage | [homepage-horizontal-scroll.md](./homepage-horizontal-scroll.md) |
+| Tuning rotella / inerzia / hint scroll | [horizontal-wheel-tuning.md](./horizontal-wheel-tuning.md) |
+| Form contatti (Resend) | [contact-form-resend.md](./contact-form-resend.md) |

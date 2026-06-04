@@ -1,5 +1,7 @@
 # Rivalidazione cache Photography (Cloudinary)
 
+Panoramica integrazione Cloudinary (cartelle, manifest, API): [cloudinary-photography.md](./cloudinary-photography.md).
+
 Il sito memorizza in cache i risultati delle chiamate a Cloudinary (lista immagini per cartella) con `unstable_cache` e il tag `photography-cloudinary` (definito in `src/lib/cloudinary-server.js`). Le pagine sotto `/photography` possono quindi mostrare dati vecchi dopo che hai spostato, rinominato o aggiunto file su Cloudinary, oppure dopo aver cambiato il campo `folder` in `src/data/photography-galleries.js` e aver fatto deploy.
 
 ## Quando rivalidare

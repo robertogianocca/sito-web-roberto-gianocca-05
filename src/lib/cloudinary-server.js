@@ -3,7 +3,7 @@ import cloudinary from "cloudinary";
 
 /**
  * Tag per `revalidateTag`: invalida la cache dati Cloudinary senza scadenza automatica.
- * Usa la pagina `/photography/revalidate-cache` dopo modifiche su Cloudinary.
+ * Docs: docs/cloudinary-photography.md — rivalidazione: /photography/revalidate-cache
  */
 export const PHOTOGRAPHY_CLOUDINARY_CACHE_TAG = "photography-cloudinary";
 
