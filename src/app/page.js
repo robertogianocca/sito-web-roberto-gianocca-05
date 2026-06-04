@@ -1,3 +1,5 @@
+import { ContactForm } from "../components/contact/ContactForm.client";
+import { HomeIntroNav } from "../components/home/HomeIntroNav";
 import { HorizontalScrollContainer } from "../components/home/HorizontalScrollContainer.client";
 import { HorizontalSection } from "../components/home/HorizontalSection";
 import { PlaceholderGrid } from "../components/home/PlaceholderGrid";
@@ -19,13 +21,14 @@ export default function Home() {
         className="flex min-h-0 flex-1 flex-col lg:flex-row lg:flex-nowrap lg:overflow-x-auto lg:overflow-y-hidden"
         aria-label="Sezioni portfolio"
       >
-        <HorizontalSection id="intro" eyebrow="Overview" title="Roberto Gianocca" span={9}>
+        <HorizontalSection id="intro" title="Roberto Gianocca" span={9}>
           <div className="flex min-h-0 flex-1 flex-col gap-6">
             <div className="grid gap-6 lg:grid-cols-12 lg:items-start lg:gap-10">
               <div className="lg:col-span-6">
                 <p className="text-lg leading-relaxed text-zinc-600 dark:text-zinc-400">
                   {LOREM_SHORT} {LOREM_MEDIUM}
                 </p>
+                <HomeIntroNav />
               </div>
               <div className="lg:col-span-6">
                 <PlaceholderGrid variant="hero" />
@@ -36,7 +39,6 @@ export default function Home() {
 
         <HorizontalSection
           id="photography"
-          eyebrow="Sezione"
           title="Photography"
           span={8}
           titleHref="/photography"
@@ -50,7 +52,6 @@ export default function Home() {
 
         <HorizontalSection
           id="video"
-          eyebrow="Sezione"
           title="Video"
           span={6}
           titleHref="/video"
@@ -64,22 +65,19 @@ export default function Home() {
           </div>
         </HorizontalSection>
 
-        <HorizontalSection id="graphic-design" eyebrow="Sezione" title="Graphic design" span={10}>
+        <HorizontalSection id="graphic-design" title="Graphic design" span={10}>
           <div className="flex h-full flex-col gap-6">
             <p className="max-w-prose text-zinc-600 dark:text-zinc-400">{LOREM_SHORT}</p>
             <PlaceholderGrid variant="mixed" />
           </div>
         </HorizontalSection>
 
-        <HorizontalSection id="contact" eyebrow="Prossimo passo" title="Contatti" span={4}>
-          <div className="flex h-full flex-col justify-between gap-8">
+        <HorizontalSection id="contact" title="Contatti" span={4}>
+          <div className="flex h-full min-h-0 flex-col gap-4">
             <p className="text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
-              {LOREM_SHORT}
+              Per collaborazioni, commissioni o domande, compila il form: ti risponderò via email.
             </p>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="aspect-square rounded-lg border border-dashed border-zinc-400/60 bg-zinc-200/80 dark:border-zinc-600 dark:bg-zinc-800/80" />
-              <div className="aspect-square rounded-lg border border-dashed border-zinc-400/60 bg-zinc-200/80 dark:border-zinc-600 dark:bg-zinc-800/80" />
-            </div>
+            <ContactForm />
           </div>
         </HorizontalSection>
       </HorizontalScrollContainer>
