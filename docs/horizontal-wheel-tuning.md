@@ -68,3 +68,24 @@ Qui si decide **quanto ogni notch della rotella** si traduce in impulso orizzont
 4. Se i **piccoli** notch sono ancora morti, aumenta leggermente `MIN_IMPULSE` o il boost (`1.35` / soglia `14`), non tutti e tre insieme.
 
 Non è necessario toccare `page.js` per il solo tuning numerico, a meno che non cambi breakpoint o struttura dello scroll.
+
+---
+
+## Sfumatura destra e pill «Scroll» (fade verso la fine)
+
+Attivi solo sulla home con `showScrollHints` su `HorizontalScrollContainer`.
+
+L’opacità usa la **percentuale di scroll** del track (`progress = scrollLeft / maxScroll`, da 0 a 1). Non usare pixel dalla fine (`maxScroll - scrollLeft`): Contatti (`span` 4) è già in viewport mentre restano centinaia di px scrollabili, quindi pill e sfumatura resterebbero visibili sopra Contatti.
+
+**Verifica in locale** dopo ogni modifica: scorri fino a Contatti e controlla che pill e sfumatura siano trasparenti a fine corsa.
+
+| Nome | Valore attuale (indicativo) | Ruolo | Se lo aumenti | Se lo diminuisci |
+|------|----------------------------|--------|----------------|------------------|
+| `BUTTON_FADE_START` | 0.62 | Progresso (0–1) oltre cui la pill inizia a scomparire fino a 0 a fine corsa. | La pill resta piena **più a lungo** (scompare più tardi). | La pill scompare **prima** (meno overlap su Contatti). |
+| `GRADIENT_FADE_START` | 0.82 | Progresso oltre cui la sfumatura destra svanisce (dopo la pill). | La sfumatura resta **più a lungo** vicino a Contatti. | La sfumatura sparisce **prima**. |
+
+Formula: se `progress <= fadeStart` → opacità 1; altrimenti `opacity = (1 - progress) / (1 - fadeStart)` clampata tra 0 e 1.
+
+Transizione visiva: `transition-opacity duration-500 ease-out` sull’overlay; il pulse sulla pill è attivo solo se `buttonOpacity > 0.5`.
+
+Aggiornamento opacità: evento `scroll` sul `<main>`, `resize`, `ResizeObserver` sul track, più sync durante l’inerzia della rotella (vedi `updateHintsRef` nel client).

@@ -1,10 +1,10 @@
 "use client";
 
 /**
- * Tuning guide (friction, speed, clamps): docs/horizontal-wheel-tuning.md
+ * Tuning guide (friction, speed, clamps, scroll hints): docs/horizontal-wheel-tuning.md
  */
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 /** Higher = longer glide (ease-out tail). */
 const FRICTION = 0.935;
@@ -14,11 +14,105 @@ const MAX_VELOCITY = 2800;
 const MIN_IMPULSE = 6;
 
 /**
+ * Right-edge hints (gradient + «Scroll» pill): fade by scroll progress, not px-from-end.
+ * Contact (span 4) appears before scrollLeft reaches max, so pixel-based fade kept hints
+ * visible on Contatti. See docs/horizontal-wheel-tuning.md.
+ */
+const BUTTON_FADE_START = 0.62;
+const GRADIENT_FADE_START = 0.82;
+
+/** progress in [0,1]; fadeStart is progress above which opacity linearly goes to 0. */
+function opacityFromProgress(progress, fadeStart) {
+  if (progress <= fadeStart) return 1;
+  const span = 1 - fadeStart;
+  if (span <= 0) return 0;
+  return Math.max(0, Math.min(1, (1 - progress) / span));
+}
+
+/** Maps horizontal scroll position to overlay opacities (home only, when showScrollHints). */
+function computeHintOpacities(el) {
+  const maxScroll = el.scrollWidth - el.clientWidth;
+  if (maxScroll <= 1) {
+    return { gradientOpacity: 0, buttonOpacity: 0 };
+  }
+  const progress = Math.max(0, Math.min(1, el.scrollLeft / maxScroll));
+  return {
+    buttonOpacity: opacityFromProgress(progress, BUTTON_FADE_START),
+    gradientOpacity: opacityFromProgress(progress, GRADIENT_FADE_START),
+  };
+}
+
+function ScrollHintsOverlay({ gradientOpacity, buttonOpacity }) {
+  const hidden = gradientOpacity === 0 && buttonOpacity === 0;
+
+  return (
+    <div
+      className="pointer-events-none fixed inset-y-0 right-0 z-20 hidden w-40 lg:block"
+      aria-hidden={hidden}
+    >
+      <div
+        className="absolute inset-y-0 right-0 w-40 bg-linear-to-l from-background to-transparent transition-opacity duration-500 ease-out motion-reduce:transition-none"
+        style={{ opacity: gradientOpacity }}
+      />
+      <div
+        className="absolute right-6 top-1/2 -translate-y-1/2 transition-opacity duration-500 ease-out motion-reduce:transition-none"
+        style={{ opacity: buttonOpacity }}
+      >
+        <div
+          className={`flex items-center gap-2 rounded-full border border-zinc-300/60 bg-background/80 px-3 py-1 text-xs font-medium text-zinc-700 backdrop-blur dark:border-zinc-700/60 dark:bg-zinc-950/70 dark:text-zinc-200 ${
+            buttonOpacity > 0.5 ? "motion-safe:animate-pulse" : ""
+          }`}
+        >
+          <span>Scroll</span>
+          <span aria-hidden>→</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
  * Desktop: map mouse wheel (vertical) to horizontal scroll on this element.
  * Mouse path uses velocity + friction (ease-out coasting). Horizontal-dominant wheel stays native (trackpad).
  */
-export function HorizontalScrollContainer({ className = "", children, ...props }) {
+export function HorizontalScrollContainer({
+  className = "",
+  showScrollHints = false,
+  children,
+  ...props
+}) {
   const ref = useRef(null);
+  /** Called from wheel momentum RAF when scroll events may be sparse. */
+  const updateHintsRef = useRef(() => {});
+  const [hintOpacities, setHintOpacities] = useState({
+    gradientOpacity: 1,
+    buttonOpacity: 1,
+  });
+
+  useEffect(() => {
+    if (!showScrollHints) return;
+
+    const el = ref.current;
+    if (!el) return;
+
+    const updateHints = () => {
+      setHintOpacities(computeHintOpacities(el));
+    };
+    updateHintsRef.current = updateHints;
+
+    updateHints();
+    el.addEventListener("scroll", updateHints, { passive: true });
+    const resizeObserver = new ResizeObserver(updateHints);
+    resizeObserver.observe(el);
+    window.addEventListener("resize", updateHints);
+
+    return () => {
+      updateHintsRef.current = () => {};
+      el.removeEventListener("scroll", updateHints);
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", updateHints);
+    };
+  }, [showScrollHints]);
 
   useEffect(() => {
     const el = ref.current;
@@ -79,11 +173,13 @@ export function HorizontalScrollContainer({ className = "", children, ...props }
 
       const disp = velocity * (dt / 16.67);
       el.scrollLeft += disp;
+      updateHintsRef.current();
 
       velocity *= Math.pow(FRICTION, dt / 16.67);
 
       if (Math.abs(velocity) < EPSILON) {
         stopMomentum();
+        updateHintsRef.current();
         return;
       }
 
@@ -171,8 +267,11 @@ export function HorizontalScrollContainer({ className = "", children, ...props }
   }, []);
 
   return (
-    <main ref={ref} className={className} {...props}>
-      {children}
-    </main>
+    <>
+      {showScrollHints ? <ScrollHintsOverlay {...hintOpacities} /> : null}
+      <main ref={ref} className={className} {...props}>
+        {children}
+      </main>
+    </>
   );
 }

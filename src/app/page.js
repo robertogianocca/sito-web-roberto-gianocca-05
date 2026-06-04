@@ -8,16 +8,8 @@ import { LOREM_MEDIUM, LOREM_SHORT } from "../components/home/constants";
 export default function Home() {
   return (
     <div className="relative flex min-h-0 flex-1 flex-col bg-zinc-50 dark:bg-zinc-950 lg:min-h-0">
-      <div className="pointer-events-none fixed inset-y-0 right-0 z-20 hidden w-40 lg:block">
-        <div className="absolute inset-y-0 right-0 w-40 bg-linear-to-l from-background to-transparent" />
-        <div className="absolute right-6 top-1/2 -translate-y-1/2">
-          <div className="flex items-center gap-2 rounded-full border border-zinc-300/60 bg-background/80 px-3 py-1 text-xs font-medium text-zinc-700 backdrop-blur dark:border-zinc-700/60 dark:bg-zinc-950/70 dark:text-zinc-200 motion-safe:animate-pulse">
-            <span>Scroll</span>
-            <span aria-hidden>→</span>
-          </div>
-        </div>
-      </div>
       <HorizontalScrollContainer
+        showScrollHints
         className="flex min-h-0 flex-1 flex-col lg:flex-row lg:flex-nowrap lg:overflow-x-auto lg:overflow-y-hidden"
         aria-label="Sezioni portfolio"
       >
