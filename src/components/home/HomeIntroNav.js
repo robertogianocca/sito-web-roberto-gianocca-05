@@ -4,6 +4,7 @@ const INTRO_NAV_LINKS = [
   { label: "Photography", href: "/photography" },
   { label: "Video", href: "/video" },
   { label: "Graphic design", href: "#graphic-design" },
+  { label: "Blog", href: "/blog" },
   { label: "Contatti", href: "#contact" },
 ];
 
