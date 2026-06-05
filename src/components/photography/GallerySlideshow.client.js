@@ -27,7 +27,7 @@ const galleryImageClass =
   "max-h-full max-w-full select-none object-contain [-webkit-user-drag:none]";
 
 // ---------------------------------------------------------------------------
-// Spinner overlay sulla slide principale (in attesa di `onLoadingComplete`)
+// Spinner overlay sulla slide principale (in attesa di `onLoad`)
 // ---------------------------------------------------------------------------
 function SlideLoadingSpinner({ className = "" }) {
   return (
@@ -44,10 +44,10 @@ function SlideLoadingSpinner({ className = "" }) {
 // Slide principale — rampa qualità (bassa → alta) + dissolvenza in opacità
 // ---------------------------------------------------------------------------
 /**
- * Qualità bassa al mount (`quality` 1), poi 70 dopo `onLoadingComplete` (stile Immagina).
+ * Qualità bassa al mount (`quality` 1), poi 70 dopo `onLoad`.
  * Spinner finché l’immagine non è pronta; poi dissolvenza leggera in opacità.
  */
-function GalleryMainSlideImage({ src, alt, width, height, priority = true, onReady }) {
+function GalleryMainSlideImage({ src, alt, width, height, preload = true, onReady }) {
   const [quality, setQuality] = useState(MAIN_QUALITY_INITIAL);
   const [revealed, setRevealed] = useState(false);
 
@@ -73,9 +73,9 @@ function GalleryMainSlideImage({ src, alt, width, height, priority = true, onRea
         }`}
         style={{ transitionDuration: `${REVEAL_DURATION_MS}ms` }}
         sizes={imageSizes}
-        priority={priority}
+        preload={preload}
         quality={quality}
-        onLoadingComplete={() => {
+        onLoad={() => {
           setQuality(MAIN_QUALITY_LOADED);
           setRevealed(true);
           onReady?.();
@@ -101,7 +101,6 @@ function GalleryMainSlideImageStable({ src, alt, width, height }) {
       draggable={false}
       className={galleryImageClass}
       sizes={imageSizes}
-      priority={false}
       quality={MAIN_QUALITY_LOADED}
       onContextMenu={(e) => e.preventDefault()}
     />
@@ -313,7 +312,7 @@ export function GallerySlideshow({ title, description, slides, backHref }) {
                   alt={current.alt}
                   width={current.width}
                   height={current.height}
-                  priority={false}
+                  preload={false}
                   onReady={handleIncomingReady}
                 />
               </div>
@@ -326,7 +325,6 @@ export function GallerySlideshow({ title, description, slides, backHref }) {
               alt={current.alt}
               width={current.width}
               height={current.height}
-              priority
             />
           )}
         </div>

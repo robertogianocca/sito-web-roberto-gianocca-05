@@ -9,6 +9,9 @@ const nextConfig = {
         pathname: "/**",
       },
     ],
+    // quality={1} (low-res placeholder) and quality={70} (final) used in GallerySlideshow.
+    // Next.js 16 defaults to [75] only — values outside the list snap to nearest allowed.
+    qualities: [1, 70, 75],
   },
 };
 
