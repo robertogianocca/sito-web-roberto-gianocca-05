@@ -25,8 +25,13 @@ export function isCloudinaryConfigured() {
   return Boolean(cloudName && apiKey && apiSecret);
 }
 
-function configureCloudinary() {
-  const { cloudName, apiKey, apiSecret } = readEnv();
+/**
+ * @param {{ cloudName?: string; apiKey?: string; apiSecret?: string }} [env]
+ *   Pass pre-read env values to avoid a redundant readEnv() call.
+ *   Omit to let the function call readEnv() itself (used by fetchCloudinaryResourceProbe).
+ */
+function configureCloudinary(env) {
+  const { cloudName, apiKey, apiSecret } = env ?? readEnv();
   if (!cloudName || !apiKey || !apiSecret) {
     return null;
   }
@@ -165,7 +170,8 @@ async function fetchFolderAssetsUncached(folder) {
     return { ok: false, reason: "missing_env" };
   }
 
-  configureCloudinary();
+  // Pass already-read values so configureCloudinary does not call readEnv() again.
+  configureCloudinary({ cloudName, apiKey, apiSecret });
 
   const folderExact = folder.replace(/\/$/, "");
 

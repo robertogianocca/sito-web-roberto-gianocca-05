@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 
 /**
@@ -28,13 +29,14 @@ export function VideoCard({
     >
       <div className="relative aspect-4/3 w-full bg-zinc-100 dark:bg-zinc-900">
         {thumbnailUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element -- URL arbitrarie dal manifest; evita remotePatterns per ogni host.
-          <img
+          // Hostname must be listed in next.config.mjs remotePatterns.
+          // Currently allows i.vimeocdn.com — add other providers there as needed.
+          <Image
             src={thumbnailUrl}
             alt={thumbnailAlt}
-            className="absolute inset-0 h-full w-full object-cover"
-            loading="lazy"
-            decoding="async"
+            fill
+            className="object-cover"
+            sizes="(max-width: 640px) 100vw, (max-width: 1200px) 50vw, 33vw"
           />
         ) : (
           <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center text-sm text-zinc-500 dark:text-zinc-400">

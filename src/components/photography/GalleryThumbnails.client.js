@@ -6,9 +6,38 @@ import { useMemo } from "react";
 const ITEMS_PER_PAGE = 20;
 
 /**
- * Griglia miniature (stesso approccio di immagina-website-03): stesso `src` della
- * slide principale; Next/Image ridimensiona con width/height piccoli.
- *
+ * Single thumbnail button. Isolated so the React Compiler can memoize each item
+ * independently — only the previously-active and newly-active thumbnails re-render
+ * on index change instead of the entire grid.
+ */
+function ThumbnailItem({ slide, globalIndex, isActive, onSelect }) {
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(globalIndex)}
+      aria-label={`Vai alla foto ${globalIndex + 1}`}
+      aria-current={isActive ? "true" : undefined}
+      className={`relative aspect-square overflow-hidden rounded border transition ${
+        isActive
+          ? "border-foreground ring-2 ring-foreground/25"
+          : "border-zinc-200/90 opacity-85 hover:opacity-100 dark:border-zinc-700/90"
+      }`}
+    >
+      <Image
+        src={slide.src}
+        alt=""
+        width={30}
+        height={30}
+        draggable={false}
+        sizes="30px"
+        quality={30}
+        className="pointer-events-none h-full w-full object-cover select-none [-webkit-user-drag:none]"
+      />
+    </button>
+  );
+}
+
+/**
  * @param {{
  *   slides: Array<{ publicId: string; src: string }>;
  *   currentIndex: number;
@@ -35,33 +64,16 @@ export function GalleryThumbnails({ slides, currentIndex, onSelectIndex }) {
       onContextMenu={(e) => e.preventDefault()}
     >
       <div className="grid grid-cols-5 gap-1.5 overflow-hidden">
-        {pageSlice.map((item, i) => {
+        {pageSlice.map((slide, i) => {
           const globalIndex = (pageFromIndex - 1) * ITEMS_PER_PAGE + i;
-          const active = globalIndex === currentIndex;
           return (
-            <button
-              key={item.publicId}
-              type="button"
-              onClick={() => onSelectIndex(globalIndex)}
-              aria-label={`Vai alla foto ${globalIndex + 1}`}
-              aria-current={active ? "true" : undefined}
-              className={`relative aspect-square overflow-hidden rounded border transition ${
-                active
-                  ? "border-foreground ring-2 ring-foreground/25"
-                  : "border-zinc-200/90 opacity-85 hover:opacity-100 dark:border-zinc-700/90"
-              }`}
-            >
-              <Image
-                src={item.src}
-                alt=""
-                width={30}
-                height={30}
-                draggable={false}
-                sizes="30px"
-                quality={30}
-                className="pointer-events-none h-full w-full object-cover select-none [-webkit-user-drag:none]"
-              />
-            </button>
+            <ThumbnailItem
+              key={slide.publicId}
+              slide={slide}
+              globalIndex={globalIndex}
+              isActive={globalIndex === currentIndex}
+              onSelect={onSelectIndex}
+            />
           );
         })}
       </div>
