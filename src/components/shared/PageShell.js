@@ -16,7 +16,7 @@ export function PageShell({ header, children }) {
           {header}
         </div>
       </header>
-      <main className="mx-auto max-w-6xl px-6 py-10 md:px-10 md:py-12">{children}</main>
+      <main className="mx-auto max-w-6xl px-6 py-10 md:px-0 md:py-12">{children}</main>
     </div>
   );
 }

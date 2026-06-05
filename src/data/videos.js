@@ -2,7 +2,9 @@
  * Elenco video: testi e id Vimeo in repo; player da `https://player.vimeo.com/video/{id}`.
  * Anteprima card (opzionale): `thumbnailUrl` HTTPS; senza, la card mostra un segnaposto.
  *
- * @type {Array<{ slug: string, title: string, shortDescription: string, vimeoId: string | number, thumbnailUrl?: string }>}
+ * `tags` (opzionale): array di stringhe per filtrare i video nella listing page (es. ["Drone", "Live"]).
+ *
+ * @type {Array<{ slug: string, title: string, shortDescription: string, vimeoId: string | number, thumbnailUrl?: string, tags?: string[] }>}
  */
 export const VIDEOS = [
   {
@@ -29,7 +31,7 @@ export function normalizeVimeoId(raw) {
 
 /**
  * @param {string} slug
- * @returns {{ slug: string, title: string, shortDescription: string, vimeoId: string | number, thumbnailUrl?: string } | null}
+ * @returns {{ slug: string, title: string, shortDescription: string, vimeoId: string | number, thumbnailUrl?: string, tags?: string[] } | null}
  */
 export function getVideoBySlug(slug) {
   return VIDEOS.find((v) => v.slug === slug) ?? null;
