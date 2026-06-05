@@ -115,18 +115,21 @@ async function fetchAllResourcesByPrefix(cloudName, folder, apiKey, apiSecret) {
   return all;
 }
 
+/**
+ * Builds a size-capped slide URL using `c_limit,w_2400,h_2400`.
+ *
+ * This consumes 1 Cloudinary transformation credit per unique image on first access
+ * (then CDN-cached permanently). The benefit: next/image downloads a ≤2400 px file
+ * instead of the full-resolution original (which can be 10–20 MB for a 24 MP photo).
+ *
+ * `f_auto` and `q_auto` are intentionally omitted so next/image handles all
+ * quality/format optimisation (quality=70, WebP/AVIF negotiation via /_next/image).
+ * Adding Cloudinary-side quality reduction would double-compress the image before
+ * next/image processes it.
+ */
 function deliveryUrlFromResource(r, cloudName) {
-  if (typeof r.secure_url === "string" && r.secure_url.length > 0) {
-    return r.secure_url;
-  }
-  if (typeof r.url === "string" && r.url.length > 0) {
-    return r.url;
-  }
-  return buildCloudinaryImageUrl(cloudName, r.public_id, {
-    width: 1920,
-    height: 1280,
-    crop: "limit",
-  });
+  const publicId = String(r.public_id);
+  return `https://res.cloudinary.com/${cloudName}/image/upload/c_limit,w_2400,h_2400/${publicId}`;
 }
 
 /**
