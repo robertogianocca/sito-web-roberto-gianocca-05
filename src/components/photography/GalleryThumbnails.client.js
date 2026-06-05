@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useMemo } from "react";
+import { useTranslations } from "next-intl";
 
 const ITEMS_PER_PAGE = 20;
 
@@ -11,11 +12,12 @@ const ITEMS_PER_PAGE = 20;
  * on index change instead of the entire grid.
  */
 function ThumbnailItem({ slide, globalIndex, isActive, onSelect }) {
+  const t = useTranslations("Photography");
   return (
     <button
       type="button"
       onClick={() => onSelect(globalIndex)}
-      aria-label={`Vai alla foto ${globalIndex + 1}`}
+      aria-label={t("goToPhoto", { n: globalIndex + 1 })}
       aria-current={isActive ? "true" : undefined}
       className={`relative aspect-square overflow-hidden rounded border transition ${
         isActive
@@ -45,6 +47,7 @@ function ThumbnailItem({ slide, globalIndex, isActive, onSelect }) {
  * }} props
  */
 export function GalleryThumbnails({ slides, currentIndex, onSelectIndex }) {
+  const t = useTranslations("Photography");
   const total = slides.length;
   const totalPages = Math.max(1, Math.ceil(total / ITEMS_PER_PAGE));
   const pageFromIndex = Math.floor(currentIndex / ITEMS_PER_PAGE) + 1;
@@ -81,7 +84,7 @@ export function GalleryThumbnails({ slides, currentIndex, onSelectIndex }) {
         <div
           className="flex shrink-0 flex-wrap justify-center gap-1.5 pt-1.5"
           role="tablist"
-          aria-label="Pagine miniature"
+          aria-label={t("thumbnailPage", { n: "…", total: totalPages })}
         >
           {Array.from({ length: totalPages }, (_, i) => {
             const n = i + 1;
@@ -92,7 +95,7 @@ export function GalleryThumbnails({ slides, currentIndex, onSelectIndex }) {
                 type="button"
                 role="tab"
                 aria-selected={active}
-                aria-label={`Vai alla pagina miniature ${n} di ${totalPages}`}
+                aria-label={t("thumbnailPage", { n, total: totalPages })}
                 onClick={() => onSelectIndex((n - 1) * ITEMS_PER_PAGE)}
                 className={`flex min-h-10 min-w-10 items-center justify-center rounded-md border text-sm font-medium transition ${
                   active

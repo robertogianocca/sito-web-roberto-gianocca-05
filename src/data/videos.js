@@ -2,16 +2,29 @@
  * Elenco video: testi e id Vimeo in repo; player da `https://player.vimeo.com/video/{id}`.
  * Anteprima card (opzionale): `thumbnailUrl` HTTPS; senza, la card mostra un segnaposto.
  *
+ * `title` e `shortDescription` possono essere stringhe (una sola lingua) o oggetti `{ it, en }`.
  * `tags` (opzionale): array di stringhe per filtrare i video nella listing page (es. ["Drone", "Live"]).
  *
- * @type {Array<{ slug: string, title: string, shortDescription: string, vimeoId: string | number, thumbnailUrl?: string, tags?: string[] }>}
+ * @type {Array<{
+ *   slug: string,
+ *   title: string | { it: string, en: string },
+ *   shortDescription: string | { it: string, en: string },
+ *   vimeoId: string | number,
+ *   thumbnailUrl?: string,
+ *   tags?: string[]
+ * }>}
  */
 export const VIDEOS = [
   {
     slug: "esempio-vimeo",
-    title: "Esempio Vimeo",
-    shortDescription:
-      "Video di esempio dal player Vimeo (sostituisci slug e vimeoId con i tuoi contenuti).",
+    title: {
+      it: "Esempio Vimeo",
+      en: "Vimeo Example",
+    },
+    shortDescription: {
+      it: "Video di esempio dal player Vimeo (sostituisci slug e vimeoId con i tuoi contenuti).",
+      en: "Sample video from Vimeo player (replace slug and vimeoId with your own content).",
+    },
     vimeoId: "1132948199",
   },
 ];
@@ -31,13 +44,13 @@ export function normalizeVimeoId(raw) {
 
 /**
  * @param {string} slug
- * @returns {{ slug: string, title: string, shortDescription: string, vimeoId: string | number, thumbnailUrl?: string, tags?: string[] } | null}
+ * @returns {{ slug: string, title: { it: string, en: string } | string, shortDescription: { it: string, en: string } | string, vimeoId: string | number, thumbnailUrl?: string, tags?: string[] } | null}
  */
 export function getVideoBySlug(slug) {
   return VIDEOS.find((v) => v.slug === slug) ?? null;
 }
 
-/** Parametri per `generateStaticParams` su `/video/[slug]`. */
+/** Parametri per `generateStaticParams` su `/[locale]/video/[slug]`. */
 export function getVideoStaticParams() {
   return VIDEOS.map((v) => ({ slug: v.slug }));
 }

@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 
 /**
  * Consistent back-navigation link used across all inner pages.

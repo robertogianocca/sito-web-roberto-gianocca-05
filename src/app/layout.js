@@ -1,4 +1,5 @@
 import { Geist_Mono, Roboto } from "next/font/google";
+import { getLocale } from "next-intl/server";
 import "./globals.css";
 
 const roboto = Roboto({
@@ -13,15 +14,11 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata = {
-  title: "Roberto Gianocca",
-  description: "Portfolio e progetti creativi.",
-};
-
-export default function RootLayout({ children }) {
+export default async function RootLayout({ children }) {
+  const locale = await getLocale();
   return (
     <html
-      lang="it"
+      lang={locale}
       className={`${roboto.variable} ${geistMono.variable} h-full antialiased lg:h-dvh`}
     >
       <body className="flex min-h-full flex-col font-sans text-base lg:h-dvh lg:min-h-0 lg:overflow-hidden">

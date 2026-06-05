@@ -1,6 +1,7 @@
 "use server";
 
 import { Resend } from "resend";
+import { getTranslations } from "next-intl/server";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -8,43 +9,45 @@ function field(value) {
   return String(value ?? "").trim();
 }
 
-function validateContact({ name, email, subject, message }) {
+async function validateContact({ name, email, subject, message }, t) {
   const errors = {};
 
   if (name.length < 2) {
-    errors.name = "Inserisci almeno 2 caratteri.";
+    errors.name = t("nameTooShort");
   } else if (name.length > 100) {
-    errors.name = "Il nome è troppo lungo.";
+    errors.name = t("nameTooLong");
   }
 
   if (!email) {
-    errors.email = "L’email è obbligatoria.";
+    errors.email = t("emailRequired");
   } else if (email.length > 254) {
-    errors.email = "L’email è troppo lunga.";
+    errors.email = t("emailTooLong");
   } else if (!EMAIL_RE.test(email)) {
-    errors.email = "Inserisci un indirizzo email valido.";
+    errors.email = t("emailInvalid");
   }
 
   if (subject.length < 3) {
-    errors.subject = "Inserisci almeno 3 caratteri.";
+    errors.subject = t("subjectTooShort");
   } else if (subject.length > 200) {
-    errors.subject = "L’oggetto è troppo lungo.";
+    errors.subject = t("subjectTooLong");
   }
 
   if (message.length < 10) {
-    errors.message = "Il messaggio deve avere almeno 10 caratteri.";
+    errors.message = t("messageTooShort");
   } else if (message.length > 5000) {
-    errors.message = "Il messaggio è troppo lungo.";
+    errors.message = t("messageTooLong");
   }
 
   return errors;
 }
 
 /**
- * Invia il form contatti via Resend.
- * Env: RESEND_API_KEY, RESEND_FROM_EMAIL, CONTACT_TO_EMAIL (vedi docs/contact-form-resend.md).
+ * Sends the contact form via Resend.
+ * Env: RESEND_API_KEY, RESEND_FROM_EMAIL, CONTACT_TO_EMAIL (see docs/contact-form-resend.md).
  */
 export async function submitContactAction(prevState, formData) {
+  const t = await getTranslations("ContactForm.errors");
+
   const website = field(formData.get("website"));
   if (website) {
     return { ok: true, resetKey: (prevState?.resetKey ?? 0) + 1, errors: {} };
@@ -55,7 +58,7 @@ export async function submitContactAction(prevState, formData) {
   const subject = field(formData.get("subject"));
   const message = field(formData.get("message"));
 
-  const fieldErrors = validateContact({ name, email, subject, message });
+  const fieldErrors = await validateContact({ name, email, subject, message }, t);
   if (Object.keys(fieldErrors).length > 0) {
     return { ok: false, resetKey: prevState?.resetKey ?? 0, errors: fieldErrors };
   }
@@ -71,10 +74,7 @@ export async function submitContactAction(prevState, formData) {
     return {
       ok: false,
       resetKey: prevState?.resetKey ?? 0,
-      errors: {
-        submission:
-          "Il servizio email non è configurato. Riprova più tardi o contattami con un altro canale.",
-      },
+      errors: { submission: t("serviceUnconfigured") },
     };
   }
 
@@ -86,13 +86,13 @@ export async function submitContactAction(prevState, formData) {
       from,
       to: [to],
       replyTo: email,
-      subject: `Contatto sito: ${safeSubject}`,
+      subject: `Contact: ${safeSubject}`,
       text: [
-        `Nome: ${name}`,
+        `Name: ${name}`,
         `Email: ${email}`,
-        `Oggetto: ${subject}`,
+        `Subject: ${subject}`,
         "",
-        "Messaggio:",
+        "Message:",
         message,
       ].join("\n"),
     });
@@ -104,9 +104,7 @@ export async function submitContactAction(prevState, formData) {
       return {
         ok: false,
         resetKey: prevState?.resetKey ?? 0,
-        errors: {
-          submission: "Invio non riuscito. Riprova tra qualche minuto.",
-        },
+        errors: { submission: t("sendFailed") },
       };
     }
   } catch (err) {
@@ -116,9 +114,7 @@ export async function submitContactAction(prevState, formData) {
     return {
       ok: false,
       resetKey: prevState?.resetKey ?? 0,
-      errors: {
-        submission: "Invio non riuscito. Riprova tra qualche minuto.",
-      },
+      errors: { submission: t("sendFailed") },
     };
   }
 

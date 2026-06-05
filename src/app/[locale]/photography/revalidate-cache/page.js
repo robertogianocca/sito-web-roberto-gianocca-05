@@ -1,16 +1,25 @@
+import { getTranslations, setRequestLocale } from "next-intl/server";
+import { revalidatePhotographyCaches } from "./actions";
 import {
-  revalidatePhotographyCaches,
   REVALIDATION_OK_VALUE,
   REVALIDATION_ERROR_VALUE,
-} from "./actions";
-import { BackLink } from "../../../components/shared/BackLink";
+} from "./constants";
+import { BackLink } from "@/components/shared/BackLink";
 
-export const metadata = {
-  title: "Rigenera cache Photography | Roberto Gianocca",
-  robots: { index: false, follow: false },
-};
+export async function generateMetadata({ params }) {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "RevalidateCache" });
+  return {
+    title: `${t("metaTitle")} | Roberto Gianocca`,
+    robots: { index: false, follow: false },
+  };
+}
 
-export default async function PhotographyRevalidateCachePage({ searchParams }) {
+export default async function PhotographyRevalidateCachePage({ params, searchParams }) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+
+  const t = await getTranslations("RevalidateCache");
   const sp = await searchParams;
   const ok = sp.ok === REVALIDATION_OK_VALUE;
   const err = sp.error === REVALIDATION_ERROR_VALUE;
@@ -20,30 +29,28 @@ export default async function PhotographyRevalidateCachePage({ searchParams }) {
       <div className="space-y-2">
         <BackLink href="/photography" label="Photography" />
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-          Rigenera cache gallerie
+          {t("title")}
         </h1>
         <p className="text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
-          Dopo aver modificato immagini o cartelle su Cloudinary, invia il form per svuotare la cache
-          server e rigenerare le pagine statiche. Serve il segreto di rivalidazione configurato nelle
-          variabili d&apos;ambiente (stesso valore che inserisci qui).
+          {t("description")}
         </p>
       </div>
 
       {ok ? (
         <p className="rounded-lg border border-emerald-200/90 bg-emerald-50/90 p-4 text-sm text-emerald-950 dark:border-emerald-800/60 dark:bg-emerald-950/40 dark:text-emerald-100">
-          Cache aggiornata. Puoi tornare alle gallerie.
+          {t("successMessage")}
         </p>
       ) : null}
       {err ? (
         <p className="rounded-lg border border-amber-200/90 bg-amber-50/90 p-4 text-sm text-amber-950 dark:border-amber-800/60 dark:bg-amber-950/40 dark:text-amber-100">
-          Segreto di rivalidazione non valido.
+          {t("errorMessage")}
         </p>
       ) : null}
 
       <form action={revalidatePhotographyCaches} className="space-y-4">
         <div className="space-y-2">
           <label htmlFor="secret" className="text-sm font-medium text-foreground">
-            Segreto di rivalidazione
+            {t("secretLabel")}
           </label>
           <input
             id="secret"
@@ -59,7 +66,7 @@ export default async function PhotographyRevalidateCachePage({ searchParams }) {
           type="submit"
           className="w-full rounded-lg bg-zinc-900 px-4 py-3 text-sm font-medium text-zinc-50 transition hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
         >
-          Rigenera cache
+          {t("submit")}
         </button>
       </form>
     </div>

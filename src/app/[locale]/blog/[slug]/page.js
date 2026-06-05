@@ -1,8 +1,11 @@
 import { notFound } from "next/navigation";
-import { getBlogStaticParams, getPostBySlug } from "../../../lib/blog";
-import { BlogPostBody } from "../../../components/blog/BlogPostBody";
-import { BackLink } from "../../../components/shared/BackLink";
-import { PageShell } from "../../../components/shared/PageShell";
+import { getTranslations, setRequestLocale } from "next-intl/server";
+import { buildAlternates } from "@/lib/metadata";
+import { routing } from "@/i18n/routing";
+import { getBlogStaticParams, getPostBySlug } from "@/lib/blog";
+import { BlogPostBody } from "@/components/blog/BlogPostBody";
+import { BackLink } from "@/components/shared/BackLink";
+import { PageShell } from "@/components/shared/PageShell";
 
 export const dynamicParams = false;
 
@@ -11,37 +14,39 @@ export function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }) {
-  const { slug } = await params;
-  const post = getPostBySlug(slug);
+  const { locale, slug } = await params;
+  const post = getPostBySlug(locale, slug);
   if (!post) {
     return { title: "Post | Roberto Gianocca" };
   }
   return {
     title: `${post.title} | Blog | Roberto Gianocca`,
     description: post.excerpt,
+    alternates: buildAlternates(`/blog/${slug}`, routing),
     ...(post.coverImage
       ? { openGraph: { images: [{ url: post.coverImage }] } }
       : {}),
   };
 }
 
-/** Formats an ISO date string for display. */
-function formatDate(date) {
-  if (!date) return "";
-  return new Date(date).toLocaleDateString("it-IT", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-}
-
 export default async function BlogPostPage({ params }) {
-  const { slug } = await params;
-  const post = getPostBySlug(slug);
+  const { locale, slug } = await params;
+  setRequestLocale(locale);
+
+  const t = await getTranslations("Blog");
+  const post = getPostBySlug(locale, slug);
 
   if (!post) {
     notFound();
   }
+
+  const dateFormatted = post.date
+    ? new Date(post.date).toLocaleDateString(locale === "it" ? "it-IT" : "en-GB", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      })
+    : "";
 
   return (
     <PageShell
@@ -53,12 +58,12 @@ export default async function BlogPostPage({ params }) {
           </h1>
           <div className="flex flex-wrap items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400">
             {post.date ? (
-              <time dateTime={post.date}>{formatDate(post.date)}</time>
+              <time dateTime={post.date}>{dateFormatted}</time>
             ) : null}
             {post.tags && post.tags.length > 0 ? (
               <>
                 <span aria-hidden>·</span>
-                <ul className="flex flex-wrap gap-1" aria-label="Tag">
+                <ul className="flex flex-wrap gap-1" aria-label={t("tagsLabel")}>
                   {post.tags.map((tag) => (
                     <li
                       key={tag}

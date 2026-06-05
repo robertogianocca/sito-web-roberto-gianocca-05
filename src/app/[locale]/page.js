@@ -1,29 +1,48 @@
-import { ContactForm } from "../components/contact/ContactForm.client";
-import { BlogCard } from "../components/blog/BlogCard";
-import { HomeIntroNav } from "../components/home/HomeIntroNav";
-import { HorizontalScrollContainer } from "../components/home/HorizontalScrollContainer.client";
-import { HorizontalSection } from "../components/home/HorizontalSection";
-import { PlaceholderGrid } from "../components/home/PlaceholderGrid";
-import { LOREM_MEDIUM, LOREM_SHORT } from "../components/home/constants";
-import { getAllPosts } from "../lib/blog";
+import { getTranslations, setRequestLocale } from "next-intl/server";
+import { ContactForm } from "@/components/contact/ContactForm.client";
+import { BlogCard } from "@/components/blog/BlogCard";
+import { HomeIntroNav } from "@/components/home/HomeIntroNav";
+import { HorizontalScrollContainer } from "@/components/home/HorizontalScrollContainer.client";
+import { HorizontalSection } from "@/components/home/HorizontalSection";
+import { PlaceholderGrid } from "@/components/home/PlaceholderGrid";
+import { LanguageSwitcher } from "@/components/home/LanguageSwitcher.client";
+import { getAllPosts } from "@/lib/blog";
+import { buildAlternates } from "@/lib/metadata";
+import { routing } from "@/i18n/routing";
 
-export default function Home() {
-  const latestPosts = getAllPosts().slice(0, 2);
+export async function generateMetadata({ params }) {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "Metadata" });
+  return {
+    title: "Roberto Gianocca",
+    description: t("homeDescription"),
+    alternates: buildAlternates("/", routing),
+  };
+}
+
+export default async function Home({ params }) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+
+  const t = await getTranslations("Home");
+  const latestPosts = getAllPosts(locale).slice(0, 2);
+
   return (
     <div className="relative flex min-h-0 flex-1 flex-col bg-zinc-50 dark:bg-zinc-950 lg:min-h-0">
       <HorizontalScrollContainer
         showScrollHints
         className="flex min-h-0 flex-1 flex-col lg:flex-row lg:flex-nowrap lg:overflow-x-auto lg:overflow-y-hidden"
-        aria-label="Sezioni portfolio"
+        aria-label={t("portfolioAriaLabel")}
       >
         <HorizontalSection id="intro" title="Roberto Gianocca" span={9}>
           <div className="flex min-h-0 flex-1 flex-col gap-6">
             <div className="grid gap-6 lg:grid-cols-12 lg:items-start lg:gap-10">
               <div className="lg:col-span-6">
                 <p className="text-lg leading-relaxed text-zinc-600 dark:text-zinc-400">
-                  {LOREM_SHORT} {LOREM_MEDIUM}
+                  {t("introText")}
                 </p>
                 <HomeIntroNav />
+                <LanguageSwitcher />
               </div>
               <div className="lg:col-span-6">
                 <PlaceholderGrid variant="hero" />
@@ -37,10 +56,12 @@ export default function Home() {
           title="Photography"
           span={8}
           titleHref="/photography"
-          titleHrefAriaLabel="Apri la pagina Photography"
+          titleHrefAriaLabel={t("photographyAriaLabel")}
         >
           <div className="flex h-full flex-col gap-6">
-            <p className="max-w-prose text-zinc-600 dark:text-zinc-400">{LOREM_SHORT}</p>
+            <p className="max-w-prose text-zinc-600 dark:text-zinc-400">
+              {t("photographyDescription")}
+            </p>
             <PlaceholderGrid variant="mixed" />
           </div>
         </HorizontalSection>
@@ -50,11 +71,11 @@ export default function Home() {
           title="Video"
           span={6}
           titleHref="/video"
-          titleHrefAriaLabel="Apri la pagina Video"
+          titleHrefAriaLabel={t("videoAriaLabel")}
         >
           <div className="flex h-full flex-col gap-6">
             <p className="max-w-prose text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
-              {LOREM_MEDIUM}
+              {t("videoDescription")}
             </p>
             <PlaceholderGrid variant="row" />
           </div>
@@ -62,7 +83,9 @@ export default function Home() {
 
         <HorizontalSection id="graphic-design" title="Graphic design" span={10}>
           <div className="flex h-full flex-col gap-6">
-            <p className="max-w-prose text-zinc-600 dark:text-zinc-400">{LOREM_SHORT}</p>
+            <p className="max-w-prose text-zinc-600 dark:text-zinc-400">
+              {t("graphicDesignDescription")}
+            </p>
             <PlaceholderGrid variant="mixed" />
           </div>
         </HorizontalSection>
@@ -72,11 +95,11 @@ export default function Home() {
           title="Blog"
           span={6}
           titleHref="/blog"
-          titleHrefAriaLabel="Apri la pagina Blog"
+          titleHrefAriaLabel={t("blogAriaLabel")}
         >
           <div className="flex h-full flex-col gap-5">
             <p className="text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
-              Aggiornamenti, riflessioni e pensieri sui progetti.
+              {t("blogDescription")}
             </p>
             {latestPosts.length > 0 ? (
               <ul className="flex flex-col gap-4">
@@ -89,6 +112,7 @@ export default function Home() {
                       tags={post.tags}
                       coverImage={post.coverImage}
                       href={`/blog/${post.slug}`}
+                      locale={locale}
                     />
                   </li>
                 ))}
@@ -97,10 +121,10 @@ export default function Home() {
           </div>
         </HorizontalSection>
 
-        <HorizontalSection id="contact" title="Contatti" span={4}>
+        <HorizontalSection id="contact" title={t("contactTitle")} span={4}>
           <div className="flex h-full min-h-0 flex-col gap-4">
             <p className="text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
-              Per collaborazioni, commissioni o domande, compila il form: ti risponderò via email.
+              {t("contactDescription")}
             </p>
             <ContactForm />
           </div>

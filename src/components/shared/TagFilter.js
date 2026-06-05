@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 
 /**
  * Barra di filtro per tag. Ogni bottone è un `<Link>` che aggiorna il query param `tag`.
@@ -8,16 +8,17 @@ import Link from "next/link";
  *   basePath: string;
  *   tags: string[];
  *   activeTag: string | null;
+ *   allLabel?: string;
  * }} props
  */
-export function TagFilter({ basePath, tags, activeTag }) {
+export function TagFilter({ basePath, tags, activeTag, allLabel = "All" }) {
   if (tags.length === 0) return null;
 
   return (
     <div className="flex flex-wrap gap-2">
       <TagPill
         href={basePath}
-        label="Tutte"
+        label={allLabel}
         active={!activeTag}
       />
       {tags.map((tag) => (

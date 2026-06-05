@@ -7,6 +7,7 @@
 
 import Image from "next/image";
 import { useCallback, useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { BackLink } from "../shared/BackLink";
 import { GalleryThumbnails } from "./GalleryThumbnails.client";
 import { PhotographyRichDescription } from "./PhotographyRichDescription";
@@ -54,6 +55,7 @@ function GalleryMainSlideImage({
   stable = false,
 }) {
   const [revealed, setRevealed] = useState(stable);
+  const t = useTranslations("Photography");
 
   return (
     <div
@@ -63,7 +65,7 @@ function GalleryMainSlideImage({
       {!revealed ? (
         <>
           <SlideLoadingSpinner className="absolute inset-0 z-10" />
-          <span className="sr-only">Caricamento immagine</span>
+          <span className="sr-only">{t("loadingImage")}</span>
         </>
       ) : null}
       <Image
@@ -110,6 +112,7 @@ function GalleryMainSlideImage({
  * }} props
  */
 export function GallerySlideshow({ title, description, slides, backHref }) {
+  const t = useTranslations("Photography");
   // --- Stato: indice richiesto vs indice effettivamente mostrato (transizione slide) ---
   const [index, setIndex] = useState(0);
   const [displayedIndex, setDisplayedIndex] = useState(0);
@@ -224,18 +227,18 @@ export function GallerySlideshow({ title, description, slides, backHref }) {
               type="button"
               onClick={goPrev}
               className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-zinc-300/90 bg-background py-2.5 text-sm font-medium text-foreground transition hover:bg-zinc-100 dark:border-zinc-700/90 dark:hover:bg-zinc-900"
-              aria-label="Immagine precedente"
+              aria-label={t("previousImage")}
             >
               <span aria-hidden>&#8592;</span>
-              <span className="hidden sm:inline">Indietro</span>
+              <span className="hidden sm:inline">{t("back")}</span>
             </button>
             <button
               type="button"
               onClick={goNext}
               className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-zinc-300/90 bg-background py-2.5 text-sm font-medium text-foreground transition hover:bg-zinc-100 dark:border-zinc-700/90 dark:hover:bg-zinc-900"
-              aria-label="Immagine successiva"
+              aria-label={t("nextImage")}
             >
-              <span className="hidden sm:inline">Avanti</span>
+              <span className="hidden sm:inline">{t("forward")}</span>
               <span aria-hidden>&#8594;</span>
             </button>
           </div>
@@ -280,7 +283,7 @@ export function GallerySlideshow({ title, description, slides, backHref }) {
                 role="status"
                 aria-live="polite"
               >
-                <span className="sr-only">Caricamento immagine successiva</span>
+                <span className="sr-only">{t("loadingNextImage")}</span>
                 <div
                   className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white"
                   aria-hidden

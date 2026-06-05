@@ -1,0 +1,119 @@
+{
+  "Metadata": {
+    "homeDescription": "Portfolio and creative projects."
+  },
+  "Home": {
+    "portfolioAriaLabel": "Portfolio sections",
+    "introText": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
+    "photographyAriaLabel": "Open Photography page",
+    "photographyDescription": "A selection of photographic work.",
+    "videoAriaLabel": "Open Video page",
+    "videoDescription": "Video projects and productions.",
+    "graphicDesignDescription": "Visual identities, editorial design, and graphic projects.",
+    "blogAriaLabel": "Open Blog page",
+    "blogDescription": "Updates, reflections and thoughts on projects.",
+    "contactTitle": "Contact",
+    "contactDescription": "For collaborations, commissions or questions, fill in the form: I'll reply by email."
+  },
+  "Nav": {
+    "label": "Portfolio areas",
+    "contact": "Contact",
+    "languageSwitcherLabel": "Change language"
+  },
+  "TagFilter": {
+    "all": "All"
+  },
+  "ContactForm": {
+    "nameLabel": "Name",
+    "emailLabel": "Email",
+    "subjectLabel": "Subject",
+    "messageLabel": "Message",
+    "websiteLabel": "Website",
+    "sending": "Sending…",
+    "submit": "Send message",
+    "successMessage": "Message sent. I'll get back to you soon.",
+    "errors": {
+      "nameTooShort": "Enter at least 2 characters.",
+      "nameTooLong": "Name is too long.",
+      "emailRequired": "Email is required.",
+      "emailTooLong": "Email is too long.",
+      "emailInvalid": "Enter a valid email address.",
+      "subjectTooShort": "Enter at least 3 characters.",
+      "subjectTooLong": "Subject is too long.",
+      "messageTooShort": "Message must be at least 10 characters.",
+      "messageTooLong": "Message is too long.",
+      "serviceUnconfigured": "Email service is not configured. Try again later or contact me through another channel.",
+      "sendFailed": "Sending failed. Please try again in a few minutes."
+    }
+  },
+  "Photography": {
+    "metaDescription": "Photography galleries.",
+    "backLabel": "Back to portfolio",
+    "allLabel": "All",
+    "pageDescription": "Galleries hosted on Cloudinary. Optional: an image whose name (last segment of the public id) is",
+    "regenerateCache": "regenerate cache",
+    "cloudinaryNotConfigured": "Cloudinary not configured: set CLOUDINARY_* in .env.local.",
+    "emptyFolder": "Empty folder on Cloudinary or wrong `folder` path in the manifest.",
+    "loadError": "Unable to load the gallery from Cloudinary.",
+    "cloudinaryError": "Cloudinary error:",
+    "coverAlt": "Cover: {title}",
+    "noGalleryWithTag": "No gallery with tag \"{tag}\"",
+    "noGalleries": "No galleries listed",
+    "tryOtherTag": "Try selecting another tag or",
+    "showAllGalleries": "show all galleries",
+    "addGalleries": "Add entries to src/data/photography-galleries.js (slug, title, description, Cloudinary folder). Set CLOUDINARY_* for build and deploy.",
+    "errorCloudinaryNotConfiguredTitle": "Cloudinary not configured",
+    "errorCloudinaryNotConfiguredBody": "Set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET in .env.local.",
+    "errorLoadTitle": "Error while loading",
+    "errorEmptyFolderTitle": "Folder without images",
+    "errorEmptyFolderBody": "There are no images in this Cloudinary folder, or the `folder` value in the manifest does not match the actual path.",
+    "errorGalleryUnavailableTitle": "Gallery unavailable",
+    "errorGalleryUnavailableBody": "Could not read images from Cloudinary. Check folder and API permissions.",
+    "errorNoImagesTitle": "No images in gallery",
+    "errorNoImagesBody": "The folder only contains a cover image and no other photos, or the folder has no displayable images.",
+    "loadingImage": "Loading image",
+    "previousImage": "Previous image",
+    "nextImage": "Next image",
+    "back": "Back",
+    "forward": "Forward",
+    "loadingNextImage": "Loading next image",
+    "thumbnailPage": "Go to thumbnail page {n} of {total}",
+    "goToPhoto": "Go to photo {n}"
+  },
+  "Video": {
+    "metaDescription": "Video projects from Vimeo.",
+    "backLabel": "Back to portfolio",
+    "allLabel": "All",
+    "pageDescription": "List in src/data/videos.js: slug, title, short description, vimeoId (digits only), optional thumbnailUrl for the card.",
+    "thumbnailAlt": "Preview: {title}",
+    "noVideoWithTag": "No video with tag \"{tag}\"",
+    "noVideos": "No videos listed",
+    "tryOtherTag": "Try selecting another tag or",
+    "showAllVideos": "show all videos",
+    "addVideos": "Add entries to src/data/videos.js (slug, title, description, Vimeo id).",
+    "errorInvalidIdTitle": "Invalid Vimeo ID",
+    "errorInvalidIdBody": "The vimeoId field in the manifest must contain digits only. Fix src/data/videos.js and redeploy."
+  },
+  "Blog": {
+    "metaDescription": "Updates, reflections and projects.",
+    "backLabel": "Back to portfolio",
+    "allLabel": "All",
+    "description": "Updates and thoughts — add posts in src/content/blog/en/.",
+    "tagsLabel": "Tags",
+    "noPostWithTag": "No post with tag \"{tag}\"",
+    "noPosts": "No published posts",
+    "tryOtherTag": "Try selecting another tag or",
+    "showAllPosts": "show all posts",
+    "createPost": "Create a .md file in src/content/blog/en/ to publish your first post.",
+    "readMore": "Read →"
+  },
+  "RevalidateCache": {
+    "metaTitle": "Regenerate Photography cache",
+    "title": "Regenerate gallery cache",
+    "description": "After modifying images or folders on Cloudinary, submit the form to clear the server cache and regenerate static pages. You need the revalidation secret configured in your environment variables.",
+    "secretLabel": "Revalidation secret",
+    "submit": "Regenerate cache",
+    "successMessage": "Cache updated. You can return to the galleries.",
+    "errorMessage": "Invalid revalidation secret."
+  }
+}

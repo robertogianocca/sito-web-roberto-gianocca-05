@@ -2,7 +2,8 @@
 
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
-import { submitContactAction } from "@/app/contact/actions";
+import { useTranslations } from "next-intl";
+import { submitContactAction } from "@/app/[locale]/contact/actions";
 
 const initialContactState = {
   ok: false,
@@ -19,18 +20,20 @@ function fieldErrorId(name) {
 
 function SubmitButton() {
   const { pending } = useFormStatus();
+  const t = useTranslations("ContactForm");
   return (
     <button
       type="submit"
       disabled={pending}
       className="w-full rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-zinc-50 transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
     >
-      {pending ? "Invio in corso…" : "Invia messaggio"}
+      {pending ? t("sending") : t("submit")}
     </button>
   );
 }
 
 export function ContactForm() {
+  const t = useTranslations("ContactForm");
   const [state, formAction] = useActionState(submitContactAction, initialContactState);
 
   return (
@@ -40,7 +43,7 @@ export function ContactForm() {
           role="status"
           className="rounded-lg border border-emerald-200/90 bg-emerald-50/90 p-3 text-sm text-emerald-950 dark:border-emerald-800/60 dark:bg-emerald-950/40 dark:text-emerald-100"
         >
-          Messaggio inviato. Ti risponderò al più presto.
+          {t("successMessage")}
         </p>
       ) : null}
 
@@ -60,7 +63,7 @@ export function ContactForm() {
         noValidate
       >
         <div className="absolute -left-[9999px] h-px w-px overflow-hidden" aria-hidden>
-          <label htmlFor="website">Sito web</label>
+          <label htmlFor="website">{t("websiteLabel")}</label>
           <input
             id="website"
             name="website"
@@ -73,7 +76,7 @@ export function ContactForm() {
 
         <div className="space-y-1.5">
           <label htmlFor="name" className="text-sm font-medium text-foreground">
-            Nome
+            {t("nameLabel")}
           </label>
           <input
             id="name"
@@ -94,7 +97,7 @@ export function ContactForm() {
 
         <div className="space-y-1.5">
           <label htmlFor="email" className="text-sm font-medium text-foreground">
-            Email
+            {t("emailLabel")}
           </label>
           <input
             id="email"
@@ -115,7 +118,7 @@ export function ContactForm() {
 
         <div className="space-y-1.5">
           <label htmlFor="subject" className="text-sm font-medium text-foreground">
-            Oggetto
+            {t("subjectLabel")}
           </label>
           <input
             id="subject"
@@ -135,7 +138,7 @@ export function ContactForm() {
 
         <div className="space-y-1.5">
           <label htmlFor="message" className="text-sm font-medium text-foreground">
-            Messaggio
+            {t("messageLabel")}
           </label>
           <textarea
             id="message"

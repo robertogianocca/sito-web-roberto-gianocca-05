@@ -1,14 +1,16 @@
 import Image from "next/image";
-import Link from "next/link";
+import { useTranslations, useLocale } from "next-intl";
+import { Link } from "@/i18n/navigation";
 
 /**
- * Formats an ISO date string (YYYY-MM-DD) into a localised Italian display string.
+ * Formats an ISO date string (YYYY-MM-DD) into a localised display string.
  * @param {string} date
+ * @param {string} locale
  * @returns {string}
  */
-function formatDate(date) {
+function formatDate(date, locale) {
   if (!date) return "";
-  return new Date(date).toLocaleDateString("it-IT", {
+  return new Date(date).toLocaleDateString(locale === "it" ? "it-IT" : "en-GB", {
     day: "numeric",
     month: "long",
     year: "numeric",
@@ -23,9 +25,14 @@ function formatDate(date) {
  *   tags?: string[];
  *   coverImage?: string | null;
  *   href: string;
+ *   locale?: string;
  * }} props
  */
-export function BlogCard({ title, date, excerpt, tags, coverImage, href }) {
+export function BlogCard({ title, date, excerpt, tags, coverImage, href, locale }) {
+  const t = useTranslations("Blog");
+  const currentLocale = useLocale();
+  const resolvedLocale = locale ?? currentLocale;
+
   return (
     <Link
       href={href}
@@ -36,7 +43,7 @@ export function BlogCard({ title, date, excerpt, tags, coverImage, href }) {
           <div className="relative aspect-video w-full overflow-hidden bg-zinc-100 dark:bg-zinc-900">
             <Image
               src={coverImage}
-              alt={`Copertina: ${title}`}
+              alt={`Cover: ${title}`}
               fill
               className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
               sizes="(max-width: 640px) 100vw, (max-width: 1200px) 50vw, 33vw"
@@ -51,13 +58,13 @@ export function BlogCard({ title, date, excerpt, tags, coverImage, href }) {
                 dateTime={date}
                 className="text-xs font-medium tabular-nums text-zinc-500 dark:text-zinc-400"
               >
-                {formatDate(date)}
+                {formatDate(date, resolvedLocale)}
               </time>
             ) : null}
             {tags && tags.length > 0 ? (
               <>
                 <span className="text-zinc-300 dark:text-zinc-600" aria-hidden>·</span>
-                <ul className="flex flex-wrap gap-1" aria-label="Tag">
+                <ul className="flex flex-wrap gap-1" aria-label={t("tagsLabel")}>
                   {tags.map((tag) => (
                     <li
                       key={tag}
@@ -82,7 +89,7 @@ export function BlogCard({ title, date, excerpt, tags, coverImage, href }) {
           ) : null}
 
           <span className="mt-auto pt-1 text-xs font-medium text-zinc-500 underline-offset-2 group-hover:underline dark:text-zinc-400">
-            Leggi →
+            {t("readMore")}
           </span>
         </div>
       </article>

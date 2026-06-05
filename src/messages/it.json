@@ -1,0 +1,119 @@
+{
+  "Metadata": {
+    "homeDescription": "Portfolio e progetti creativi."
+  },
+  "Home": {
+    "portfolioAriaLabel": "Sezioni portfolio",
+    "introText": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
+    "photographyAriaLabel": "Apri la pagina Photography",
+    "photographyDescription": "Una selezione di lavori fotografici.",
+    "videoAriaLabel": "Apri la pagina Video",
+    "videoDescription": "Progetti e produzioni video.",
+    "graphicDesignDescription": "Identità visive, design editoriale e progetti grafici.",
+    "blogAriaLabel": "Apri la pagina Blog",
+    "blogDescription": "Aggiornamenti, riflessioni e pensieri sui progetti.",
+    "contactTitle": "Contatti",
+    "contactDescription": "Per collaborazioni, commissioni o domande, compila il form: ti risponderò via email."
+  },
+  "Nav": {
+    "label": "Aree del portfolio",
+    "contact": "Contatti",
+    "languageSwitcherLabel": "Cambia lingua"
+  },
+  "TagFilter": {
+    "all": "Tutte"
+  },
+  "ContactForm": {
+    "nameLabel": "Nome",
+    "emailLabel": "Email",
+    "subjectLabel": "Oggetto",
+    "messageLabel": "Messaggio",
+    "websiteLabel": "Sito web",
+    "sending": "Invio in corso…",
+    "submit": "Invia messaggio",
+    "successMessage": "Messaggio inviato. Ti risponderò al più presto.",
+    "errors": {
+      "nameTooShort": "Inserisci almeno 2 caratteri.",
+      "nameTooLong": "Il nome è troppo lungo.",
+      "emailRequired": "L'email è obbligatoria.",
+      "emailTooLong": "L'email è troppo lunga.",
+      "emailInvalid": "Inserisci un indirizzo email valido.",
+      "subjectTooShort": "Inserisci almeno 3 caratteri.",
+      "subjectTooLong": "L'oggetto è troppo lungo.",
+      "messageTooShort": "Il messaggio deve avere almeno 10 caratteri.",
+      "messageTooLong": "Il messaggio è troppo lungo.",
+      "serviceUnconfigured": "Il servizio email non è configurato. Riprova più tardi o contattami con un altro canale.",
+      "sendFailed": "Invio non riuscito. Riprova tra qualche minuto."
+    }
+  },
+  "Photography": {
+    "metaDescription": "Gallerie fotografiche.",
+    "backLabel": "Torna al portfolio",
+    "allLabel": "Tutte",
+    "pageDescription": "Gallerie su Cloudinary. Opzionale: un'immagine il cui nome (ultimo segmento del public id) è",
+    "regenerateCache": "rigenera cache",
+    "cloudinaryNotConfigured": "Cloudinary non configurato: imposta CLOUDINARY_* in .env.local.",
+    "emptyFolder": "Cartella vuota su Cloudinary o percorso `folder` errato nel manifest.",
+    "loadError": "Impossibile caricare la galleria da Cloudinary.",
+    "cloudinaryError": "Errore Cloudinary:",
+    "coverAlt": "Copertina: {title}",
+    "noGalleryWithTag": "Nessuna galleria con il tag \"{tag}\"",
+    "noGalleries": "Nessuna galleria in elenco",
+    "tryOtherTag": "Prova a selezionare un altro tag oppure",
+    "showAllGalleries": "mostra tutte le gallerie",
+    "addGalleries": "Aggiungi voci in src/data/photography-galleries.js (slug, titolo, descrizione, cartella Cloudinary). Imposta CLOUDINARY_* per il build e il deploy.",
+    "errorCloudinaryNotConfiguredTitle": "Cloudinary non configurato",
+    "errorCloudinaryNotConfiguredBody": "Imposta CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY e CLOUDINARY_API_SECRET in .env.local.",
+    "errorLoadTitle": "Errore durante il caricamento",
+    "errorEmptyFolderTitle": "Cartella senza immagini",
+    "errorEmptyFolderBody": "Non ci sono immagini in questa cartella su Cloudinary, oppure il valore `folder` nel manifest non coincide con il percorso reale.",
+    "errorGalleryUnavailableTitle": "Galleria non disponibile",
+    "errorGalleryUnavailableBody": "Non è stato possibile leggere le immagini da Cloudinary. Controlla cartella e permessi API.",
+    "errorNoImagesTitle": "Nessuna immagine nella galleria",
+    "errorNoImagesBody": "Nella cartella c'è solo l'eventuale copertina (nome \"cover\") e nessun'altra foto, oppure la cartella non contiene immagini da mostrare.",
+    "loadingImage": "Caricamento immagine",
+    "previousImage": "Immagine precedente",
+    "nextImage": "Immagine successiva",
+    "back": "Indietro",
+    "forward": "Avanti",
+    "loadingNextImage": "Caricamento immagine successiva",
+    "thumbnailPage": "Vai alla pagina miniature {n} di {total}",
+    "goToPhoto": "Vai alla foto {n}"
+  },
+  "Video": {
+    "metaDescription": "Video da Vimeo.",
+    "backLabel": "Torna al portfolio",
+    "allLabel": "Tutte",
+    "pageDescription": "Elenco in src/data/videos.js: slug, titolo, descrizione breve, vimeoId (solo cifre), opzionale thumbnailUrl per la card.",
+    "thumbnailAlt": "Anteprima: {title}",
+    "noVideoWithTag": "Nessun video con il tag \"{tag}\"",
+    "noVideos": "Nessun video in elenco",
+    "tryOtherTag": "Prova a selezionare un altro tag oppure",
+    "showAllVideos": "mostra tutti i video",
+    "addVideos": "Aggiungi voci in src/data/videos.js (slug, titolo, descrizione, id Vimeo).",
+    "errorInvalidIdTitle": "Id Vimeo non valido",
+    "errorInvalidIdBody": "Il campo vimeoId nel manifest deve contenere solo cifre. Correggi src/data/videos.js e rideploy."
+  },
+  "Blog": {
+    "metaDescription": "Aggiornamenti, riflessioni e progetti.",
+    "backLabel": "Torna al portfolio",
+    "allLabel": "Tutte",
+    "description": "Aggiornamenti e pensieri — aggiungi post in src/content/blog/it/.",
+    "tagsLabel": "Tag",
+    "noPostWithTag": "Nessun post con il tag \"{tag}\"",
+    "noPosts": "Nessun post pubblicato",
+    "tryOtherTag": "Prova a selezionare un altro tag oppure",
+    "showAllPosts": "mostra tutti i post",
+    "createPost": "Crea un file .md in src/content/blog/it/ per pubblicare il primo post.",
+    "readMore": "Leggi →"
+  },
+  "RevalidateCache": {
+    "metaTitle": "Rigenera cache Photography",
+    "title": "Rigenera cache gallerie",
+    "description": "Dopo aver modificato immagini o cartelle su Cloudinary, invia il form per svuotare la cache server e rigenerare le pagine statiche. Serve il segreto di rivalidazione configurato nelle variabili d'ambiente.",
+    "secretLabel": "Segreto di rivalidazione",
+    "submit": "Rigenera cache",
+    "successMessage": "Cache aggiornata. Puoi tornare alle gallerie.",
+    "errorMessage": "Segreto di rivalidazione non valido."
+  }
+}
