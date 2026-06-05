@@ -169,7 +169,41 @@ export function GallerySlideshow({ title, description, slides, backHref }) {
       : [];
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col bg-zinc-50 md:flex-row md:overflow-hidden dark:bg-zinc-950">
+    <>
+      {/* ========== Mobile layout: header + vertical image stack ========== */}
+      <div className="flex min-h-0 flex-1 flex-col bg-zinc-50 md:hidden dark:bg-zinc-950">
+        <div className="border-b border-zinc-200/80 bg-background p-4 dark:border-zinc-800/80">
+          <BackLink href={backHref} label="Photography" />
+          <div className="mt-3 space-y-1.5">
+            <h1 className="text-lg font-semibold tracking-tight text-foreground">
+              {title}
+            </h1>
+            <PhotographyRichDescription markdown={description} />
+          </div>
+        </div>
+        <div
+          className="flex flex-col gap-3 bg-zinc-900 p-3"
+          onContextMenu={(e) => e.preventDefault()}
+        >
+          {slides.map((slide, i) => (
+            <Image
+              key={slide.publicId}
+              src={slide.src}
+              alt={slide.alt}
+              width={slide.width}
+              height={slide.height}
+              className="h-auto w-full select-none [-webkit-user-drag:none]"
+              sizes="100vw"
+              quality={MAIN_QUALITY}
+              draggable={false}
+              loading={i === 0 ? "eager" : "lazy"}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* ========== Desktop layout: sidebar + slideshow ========== */}
+      <div className="hidden min-h-0 flex-1 flex-col bg-zinc-50 md:flex md:flex-row md:overflow-hidden dark:bg-zinc-950">
       {/* ========== Sidebar ========== */}
       <aside className="flex w-full shrink-0 flex-col gap-4 border-zinc-200/80 bg-background p-4 md:h-full md:min-h-0 md:w-[min(100%,15rem)] md:border-r md:self-stretch dark:border-zinc-800/80 lg:w-64 lg:p-5">
         <BackLink href={backHref} label="Photography" />
@@ -291,5 +325,6 @@ export function GallerySlideshow({ title, description, slides, backHref }) {
         </div>
       </div>
     </div>
+    </>
   );
 }
