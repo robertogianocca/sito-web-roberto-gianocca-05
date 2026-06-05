@@ -13,6 +13,7 @@ export function VimeoPlayer({ vimeoId, title }) {
           className="absolute inset-0 h-full w-full"
           allow="autoplay; fullscreen; picture-in-picture"
           allowFullScreen
+          loading="lazy"
         />
       </div>
     </div>

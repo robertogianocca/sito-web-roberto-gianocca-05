@@ -181,7 +181,7 @@ export default async function PhotographyPage() {
               </div>
             ) : (
               <ul className="grid gap-8 md:grid-cols-3">
-                {entries.map(({ gallery, coverSrc, footnote }) => (
+                {entries.map(({ gallery, coverSrc, footnote }, i) => (
                   <li key={gallery.slug}>
                     <PhotographyGalleryCard
                       title={gallery.title}
@@ -190,6 +190,7 @@ export default async function PhotographyPage() {
                       coverAlt={`Copertina: ${gallery.title}`}
                       footnote={footnote}
                       href={`/photography/${gallery.slug}`}
+                      coverPreload={i === 0 && Boolean(coverSrc)}
                     />
                   </li>
                 ))}

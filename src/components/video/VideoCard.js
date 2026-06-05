@@ -18,8 +18,14 @@ export function VideoCard({
   footnote,
   href,
 }) {
-  const inner = (
-    <article className="flex h-full flex-col overflow-hidden rounded-xl border border-zinc-200/90 bg-background shadow-sm transition-[box-shadow,transform] dark:border-zinc-800/90">
+  const article = (
+    <article
+      className={`flex h-full flex-col overflow-hidden rounded-xl border border-zinc-200/90 bg-background shadow-sm transition-[box-shadow,transform] dark:border-zinc-800/90${
+        href
+          ? " group-hover:shadow-md group-hover:ring-1 group-hover:ring-zinc-300/80 dark:group-hover:ring-zinc-600/80"
+          : ""
+      }`}
+    >
       <div className="relative aspect-4/3 w-full bg-zinc-100 dark:bg-zinc-900">
         {thumbnailUrl ? (
           // eslint-disable-next-line @next/next/no-img-element -- URL arbitrarie dal manifest; evita remotePatterns per ogni host.
@@ -54,12 +60,10 @@ export function VideoCard({
         href={href}
         className="group block h-full rounded-xl outline-offset-2 focus-visible:outline-2 focus-visible:outline-zinc-400 dark:focus-visible:outline-zinc-500"
       >
-        <div className="h-full group-hover:[&_article]:shadow-md group-hover:[&_article]:ring-1 group-hover:[&_article]:ring-zinc-300/80 dark:group-hover:[&_article]:ring-zinc-600/80">
-          {inner}
-        </div>
+        {article}
       </Link>
     );
   }
 
-  return inner;
+  return article;
 }

@@ -119,13 +119,11 @@ export function HorizontalScrollContainer({
     const el = ref.current;
     if (!el) return;
 
-    const isDesktop = () =>
-      typeof window !== "undefined" &&
-      window.matchMedia?.("(min-width: 1024px)")?.matches;
+    const desktopMql = window.matchMedia("(min-width: 1024px)");
+    const reducedMotionMql = window.matchMedia("(prefers-reduced-motion: reduce)");
 
-    const prefersReducedMotion = () =>
-      typeof window !== "undefined" &&
-      window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+    const isDesktop = () => desktopMql.matches;
+    const prefersReducedMotion = () => reducedMotionMql.matches;
 
     let isHovering = false;
     let velocity = 0;

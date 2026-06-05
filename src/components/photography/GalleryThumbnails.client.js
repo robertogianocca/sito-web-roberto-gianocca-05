@@ -59,7 +59,6 @@ export function GalleryThumbnails({ slides, currentIndex, onSelectIndex }) {
                 draggable={false}
                 sizes="30px"
                 quality={30}
-                loading="eager"
                 className="pointer-events-none h-full w-full object-cover select-none [-webkit-user-drag:none]"
               />
             </button>

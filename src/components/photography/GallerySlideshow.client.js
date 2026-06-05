@@ -2,7 +2,7 @@
 
 /**
  * Slideshow galleria photography: sidebar (titolo, testo, controlli, miniature) + pannello
- * immagine principale. Sotto-componenti per qualità immagine e transizione tra slide.
+ * immagine principale. Sotto-componenti per dissolvenza e transizione tra slide.
  */
 
 import Image from "next/image";
@@ -12,10 +12,9 @@ import { GalleryThumbnails } from "./GalleryThumbnails.client";
 import { PhotographyRichDescription } from "./PhotographyRichDescription";
 
 // ---------------------------------------------------------------------------
-// Costanti (qualità Cloudinary, preload, dimensioni `sizes` Next/Image)
+// Costanti (qualita, preload, dimensioni `sizes` Next/Image)
 // ---------------------------------------------------------------------------
-const MAIN_QUALITY_INITIAL = 1;
-const MAIN_QUALITY_LOADED = 70;
+const MAIN_QUALITY = 70;
 const REVEAL_DURATION_MS = 420;
 
 const imageSizes = "(max-width: 1400px) 100vw, 70vw";
@@ -40,14 +39,12 @@ function SlideLoadingSpinner({ className = "" }) {
 }
 
 // ---------------------------------------------------------------------------
-// Slide principale — rampa qualità (bassa → alta) + dissolvenza in opacità
+// Slide principale — dissolvenza in opacita su caricamento completato
 // ---------------------------------------------------------------------------
 /**
- * Qualità bassa al mount (`quality` 1), poi 70 dopo `onLoad`.
- * Spinner finché l’immagine non è pronta; poi dissolvenza leggera in opacità.
+ * Spinner finche l'immagine non e pronta; poi dissolvenza leggera in opacita.
  */
 function GalleryMainSlideImage({ src, alt, width, height, preload = true, onReady }) {
-  const [quality, setQuality] = useState(MAIN_QUALITY_INITIAL);
   const [revealed, setRevealed] = useState(false);
 
   return (
@@ -73,9 +70,8 @@ function GalleryMainSlideImage({ src, alt, width, height, preload = true, onRead
         style={{ transitionDuration: `${REVEAL_DURATION_MS}ms` }}
         sizes={imageSizes}
         preload={preload}
-        quality={quality}
+        quality={MAIN_QUALITY}
         onLoad={() => {
-          setQuality(MAIN_QUALITY_LOADED);
           setRevealed(true);
           onReady?.();
         }}
@@ -85,10 +81,10 @@ function GalleryMainSlideImage({ src, alt, width, height, preload = true, onRead
 }
 
 // ---------------------------------------------------------------------------
-// Slide principale — versione “stabile” (slide già visibile durante la transizione)
+// Slide principale — versione "stabile" (slide visibile durante la transizione)
 // ---------------------------------------------------------------------------
 /**
- * Slide già mostrata: qualità alta fissa, niente rampa (evita flash in transizione).
+ * Slide gia mostrata: qualita fissa, niente ramp (evita flash in transizione).
  */
 function GalleryMainSlideImageStable({ src, alt, width, height }) {
   return (
@@ -100,7 +96,7 @@ function GalleryMainSlideImageStable({ src, alt, width, height }) {
       draggable={false}
       className={galleryImageClass}
       sizes={imageSizes}
-      quality={MAIN_QUALITY_LOADED}
+      quality={MAIN_QUALITY}
       onContextMenu={(e) => e.preventDefault()}
     />
   );
@@ -134,7 +130,7 @@ export function GallerySlideshow({ title, description, slides, backHref }) {
   const displayed = slides[displayedIdx] ?? null;
   const isTransitioning = total > 0 && safeIndex !== displayedIdx;
 
-  // --- Allineamento indice mostrato quando la nuova immagine è pronta ---
+  // --- Allineamento indice mostrato quando la nuova immagine e pronta ---
   const handleIncomingReady = useCallback(() => {
     setDisplayedIndex(safeIndex);
   }, [safeIndex]);
@@ -155,7 +151,7 @@ export function GallerySlideshow({ title, description, slides, backHref }) {
     [total],
   );
 
-  // --- Scorciatoie tastiera (← / →) ---
+  // --- Scorciatoie tastiera (<- / ->) ---
   useEffect(() => {
     function onKeyDown(e) {
       if (e.key === "ArrowLeft") {
@@ -188,7 +184,7 @@ export function GallerySlideshow({ title, description, slides, backHref }) {
     <div className="flex min-h-0 flex-1 flex-col bg-zinc-50 md:flex-row md:overflow-hidden dark:bg-zinc-950">
       {/* ========== Sidebar ========== */}
       <aside className="flex w-full shrink-0 flex-col gap-4 border-zinc-200/80 bg-background p-4 md:h-full md:min-h-0 md:w-[min(100%,15rem)] md:border-r md:self-stretch dark:border-zinc-800/80 lg:w-64 lg:p-5">
-        {/* Link torna all’indice photography */}
+        {/* Link torna all'indice photography */}
         <Link
           href={backHref}
           className="text-sm font-medium text-zinc-600 underline-offset-4 hover:text-foreground hover:underline dark:text-zinc-400"
@@ -215,7 +211,7 @@ export function GallerySlideshow({ title, description, slides, backHref }) {
               className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-zinc-300/90 bg-background py-2.5 text-sm font-medium text-foreground transition hover:bg-zinc-100 dark:border-zinc-700/90 dark:hover:bg-zinc-900"
               aria-label="Immagine precedente"
             >
-              <span aria-hidden>←</span>
+              <span aria-hidden>&#8592;</span>
               <span className="hidden sm:inline">Indietro</span>
             </button>
             <button
@@ -225,7 +221,7 @@ export function GallerySlideshow({ title, description, slides, backHref }) {
               aria-label="Immagine successiva"
             >
               <span className="hidden sm:inline">Avanti</span>
-              <span aria-hidden>→</span>
+              <span aria-hidden>&#8594;</span>
             </button>
           </div>
         </div>
@@ -252,7 +248,7 @@ export function GallerySlideshow({ title, description, slides, backHref }) {
                 alt=""
                 width={slides[i].width}
                 height={slides[i].height}
-                quality={MAIN_QUALITY_LOADED}
+                quality={MAIN_QUALITY}
                 sizes={imageSizes}
                 loading="eager"
                 fetchPriority="low"
@@ -265,7 +261,7 @@ export function GallerySlideshow({ title, description, slides, backHref }) {
           {isTransitioning ? (
             // --- Crossfade: slide corrente (stabile) + nuova in caricamento (invisibile fino a ready) ---
             <>
-              {/* Spinner “caricamento prossima slide” (angolo) */}
+              {/* Spinner "caricamento prossima slide" (angolo) */}
               <div
                 className="pointer-events-none absolute bottom-4 right-4 z-3 flex items-center justify-center rounded-full bg-black/35 p-2.5 backdrop-blur-sm md:bottom-5 md:right-5"
                 role="status"
@@ -277,7 +273,7 @@ export function GallerySlideshow({ title, description, slides, backHref }) {
                   aria-hidden
                 />
               </div>
-              {/* Layer visibile: slide già confermata */}
+              {/* Layer visibile: slide gia confermata */}
               <div className="absolute inset-0 z-1 flex items-center justify-center">
                 <GalleryMainSlideImageStable
                   src={displayed.src}
@@ -286,7 +282,7 @@ export function GallerySlideshow({ title, description, slides, backHref }) {
                   height={displayed.height}
                 />
               </div>
-              {/* Layer preload: nuova slide (opacità 0, sblocca `onReady` → aggiorna displayedIndex) */}
+              {/* Layer preload: nuova slide (opacita 0, sblocca `onReady` -> aggiorna displayedIndex) */}
               <div
                 className="pointer-events-none absolute inset-0 z-2 flex items-center justify-center opacity-0"
                 aria-hidden
