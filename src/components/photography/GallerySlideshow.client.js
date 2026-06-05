@@ -16,7 +16,6 @@ import { PhotographyRichDescription } from "./PhotographyRichDescription";
 // ---------------------------------------------------------------------------
 const MAIN_QUALITY_INITIAL = 1;
 const MAIN_QUALITY_LOADED = 70;
-const PRELOAD_ATTR = "data-photography-adjacent-preload";
 const REVEAL_DURATION_MS = 420;
 
 const imageSizes = "(max-width: 1400px) 100vw, 70vw";
@@ -172,51 +171,17 @@ export function GallerySlideshow({ title, description, slides, backHref }) {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [goPrev, goNext]);
 
-  // --- Preload leggero prev/next (link in `<head>`, in idle; URL Cloudinary) ---
-  useEffect(() => {
-    if (total < 2 || slides.length === 0) {
-      return undefined;
-    }
-
-    const created = [];
-
-    const run = () => {
-      const prevHref = slides[(displayedIdx - 1 + total) % total]?.src;
-      const nextHref = slides[(displayedIdx + 1) % total]?.src;
-      const hrefs = [...new Set([prevHref, nextHref].filter(Boolean))];
-      hrefs.forEach((href) => {
-        const link = document.createElement("link");
-        link.rel = "preload";
-        link.as = "image";
-        link.href = href;
-        link.setAttribute(PRELOAD_ATTR, "1");
-        document.head.appendChild(link);
-        created.push(link);
-      });
-    };
-
-    let idleId;
-    const useIdle = typeof window.requestIdleCallback === "function";
-    if (useIdle) {
-      idleId = window.requestIdleCallback(run, { timeout: 1200 });
-    } else {
-      idleId = setTimeout(run, 300);
-    }
-
-    return () => {
-      if (useIdle) {
-        window.cancelIdleCallback(idleId);
-      } else {
-        clearTimeout(idleId);
-      }
-      created.forEach((el) => el.remove());
-    };
-  }, [displayedIdx, slides, total]);
-
   // Nessuna slide valida (es. array vuoto lato parent)
   if (!current || total === 0 || !displayed) {
     return null;
   }
+
+  // Indici adiacenti unici (prev + next) relativi alla slide visibile.
+  // Deduplicati con Set: quando total === 2 prev e next coincidono.
+  const adjacentIndices =
+    total > 1
+      ? [...new Set([(displayedIdx - 1 + total) % total, (displayedIdx + 1) % total])]
+      : [];
 
   return (
     // --- Shell: colonna sidebar (sinistra) + area slide (destra) ---
@@ -276,6 +241,26 @@ export function GallerySlideshow({ title, description, slides, backHref }) {
         className="relative flex min-h-[50vh] flex-1 flex-col bg-zinc-900 p-3 select-none md:min-h-0 md:p-4 lg:p-5"
         onContextMenu={(e) => e.preventDefault()}
       >
+        {/* Preload slide adiacenti (prev/next) via next/image — pipeline /_next/image corretto.
+            Nascosto visivamente; loading eager + fetchPriority low per non competere con la slide attiva. */}
+        {adjacentIndices.length > 0 ? (
+          <div aria-hidden className="pointer-events-none absolute overflow-hidden opacity-0 w-px h-px">
+            {adjacentIndices.map((i) => (
+              <Image
+                key={slides[i].publicId}
+                src={slides[i].src}
+                alt=""
+                width={slides[i].width}
+                height={slides[i].height}
+                quality={MAIN_QUALITY_LOADED}
+                sizes={imageSizes}
+                loading="eager"
+                fetchPriority="low"
+              />
+            ))}
+          </div>
+        ) : null}
+
         <div className="relative flex min-h-0 w-full max-w-full flex-1 items-center justify-center">
           {isTransitioning ? (
             // --- Crossfade: slide corrente (stabile) + nuova in caricamento (invisibile fino a ready) ---
