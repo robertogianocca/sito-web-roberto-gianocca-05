@@ -15,11 +15,13 @@ const csp = [
   "style-src 'self' 'unsafe-inline'",
   // Images are served through /_next/image (relative), so 'self' covers all next/image usage.
   // data: and blob: are needed by some browser extensions and safe to include.
-  "img-src 'self' data: blob:",
+  // i.vimeocdn.com: VidStack fetches the Vimeo poster as a plain <img> (not via next/image).
+  "img-src 'self' data: blob: https://i.vimeocdn.com",
   // next/font/google self-hosts fonts at build time; no runtime request to Google servers.
   "font-src 'self'",
   "frame-src player.vimeo.com",
-  "connect-src 'self'",
+  // vimeo.com: VidStack calls the oEmbed API to fetch video metadata (title, poster, duration).
+  "connect-src 'self' https://vimeo.com",
   "base-uri 'self'",
   "form-action 'self'",
 ].join("; ");

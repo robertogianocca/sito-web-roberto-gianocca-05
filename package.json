@@ -9,8 +9,10 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@vidstack/react": "^1.15.4",
     "cloudinary": "^2.10.0",
     "gray-matter": "^4.0.3",
+    "media-icons": "^1.1.5",
     "next": "16.2.6",
     "next-intl": "^4.13.0",
     "react": "19.2.4",

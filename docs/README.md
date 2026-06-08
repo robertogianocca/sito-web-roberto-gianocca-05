@@ -7,3 +7,4 @@
 | Scroll orizzontale homepage | [homepage-horizontal-scroll.md](./homepage-horizontal-scroll.md) |
 | Tuning rotella / inerzia / hint scroll | [horizontal-wheel-tuning.md](./horizontal-wheel-tuning.md) |
 | Form contatti (Resend) | [contact-form-resend.md](./contact-form-resend.md) |
+| Player video (VidStack + Vimeo) | [vidstack-player.md](./vidstack-player.md) |
