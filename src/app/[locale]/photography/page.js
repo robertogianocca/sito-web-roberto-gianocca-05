@@ -1,18 +1,17 @@
+import { Suspense } from "react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { buildAlternates } from "@/lib/metadata";
 import { routing } from "@/i18n/routing";
 import { PHOTOGRAPHY_GALLERIES } from "@/data/photography-galleries";
 import { CloudinaryProbePanel } from "@/components/photography/CloudinaryProbePanel";
-import { PhotographyGalleryCard } from "@/components/photography/PhotographyGalleryCard";
+import { GalleryGrid, GalleryGridSkeleton } from "@/components/photography/GalleryGrid";
 import { BackLink } from "@/components/shared/BackLink";
 import { PageShell } from "@/components/shared/PageShell";
 import { TagFilter } from "@/components/shared/TagFilter";
 import {
   fetchCloudinaryResourceProbe,
-  fetchFolderGallery,
   isCloudinaryConfigured,
 } from "@/lib/cloudinary-server";
-import { plainTextFromMarkdown } from "@/lib/plain-text-from-markdown";
 
 const SHOW_CLOUDINARY_PROBE = process.env.PHOTOGRAPHY_ENABLE_PROBE === "1";
 const CLOUDINARY_PROBE_PUBLIC_ID = process.env.PHOTOGRAPHY_PROBE_PUBLIC_ID ?? "02_olvllg";
@@ -37,25 +36,6 @@ function collectAllTags(galleries) {
   return [...set].sort((a, b) => a.localeCompare(b));
 }
 
-async function resolveGalleryCover(gallery) {
-  try {
-    if (!isCloudinaryConfigured()) {
-      return { coverSrc: null, footnote: "cloudinary_not_configured" };
-    }
-    const payload = await fetchFolderGallery(gallery.folder);
-    if (!payload.ok) {
-      if (payload.reason === "empty_folder") {
-        return { coverSrc: null, footnote: "empty_folder" };
-      }
-      return { coverSrc: null, footnote: "load_error" };
-    }
-    return { coverSrc: payload.coverSrc, footnote: null };
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    return { coverSrc: null, footnote: `error:${message}` };
-  }
-}
-
 export default async function PhotographyPage({ params, searchParams }) {
   const { locale } = await params;
   setRequestLocale(locale);
@@ -72,25 +52,9 @@ export default async function PhotographyPage({ params, searchParams }) {
       ? PHOTOGRAPHY_GALLERIES.filter((g) => (g.tags ?? []).includes(activeTag))
       : PHOTOGRAPHY_GALLERIES;
 
-  const entries = await Promise.all(
-    filtered.map(async (gallery) => {
-      const { coverSrc, footnote } = await resolveGalleryCover(gallery);
-      return { gallery, coverSrc, footnote };
-    }),
-  );
-
   const probe = SHOW_CLOUDINARY_PROBE
     ? await fetchCloudinaryResourceProbe(CLOUDINARY_PROBE_PUBLIC_ID)
     : null;
-
-  function resolveFootnote(footnote) {
-    if (!footnote) return null;
-    if (footnote === "cloudinary_not_configured") return t("cloudinaryNotConfigured");
-    if (footnote === "empty_folder") return t("emptyFolder");
-    if (footnote === "load_error") return t("loadError");
-    if (footnote.startsWith("error:")) return `${t("cloudinaryError")} ${footnote.slice(6)}`;
-    return footnote;
-  }
 
   return (
     <PageShell
@@ -118,47 +82,9 @@ export default async function PhotographyPage({ params, searchParams }) {
         <CloudinaryProbePanel probe={probe} />
 
         <div className="min-w-0 flex-1">
-          {entries.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-zinc-300/80 bg-background p-8 text-zinc-600 dark:border-zinc-700/80 dark:text-zinc-400">
-              <p className="font-medium text-foreground">
-                {activeTag
-                  ? t("noGalleryWithTag", { tag: activeTag })
-                  : t("noGalleries")}
-              </p>
-              <p className="mt-2 text-sm leading-relaxed">
-                {activeTag ? (
-                  <>
-                    {t("tryOtherTag")}{" "}
-                    <a
-                      href={`/${locale}/photography`}
-                      className="font-medium text-foreground underline-offset-4 hover:underline"
-                    >
-                      {t("showAllGalleries")}
-                    </a>
-                    .
-                  </>
-                ) : (
-                  t("addGalleries")
-                )}
-              </p>
-            </div>
-          ) : (
-            <ul className="grid gap-8 md:grid-cols-3">
-              {entries.map(({ gallery, coverSrc, footnote }, i) => (
-                <li key={gallery.slug}>
-                  <PhotographyGalleryCard
-                    title={typeof gallery.title === "object" ? gallery.title[locale] ?? gallery.title.en : gallery.title}
-                    shortDescription={typeof gallery.shortDescription === "object" ? gallery.shortDescription[locale] ?? gallery.shortDescription.en : gallery.shortDescription}
-                    coverSrc={coverSrc}
-                    coverAlt={t("coverAlt", { title: typeof gallery.title === "object" ? gallery.title[locale] ?? gallery.title.en : gallery.title })}
-                    footnote={resolveFootnote(footnote)}
-                    href={`/photography/${gallery.slug}`}
-                    coverPreload={i === 0 && Boolean(coverSrc)}
-                  />
-                </li>
-              ))}
-            </ul>
-          )}
+          <Suspense fallback={<GalleryGridSkeleton count={filtered.length || 6} />}>
+            <GalleryGrid filtered={filtered} locale={locale} activeTag={activeTag} />
+          </Suspense>
         </div>
       </div>
     </PageShell>
