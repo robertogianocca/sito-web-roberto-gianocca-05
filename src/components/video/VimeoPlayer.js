@@ -77,12 +77,6 @@ function PlayerUI() {
     return () => clearTimeout(id);
   }, [paused]);
 
-  function VolumeIcon() {
-    if (muted || volume === 0) return <MuteIcon className="vds-icon" />;
-    if (volume < 0.5)          return <VolumeLowIcon className="vds-icon" />;
-    return <VolumeHighIcon className="vds-icon" />;
-  }
-
   return (
     <>
       {/* ── Click anywhere → toggle play/pause ──────────────────────────────
@@ -143,7 +137,12 @@ function PlayerUI() {
                 className="vds-button"
                 aria-label={muted ? 'Riattiva audio' : 'Silenzia'}
               >
-                <VolumeIcon />
+                {(muted || volume === 0)
+                  ? <MuteIcon className="vds-icon" />
+                  : volume < 0.5
+                    ? <VolumeLowIcon className="vds-icon" />
+                    : <VolumeHighIcon className="vds-icon" />
+                }
               </MuteButton>
 
               {/* Volume slider — hidden on mobile (too small to be usable) */}
