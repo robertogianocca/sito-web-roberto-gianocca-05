@@ -1,10 +1,36 @@
 @import "tailwindcss";
 
+/* Dark mode is opt-in via .dark class on <html>, not automatic from OS setting.
+   Add class="dark" to <html> in layout.js to enable dark styles. */
+@variant dark (&:where(.dark, .dark *));
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f5efe8;
+  --foreground: #2f2b28;
   /* Modular horizontal layout: one column = 1/12 viewport width */
   --vw-col: calc(100vw / 12);
+  /* Photographic grain on SiteFooter — tune opacity without touching the component */
+  --footer-grain-opacity: 0.2;
+}
+
+/* ============================================================
+   COLOUR PALETTE — edit these values to repaint the whole UI.
+   These override Tailwind's default zinc scale with warm tones.
+   bg-zinc-*, text-zinc-*, border-zinc-* utilities all pick up
+   the values below automatically — no component changes needed.
+   ============================================================ */
+@theme {
+  --color-zinc-50: #f5f1ee; /* page canvas */
+  --color-zinc-100: #ede8e3; /* image placeholders */
+  --color-zinc-200: #ddd6cf; /* dividers / card borders */
+  --color-zinc-300: #cec6bf; /* input borders */
+  --color-zinc-400: #b5aba3; /* focus rings / outlines */
+  --color-zinc-500: #8f877f; /* muted text */
+  --color-zinc-600: #726a63; /* secondary body text */
+  --color-zinc-700: #5a524c; /* hover text */
+  --color-zinc-800: #3d3731; /* dark borders */
+  --color-zinc-900: #231f1c; /* near-black (dark pills, media bg) */
+  --color-zinc-950: #141210; /* darkest canvas (dark mode) */
 }
 
 /* Mobile: full-width stacked sections. lg+: fixed viewport height + width from --span (1–12). */
@@ -52,14 +78,20 @@
   --text-4xl--line-height: calc(2.5 / 2.25);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
+}
+
+/* Procedural film grain (SVG feTurbulence, no bitmap). See SiteFooter.js */
+.footer-grain::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: var(--footer-grain-opacity);
+  filter: blur(0.75px);
+  mix-blend-mode: soft-light;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 180px 180px;
 }
