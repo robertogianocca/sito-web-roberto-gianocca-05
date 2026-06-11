@@ -5,7 +5,6 @@ import { HomeIntroNav } from "@/components/home/HomeIntroNav";
 import { HorizontalScrollContainer } from "@/components/home/HorizontalScrollContainer.client";
 import { HorizontalSection } from "@/components/home/HorizontalSection";
 import { PlaceholderGrid } from "@/components/home/PlaceholderGrid";
-import { LanguageSwitcher } from "@/components/home/LanguageSwitcher.client";
 import { HomeFeaturedVideo } from "@/components/video/HomeFeaturedVideo.client";
 import { HomeVideoThumb } from "@/components/video/HomeVideoThumb";
 import { getAllPosts } from "@/lib/blog";
@@ -66,7 +65,6 @@ export default async function Home({ params }) {
                   {t("introText")}
                 </p>
                 <HomeIntroNav />
-                <LanguageSwitcher />
               </div>
               <div className="lg:col-span-6">
                 <PlaceholderGrid variant="hero" />

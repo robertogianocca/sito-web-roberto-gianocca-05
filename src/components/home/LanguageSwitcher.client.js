@@ -11,7 +11,7 @@ export function LanguageSwitcher() {
   const pathname = usePathname();
 
   return (
-    <div role="group" aria-label={t("languageSwitcherLabel")} className="mt-6 flex gap-1">
+    <div role="group" aria-label={t("languageSwitcherLabel")} className="flex gap-0.5">
       {routing.locales.map((l) => (
         <button
           key={l}
@@ -19,10 +19,10 @@ export function LanguageSwitcher() {
           onClick={() => router.replace(pathname, { locale: l })}
           aria-current={l === locale ? "true" : undefined}
           className={[
-            "rounded-full px-3 py-1 text-sm font-medium transition-colors",
+            "rounded-full px-2 py-0.5 text-xs font-medium tracking-wide transition-colors",
             l === locale
-              ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
-              : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200 hover:text-zinc-700 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700 dark:hover:text-zinc-200",
+              ? "bg-zinc-900 text-white"
+              : "bg-slate-500/40 text-zinc-800 hover:bg-slate-500/60",
           ].join(" ")}
         >
           {l.toUpperCase()}

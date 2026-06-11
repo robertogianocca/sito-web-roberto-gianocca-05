@@ -9,8 +9,10 @@
   --foreground: #2f2b28;
   /* Modular horizontal layout: one column = 1/12 viewport width */
   --vw-col: calc(100vw / 12);
-  /* Photographic grain on SiteFooter — tune opacity without touching the component */
-  --footer-grain-opacity: 0.2;
+  /* Photographic grain on nav/footer chrome — tune opacity without touching components */
+  --site-chrome-grain-opacity: 0.2;
+  --site-nav-height: 2.25rem; /* 36px, matches 04 nav bar height */
+  --site-footer-height: 10rem; /* 160px — between compact bar and original 25vh */
 }
 
 /* ============================================================
@@ -83,13 +85,13 @@ body {
   color: var(--foreground);
 }
 
-/* Procedural film grain (SVG feTurbulence, no bitmap). See SiteFooter.js */
-.footer-grain::before {
+/* Procedural film grain (SVG feTurbulence, no bitmap). See SiteNavBar / SiteFooter. */
+.site-chrome-grain::before {
   content: "";
   position: absolute;
   inset: 0;
   pointer-events: none;
-  opacity: var(--footer-grain-opacity);
+  opacity: var(--site-chrome-grain-opacity);
   filter: blur(0.75px);
   mix-blend-mode: soft-light;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");

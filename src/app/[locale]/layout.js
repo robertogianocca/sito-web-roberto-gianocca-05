@@ -2,6 +2,7 @@ import { NextIntlClientProvider, hasLocale } from "next-intl";
 import { getMessages, setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { SiteFooter } from "@/components/layout/SiteFooter";
+import { SiteNavBar } from "@/components/layout/SiteNavBar";
 import { routing } from "@/i18n/routing";
 
 export function generateStaticParams() {
@@ -21,7 +22,10 @@ export default async function LocaleLayout({ children, footer, params }) {
 
   return (
     <NextIntlClientProvider messages={messages}>
-      {children}
+      <SiteNavBar />
+      <div className="flex min-h-0 flex-1 flex-col pt-(--site-nav-height)">
+        {children}
+      </div>
       <SiteFooter>{footer}</SiteFooter>
     </NextIntlClientProvider>
   );
