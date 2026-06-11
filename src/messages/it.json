@@ -7,6 +7,8 @@
     "introText": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
     "photographyAriaLabel": "Apri la pagina Photography",
     "photographyDescription": "Una selezione di lavori fotografici.",
+    "photographySeeGallery": "Tutte le foto",
+    "photographyAllGalleries": "Tutte le gallerie",
     "videoAriaLabel": "Apri la pagina Video",
     "videoDescription": "Progetti e produzioni video.",
     "videoSeeProject": "Vedi progetto completo",

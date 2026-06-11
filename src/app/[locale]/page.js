@@ -7,12 +7,25 @@ import { HorizontalSection } from "@/components/home/HorizontalSection";
 import { PlaceholderGrid } from "@/components/home/PlaceholderGrid";
 import { HomeFeaturedVideo } from "@/components/video/HomeFeaturedVideo.client";
 import { HomeVideoThumb } from "@/components/video/HomeVideoThumb";
+import { HomePhotographyMosaic } from "@/components/photography/HomePhotographyMosaic.client";
+import { HomeGalleryThumb } from "@/components/photography/HomeGalleryThumb";
 import { getAllPosts } from "@/lib/blog";
 import { buildAlternates } from "@/lib/metadata";
 import { routing } from "@/i18n/routing";
 import { Link } from "@/i18n/navigation";
 import { getFeaturedVideo, getRecentVideos, normalizeVimeoId } from "@/data/videos";
 import { fetchVimeoThumbnail } from "@/lib/vimeo";
+import {
+  getFeaturedGallery,
+  getSideGalleries,
+  getRecentGalleries,
+} from "@/data/photography-galleries";
+import {
+  buildCloudinaryImageUrl,
+  fetchFolderGallery,
+  fetchFolderGalleryDetail,
+  isCloudinaryConfigured,
+} from "@/lib/cloudinary-server";
 
 export async function generateMetadata({ params }) {
   const { locale } = await params;
@@ -50,6 +63,87 @@ export default async function Home({ params }) {
   const featuredThumbnail = featuredVideo?.thumbnailUrl
     ?? (featuredVimeoId ? await fetchVimeoThumbnail(featuredVimeoId) : null);
 
+  // ── Photography mosaic data ────────────────────────────────────────────────
+  const featuredGallery = getFeaturedGallery();
+  const sideGalleriesList = getSideGalleries(2);
+  const recentGalleriesList = getRecentGalleries(2, 3);
+
+  function getGalleryTitle(gallery) {
+    if (!gallery) return "";
+    return typeof gallery.title === "object"
+      ? (gallery.title[locale] ?? gallery.title.en)
+      : gallery.title;
+  }
+
+  function getGalleryDescription(gallery) {
+    if (!gallery) return "";
+    const d = gallery.shortDescription;
+    const raw = typeof d === "object" ? (d[locale] ?? d.en) : d;
+    return raw.replace(/\*+([^*]+)\*+/g, "$1").replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");
+  }
+
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME ?? null;
+  const cloudinaryReady = isCloudinaryConfigured();
+
+  const [cropWRatio, cropHRatio] = (featuredGallery?.homeImageAspect ?? "4/3").split("/").map(Number);
+  const cropW = 1200;
+  const cropH = Math.round((cropW * cropHRatio) / cropWRatio);
+
+  let carouselImages = [];
+  if (featuredGallery && cloudinaryReady) {
+    if (featuredGallery.homeImages?.length) {
+      carouselImages = featuredGallery.homeImages.map((publicId) => ({
+        src: buildCloudinaryImageUrl(cloudName, publicId, { width: cropW, height: cropH, crop: "fill" }),
+        alt: publicId.split("/").pop()?.replace(/[-_]/g, " ") ?? "Photography",
+      }));
+    } else {
+      const detail = await fetchFolderGalleryDetail(featuredGallery.folder);
+      const count = featuredGallery.homeImageCount ?? 4;
+      if (detail.ok) {
+        carouselImages = detail.slides.slice(0, count).map((s) => ({ src: s.src, alt: s.alt }));
+      }
+    }
+  }
+
+  const sideGalleriesData = await Promise.all(
+    sideGalleriesList.map(async (g) => {
+      if (!cloudinaryReady) return { src: null, alt: getGalleryTitle(g), href: `/photography/${g.slug}` };
+      const data = await fetchFolderGallery(g.folder);
+      return {
+        src: data.ok ? data.coverSrc : null,
+        alt: getGalleryTitle(g),
+        href: `/photography/${g.slug}`,
+      };
+    }),
+  );
+
+  // If fewer than 2 other galleries exist, fill side slots with carousel images
+  // from the featured gallery so the mosaic is never visually empty.
+  const filledSideGalleries = [...sideGalleriesData];
+  if (featuredGallery) {
+    while (filledSideGalleries.length < 2) {
+      const fallbackIdx = filledSideGalleries.length + 1;
+      const fallbackSrc =
+        carouselImages[fallbackIdx % Math.max(carouselImages.length, 1)]?.src ??
+        carouselImages[0]?.src ??
+        null;
+      filledSideGalleries.push({
+        src: fallbackSrc,
+        alt: getGalleryTitle(featuredGallery),
+        href: `/photography/${featuredGallery.slug}`,
+      });
+    }
+  }
+
+  const recentGalleryCovers = await Promise.all(
+    recentGalleriesList.map(async (g) => {
+      if (!cloudinaryReady) return null;
+      const data = await fetchFolderGallery(g.folder);
+      return data.ok ? data.coverSrc : null;
+    }),
+  );
+  // ── end Photography mosaic data ───────────────────────────────────────────
+
   return (
     <div className="relative flex min-h-0 flex-1 flex-col bg-zinc-50 dark:bg-zinc-950 lg:min-h-0">
       <HorizontalScrollContainer
@@ -80,12 +174,41 @@ export default async function Home({ params }) {
           titleHref="/photography"
           titleHrefAriaLabel={t("photographyAriaLabel")}
         >
-          <div className="flex h-full flex-col gap-6">
-            <p className="max-w-prose text-zinc-600 dark:text-zinc-400">
-              {t("photographyDescription")}
-            </p>
-            <PlaceholderGrid variant="mixed" />
-          </div>
+          {featuredGallery ? (
+            <div className="flex flex-col gap-4">
+              <HomePhotographyMosaic
+                carouselImages={carouselImages}
+                sideGalleries={filledSideGalleries}
+                title={getGalleryTitle(featuredGallery)}
+                description={getGalleryDescription(featuredGallery)}
+                detailHref={`/photography/${featuredGallery.slug}`}
+                seeGalleryLabel={t("photographySeeGallery")}
+                imageAspect={featuredGallery.homeImageAspect ?? '3/4'}
+              />
+              <div className="flex items-end gap-3">
+                <ul className="grid flex-1 grid-cols-3 gap-3">
+                  {recentGalleriesList.map((g, i) => (
+                    <li key={g.slug}>
+                      <HomeGalleryThumb
+                        title={getGalleryTitle(g)}
+                        coverSrc={recentGalleryCovers[i]}
+                        href={`/photography/${g.slug}`}
+                        aspect={featuredGallery.homeImageAspect ?? "4/3"}
+                      />
+                    </li>
+                  ))}
+                </ul>
+                <Link
+                  href="/photography"
+                  className="shrink-0 text-xs font-medium text-zinc-500 underline-offset-2 hover:text-foreground hover:underline dark:text-zinc-400 dark:hover:text-zinc-200"
+                >
+                  {t("photographyAllGalleries")} →
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">{t("photographyDescription")}</p>
+          )}
         </HorizontalSection>
 
         <HorizontalSection

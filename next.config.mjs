@@ -16,7 +16,8 @@ const csp = [
   // Images are served through /_next/image (relative), so 'self' covers all next/image usage.
   // data: and blob: are needed by some browser extensions and safe to include.
   // i.vimeocdn.com: VidStack fetches the Vimeo poster as a plain <img> (not via next/image).
-  "img-src 'self' data: blob: https://i.vimeocdn.com",
+  // res.cloudinary.com: direct <img> tags in HomePhotographyMosaic and video components.
+  "img-src 'self' data: blob: https://i.vimeocdn.com https://res.cloudinary.com",
   // next/font/google self-hosts fonts at build time; no runtime request to Google servers.
   "font-src 'self'",
   "frame-src player.vimeo.com",
