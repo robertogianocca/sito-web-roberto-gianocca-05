@@ -67,7 +67,8 @@
   --text-sm--line-height: 1.25rem;
   --text-sm--letter-spacing: 0em;
   --text-base: 1rem;
-  --text-base--line-height: calc(1.5 / 1);
+  /* --text-base--line-height: calc(1.5 / 1); */
+  --text-base--line-height: calc(1.5 / 1.2);
   --text-lg: 1.125rem;
   --text-lg--line-height: calc(1.75 / 1.125);
   --text-xl: 1.25rem;

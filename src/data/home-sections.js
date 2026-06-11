@@ -17,9 +17,9 @@ const LOREM_TWO_LINES = {
  * }>}
  */
 export const HOME_SECTIONS = {
-  intro: {
-    shortDescription: LOREM_TWO_LINES,
-  },
+  // intro: {
+  //   shortDescription: LOREM_TWO_LINES,
+  // },
   photography: {
     shortDescription: LOREM_TWO_LINES,
   },

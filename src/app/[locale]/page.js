@@ -155,17 +155,22 @@ export default async function Home({ params }) {
         <HorizontalSection
           id="intro"
           title="Roberto Gianocca"
-          span={9}
+          span={5}
           shortDescription={getHomeSectionCopy("intro", locale).shortDescription}
         >
           <div className="flex min-h-0 flex-1 flex-col gap-6">
             <div className="grid gap-6 lg:grid-cols-12 lg:items-start lg:gap-10">
+              <p className="col-span-12">
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor
+                incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
+                exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+              </p>
               <div className="lg:col-span-6">
                 <HomeIntroNav />
               </div>
-              <div className="lg:col-span-6">
+              {/* <div className="lg:col-span-6">
                 <PlaceholderGrid variant="hero" />
-              </div>
+              </div> */}
             </div>
           </div>
         </HorizontalSection>
