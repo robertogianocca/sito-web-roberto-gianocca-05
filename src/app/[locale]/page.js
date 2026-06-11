@@ -13,7 +13,9 @@ import { getAllPosts } from "@/lib/blog";
 import { buildAlternates } from "@/lib/metadata";
 import { routing } from "@/i18n/routing";
 import { Link } from "@/i18n/navigation";
+import { getHomeSectionCopy } from "@/data/home-sections";
 import { getFeaturedVideo, getRecentVideos, normalizeVimeoId } from "@/data/videos";
+import { resolveLocalized } from "@/lib/i18n-content";
 import { fetchVimeoThumbnail } from "@/lib/vimeo";
 import {
   getFeaturedGallery,
@@ -48,20 +50,17 @@ export default async function Home({ params }) {
   const recentVideos = getRecentVideos(3);
 
   function getVideoTitle(video) {
-    if (!video) return "";
-    return typeof video.title === "object" ? (video.title[locale] ?? video.title.en) : video.title;
+    return resolveLocalized(video?.title, locale);
   }
 
   function getVideoDescription(video) {
-    if (!video) return "";
-    return typeof video.shortDescription === "object"
-      ? (video.shortDescription[locale] ?? video.shortDescription.en)
-      : video.shortDescription;
+    return resolveLocalized(video?.shortDescription, locale);
   }
 
   const featuredVimeoId = featuredVideo ? normalizeVimeoId(featuredVideo.vimeoId) : null;
-  const featuredThumbnail = featuredVideo?.thumbnailUrl
-    ?? (featuredVimeoId ? await fetchVimeoThumbnail(featuredVimeoId) : null);
+  const featuredThumbnail =
+    featuredVideo?.thumbnailUrl ??
+    (featuredVimeoId ? await fetchVimeoThumbnail(featuredVimeoId) : null);
 
   // ── Photography mosaic data ────────────────────────────────────────────────
   const featuredGallery = getFeaturedGallery();
@@ -69,23 +68,20 @@ export default async function Home({ params }) {
   const recentGalleriesList = getRecentGalleries(2, 3);
 
   function getGalleryTitle(gallery) {
-    if (!gallery) return "";
-    return typeof gallery.title === "object"
-      ? (gallery.title[locale] ?? gallery.title.en)
-      : gallery.title;
+    return resolveLocalized(gallery?.title, locale);
   }
 
   function getGalleryDescription(gallery) {
-    if (!gallery) return "";
-    const d = gallery.shortDescription;
-    const raw = typeof d === "object" ? (d[locale] ?? d.en) : d;
+    const raw = resolveLocalized(gallery?.shortDescription, locale);
     return raw.replace(/\*+([^*]+)\*+/g, "$1").replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");
   }
 
   const cloudName = process.env.CLOUDINARY_CLOUD_NAME ?? null;
   const cloudinaryReady = isCloudinaryConfigured();
 
-  const [cropWRatio, cropHRatio] = (featuredGallery?.homeImageAspect ?? "4/3").split("/").map(Number);
+  const [cropWRatio, cropHRatio] = (featuredGallery?.homeImageAspect ?? "4/3")
+    .split("/")
+    .map(Number);
   const cropW = 1200;
   const cropH = Math.round((cropW * cropHRatio) / cropWRatio);
 
@@ -93,7 +89,11 @@ export default async function Home({ params }) {
   if (featuredGallery && cloudinaryReady) {
     if (featuredGallery.homeImages?.length) {
       carouselImages = featuredGallery.homeImages.map((publicId) => ({
-        src: buildCloudinaryImageUrl(cloudName, publicId, { width: cropW, height: cropH, crop: "fill" }),
+        src: buildCloudinaryImageUrl(cloudName, publicId, {
+          width: cropW,
+          height: cropH,
+          crop: "fill",
+        }),
         alt: publicId.split("/").pop()?.replace(/[-_]/g, " ") ?? "Photography",
       }));
     } else {
@@ -107,7 +107,8 @@ export default async function Home({ params }) {
 
   const sideGalleriesData = await Promise.all(
     sideGalleriesList.map(async (g) => {
-      if (!cloudinaryReady) return { src: null, alt: getGalleryTitle(g), href: `/photography/${g.slug}` };
+      if (!cloudinaryReady)
+        return { src: null, alt: getGalleryTitle(g), href: `/photography/${g.slug}` };
       const data = await fetchFolderGallery(g.folder);
       return {
         src: data.ok ? data.coverSrc : null,
@@ -151,13 +152,15 @@ export default async function Home({ params }) {
         className="flex min-h-0 flex-1 flex-col lg:flex-row lg:flex-nowrap lg:overflow-x-auto lg:overflow-y-hidden"
         aria-label={t("portfolioAriaLabel")}
       >
-        <HorizontalSection id="intro" title="Roberto Gianocca" span={9}>
+        <HorizontalSection
+          id="intro"
+          title="Roberto Gianocca"
+          span={9}
+          shortDescription={getHomeSectionCopy("intro", locale).shortDescription}
+        >
           <div className="flex min-h-0 flex-1 flex-col gap-6">
             <div className="grid gap-6 lg:grid-cols-12 lg:items-start lg:gap-10">
               <div className="lg:col-span-6">
-                <p className="text-lg leading-relaxed text-zinc-600 dark:text-zinc-400">
-                  {t("introText")}
-                </p>
                 <HomeIntroNav />
               </div>
               <div className="lg:col-span-6">
@@ -173,6 +176,7 @@ export default async function Home({ params }) {
           span={8}
           titleHref="/photography"
           titleHrefAriaLabel={t("photographyAriaLabel")}
+          shortDescription={getHomeSectionCopy("photography", locale).shortDescription}
         >
           {featuredGallery ? (
             <div className="flex flex-col gap-4">
@@ -183,7 +187,7 @@ export default async function Home({ params }) {
                 description={getGalleryDescription(featuredGallery)}
                 detailHref={`/photography/${featuredGallery.slug}`}
                 seeGalleryLabel={t("photographySeeGallery")}
-                imageAspect={featuredGallery.homeImageAspect ?? '3/4'}
+                imageAspect={featuredGallery.homeImageAspect ?? "3/4"}
               />
               <div className="flex items-end gap-3">
                 <ul className="grid flex-1 grid-cols-3 gap-3">
@@ -206,9 +210,7 @@ export default async function Home({ params }) {
                 </Link>
               </div>
             </div>
-          ) : (
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">{t("photographyDescription")}</p>
-          )}
+          ) : null}
         </HorizontalSection>
 
         <HorizontalSection
@@ -217,6 +219,7 @@ export default async function Home({ params }) {
           span={8}
           titleHref="/video"
           titleHrefAriaLabel={t("videoAriaLabel")}
+          shortDescription={getHomeSectionCopy("video", locale).shortDescription}
         >
           {featuredVideo && featuredVimeoId ? (
             <div className="flex flex-col gap-4">
@@ -250,18 +253,16 @@ export default async function Home({ params }) {
                 </Link>
               </div>
             </div>
-          ) : (
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">{t("videoDescription")}</p>
-          )}
+          ) : null}
         </HorizontalSection>
 
-        <HorizontalSection id="graphic-design" title="Graphic design" span={10}>
-          <div className="flex h-full flex-col gap-6">
-            <p className="max-w-prose text-zinc-600 dark:text-zinc-400">
-              {t("graphicDesignDescription")}
-            </p>
-            <PlaceholderGrid variant="mixed" />
-          </div>
+        <HorizontalSection
+          id="graphic-design"
+          title="Graphic design"
+          span={10}
+          shortDescription={getHomeSectionCopy("graphicDesign", locale).shortDescription}
+        >
+          <PlaceholderGrid variant="mixed" />
         </HorizontalSection>
 
         <HorizontalSection
@@ -270,11 +271,9 @@ export default async function Home({ params }) {
           span={6}
           titleHref="/blog"
           titleHrefAriaLabel={t("blogAriaLabel")}
+          shortDescription={getHomeSectionCopy("blog", locale).shortDescription}
         >
           <div className="flex h-full flex-col gap-5">
-            <p className="text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
-              {t("blogDescription")}
-            </p>
             {latestPosts.length > 0 ? (
               <ul className="flex flex-col gap-4">
                 {latestPosts.map((post) => (
@@ -295,13 +294,13 @@ export default async function Home({ params }) {
           </div>
         </HorizontalSection>
 
-        <HorizontalSection id="contact" title={t("contactTitle")} span={4}>
-          <div className="flex h-full min-h-0 flex-col gap-4">
-            <p className="text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
-              {t("contactDescription")}
-            </p>
-            <ContactForm />
-          </div>
+        <HorizontalSection
+          id="contact"
+          title={t("contactTitle")}
+          span={4}
+          shortDescription={getHomeSectionCopy("contact", locale).shortDescription}
+        >
+          <ContactForm />
         </HorizontalSection>
       </HorizontalScrollContainer>
     </div>

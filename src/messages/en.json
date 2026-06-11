@@ -4,20 +4,14 @@
   },
   "Home": {
     "portfolioAriaLabel": "Portfolio sections",
-    "introText": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
     "photographyAriaLabel": "Open Photography page",
-    "photographyDescription": "A selection of photographic work.",
     "photographySeeGallery": "All photos",
     "photographyAllGalleries": "All galleries",
     "videoAriaLabel": "Open Video page",
-    "videoDescription": "Video projects and productions.",
     "videoSeeProject": "See full project",
     "videoAllVideos": "All videos",
-    "graphicDesignDescription": "Visual identities, editorial design, and graphic projects.",
     "blogAriaLabel": "Open Blog page",
-    "blogDescription": "Updates, reflections and thoughts on projects.",
-    "contactTitle": "Contact",
-    "contactDescription": "For collaborations, commissions or questions, fill in the form: I'll reply by email."
+    "contactTitle": "Contact"
   },
   "Nav": {
     "label": "Portfolio areas",
