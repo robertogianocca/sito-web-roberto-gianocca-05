@@ -9,6 +9,8 @@ const labelClass = "mb-1 block text-xs font-semibold uppercase tracking-wider te
 
 function EditableList({ label, items, onChange }) {
   const [newValue, setNewValue] = useState("");
+  const [editingIndex, setEditingIndex] = useState(null);
+  const [editValue, setEditValue] = useState("");
 
   function addItem() {
     const trimmed = newValue.trim();
@@ -18,8 +20,29 @@ function EditableList({ label, items, onChange }) {
     setNewValue("");
   }
 
-  function removeItem(item) {
-    onChange(items.filter((i) => i !== item));
+  function removeItem(index) {
+    onChange(items.filter((_, i) => i !== index));
+  }
+
+  function startEdit(index) {
+    setEditingIndex(index);
+    setEditValue(items[index]);
+  }
+
+  function confirmEdit() {
+    const trimmed = editValue.trim();
+    if (trimmed && (trimmed === items[editingIndex] || !items.includes(trimmed))) {
+      const next = [...items];
+      next[editingIndex] = trimmed;
+      onChange(next);
+    }
+    setEditingIndex(null);
+    setEditValue("");
+  }
+
+  function cancelEdit() {
+    setEditingIndex(null);
+    setEditValue("");
   }
 
   return (
@@ -29,24 +52,69 @@ function EditableList({ label, items, onChange }) {
         {items.length === 0 && (
           <span className="text-xs text-zinc-400 italic">No items yet</span>
         )}
-        {items.map((item) => (
-          <span
-            key={item}
-            className="flex items-center gap-1 rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-700"
-          >
-            {item}
-            <button
-              type="button"
-              aria-label={`Remove ${item}`}
-              onClick={() => removeItem(item)}
-              className="ml-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full text-zinc-400 transition hover:bg-zinc-300 hover:text-zinc-700"
+        {items.map((item, index) =>
+          editingIndex === index ? (
+            <span
+              key={index}
+              className="flex items-center gap-1 rounded-full bg-zinc-200 px-2 py-0.5"
             >
-              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} className="h-2.5 w-2.5" aria-hidden>
-                <path d="M18 6 6 18M6 6l12 12" />
-              </svg>
-            </button>
-          </span>
-        ))}
+              <input
+                autoFocus
+                className="w-28 rounded bg-white px-1.5 py-0.5 text-xs text-foreground outline-none ring-1 ring-zinc-300 focus:ring-zinc-400"
+                value={editValue}
+                onChange={(e) => setEditValue(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") { e.preventDefault(); confirmEdit(); }
+                  if (e.key === "Escape") cancelEdit();
+                }}
+              />
+              <button
+                type="button"
+                aria-label="Confirm rename"
+                onClick={confirmEdit}
+                className="flex h-3.5 w-3.5 items-center justify-center rounded-full text-emerald-600 transition hover:bg-emerald-100"
+              >
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} className="h-2.5 w-2.5" aria-hidden>
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                aria-label="Cancel rename"
+                onClick={cancelEdit}
+                className="flex h-3.5 w-3.5 items-center justify-center rounded-full text-zinc-400 transition hover:bg-zinc-300 hover:text-zinc-700"
+              >
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} className="h-2.5 w-2.5" aria-hidden>
+                  <path d="M18 6 6 18M6 6l12 12" />
+                </svg>
+              </button>
+            </span>
+          ) : (
+            <span
+              key={index}
+              className="flex items-center gap-1 rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-700"
+            >
+              <button
+                type="button"
+                aria-label={`Rename ${item}`}
+                onClick={() => startEdit(index)}
+                className="transition hover:text-zinc-900"
+              >
+                {item}
+              </button>
+              <button
+                type="button"
+                aria-label={`Remove ${item}`}
+                onClick={() => removeItem(index)}
+                className="ml-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full text-zinc-400 transition hover:bg-zinc-300 hover:text-zinc-700"
+              >
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} className="h-2.5 w-2.5" aria-hidden>
+                  <path d="M18 6 6 18M6 6l12 12" />
+                </svg>
+              </button>
+            </span>
+          )
+        )}
       </div>
       <div className="flex gap-1.5">
         <input
