@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { readProjects } from "@/lib/archive";
+import { ensureInit } from "@/lib/turso";
 import ExcelJS from "exceljs";
 
 function checkAuth(request) {
@@ -14,13 +15,12 @@ const COLUMNS = [
   { header: "Title", key: "title", width: 32 },
   { header: "Client", key: "client", width: 22 },
   { header: "Type", key: "type", width: 16 },
-  { header: "Date", key: "date", width: 12 },
+  { header: "Date", key: "date", width: 14 },
   { header: "Location", key: "location", width: 22 },
   { header: "Archive Drive", key: "archiveDrive", width: 16 },
   { header: "Backup Drive", key: "backupDrive", width: 16 },
   { header: "Cleaned", key: "cleaned", width: 10 },
   { header: "Backup Completed", key: "backupCompleted", width: 18 },
-  { header: "Verified", key: "verified", width: 10 },
   { header: "Notes", key: "notes", width: 40 },
   { header: "Tags", key: "tags", width: 30 },
   { header: "Created At", key: "createdAt", width: 22 },
@@ -41,6 +41,7 @@ export async function GET(request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  await ensureInit();
   const { searchParams } = new URL(request.url);
   const format = searchParams.get("format") ?? "xlsx";
   const projects = await readProjects();
@@ -87,7 +88,6 @@ export async function GET(request) {
       ...p,
       cleaned: boolStr(p.cleaned),
       backupCompleted: boolStr(p.backupCompleted),
-      verified: boolStr(p.verified),
       tags: Array.isArray(p.tags) ? p.tags.join(", ") : "",
     });
     row.height = 18;

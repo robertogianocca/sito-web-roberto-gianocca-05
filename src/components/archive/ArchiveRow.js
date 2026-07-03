@@ -64,9 +64,6 @@ export function ArchiveRow({ project, onEdit }) {
       <td className="px-3 py-2 text-center">
         <Check value={project.backupCompleted} />
       </td>
-      <td className="px-3 py-2 text-center">
-        <Check value={project.verified} />
-      </td>
     </tr>
   );
 }

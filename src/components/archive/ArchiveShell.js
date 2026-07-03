@@ -7,9 +7,13 @@ import { ExportButton } from "./ExportButton";
 import { StatusLegend } from "./StatusLegend";
 import { ArchiveTable } from "./ArchiveTable";
 import { ProjectDrawer } from "./ProjectDrawer";
+import { SettingsDrawer } from "./SettingsDrawer";
 import { getStatus } from "./archiveStatus";
 
-export function ArchiveShell({ archiveDrives, backupDrives, projectTypes, initialClients, locale, logoutAction }) {
+export function ArchiveShell({ initialSettings, initialClients, locale, logoutAction }) {
+  const [settings, setSettings] = useState(
+    initialSettings ?? { projectTypes: [], archiveDrives: [], backupDrives: [] }
+  );
   const [projects, setProjects] = useState([]);
   const [clients, setClients] = useState(initialClients ?? []);
   const [loading, setLoading] = useState(true);
@@ -24,6 +28,7 @@ export function ArchiveShell({ archiveDrives, backupDrives, projectTypes, initia
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingProject, setEditingProject] = useState(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   async function fetchProjects() {
     setLoading(true);
@@ -64,7 +69,6 @@ export function ArchiveShell({ archiveDrives, backupDrives, projectTypes, initia
           p.client?.toLowerCase().includes(q) ||
           p.projectId?.toLowerCase().includes(q) ||
           p.invoiceNumber?.toLowerCase().includes(q) ||
-          p.workNumber?.toLowerCase().includes(q) ||
           p.tags?.some((t) => t.toLowerCase().includes(q))
       );
     }
@@ -150,6 +154,11 @@ export function ArchiveShell({ archiveDrives, backupDrives, projectTypes, initia
     setProjects((prev) => prev.filter((p) => p.id !== id));
   }, []);
 
+  const handleSettingsSaved = useCallback((newSettings, newClients) => {
+    setSettings(newSettings);
+    setClients(newClients);
+  }, []);
+
   return (
     <div className="flex h-full flex-col overflow-hidden">
       <header className="border-b border-zinc-200 bg-background px-6 py-4">
@@ -167,6 +176,24 @@ export function ArchiveShell({ archiveDrives, backupDrives, projectTypes, initia
           </div>
           <div className="flex items-center gap-2">
             <ExportButton />
+            <button
+              onClick={() => setSettingsOpen(true)}
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700"
+              title="Settings"
+              aria-label="Open settings"
+            >
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={1.75}
+                aria-hidden
+              >
+                <circle cx="12" cy="12" r="3" />
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+              </svg>
+            </button>
             <button
               onClick={openNew}
               className="flex h-8 items-center gap-1.5 rounded-lg bg-zinc-900 px-3 text-sm font-medium text-zinc-50 transition hover:bg-zinc-700"
@@ -216,7 +243,7 @@ export function ArchiveShell({ archiveDrives, backupDrives, projectTypes, initia
               filterStatus={filterStatus}
               sortKey={sortKey}
               sortDir={sortDir}
-              projectTypes={projectTypes}
+              projectTypes={settings.projectTypes}
               availableYears={availableYears}
               onFilterType={setFilterType}
               onFilterYear={setFilterYear}
@@ -251,13 +278,21 @@ export function ArchiveShell({ archiveDrives, backupDrives, projectTypes, initia
       <ProjectDrawer
         open={drawerOpen}
         project={editingProject}
-        archiveDrives={archiveDrives}
-        backupDrives={backupDrives}
-        projectTypes={projectTypes}
+        archiveDrives={settings.archiveDrives}
+        backupDrives={settings.backupDrives}
+        projectTypes={settings.projectTypes}
         clients={clients}
         onClose={closeDrawer}
         onSave={handleSave}
         onDelete={handleDelete}
+      />
+
+      <SettingsDrawer
+        open={settingsOpen}
+        settings={settings}
+        clients={clients}
+        onClose={() => setSettingsOpen(false)}
+        onSaved={handleSettingsSaved}
       />
     </div>
   );

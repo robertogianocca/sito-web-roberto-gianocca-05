@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { readProjects, writeProjects, generateId } from "@/lib/archive";
+import { readProjects, createProject, generateId } from "@/lib/archive";
+import { ensureInit } from "@/lib/turso";
 
 function checkAuth(request) {
   const session = request.cookies.get("archive_session");
@@ -11,6 +12,7 @@ export async function GET(request) {
   if (!checkAuth(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  await ensureInit();
   const projects = await readProjects();
   return NextResponse.json(projects);
 }
@@ -27,7 +29,7 @@ export async function POST(request) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const projects = await readProjects();
+  await ensureInit();
   const now = new Date().toISOString();
 
   const project = {
@@ -43,14 +45,12 @@ export async function POST(request) {
     backupDrive: body.backupDrive ?? "",
     cleaned: Boolean(body.cleaned),
     backupCompleted: Boolean(body.backupCompleted),
-    verified: Boolean(body.verified),
     notes: body.notes ?? "",
     tags: Array.isArray(body.tags) ? body.tags : [],
     createdAt: now,
     updatedAt: now,
   };
 
-  projects.push(project);
-  await writeProjects(projects);
+  await createProject(project);
   return NextResponse.json(project, { status: 201 });
 }

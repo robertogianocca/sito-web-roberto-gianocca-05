@@ -41,7 +41,6 @@ export function ArchiveTable({ projects, onEdit }) {
             <th className={thClass}>Backup</th>
             <th className={thCenterClass}>Cleaned</th>
             <th className={thCenterClass}>Backed up</th>
-            <th className={thCenterClass}>Verified</th>
           </tr>
         </thead>
         <tbody>

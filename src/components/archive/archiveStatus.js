@@ -1,17 +1,15 @@
 /**
  * Derives the 4-level status of a project from its fields.
  *
- * complete    — cleaned + backupCompleted + verified all true
- * partial     — at least one of the three is true
+ * complete    — cleaned + backupCompleted both true
+ * partial     — at least one is true
  * open        — archiveDrive set but nothing done yet
  * unarchived  — no archiveDrive set
  */
 export function getStatus(project) {
   if (!project.archiveDrive) return "unarchived";
-  if (project.cleaned && project.backupCompleted && project.verified)
-    return "complete";
-  if (project.cleaned || project.backupCompleted || project.verified)
-    return "partial";
+  if (project.cleaned && project.backupCompleted) return "complete";
+  if (project.cleaned || project.backupCompleted) return "partial";
   return "open";
 }
 

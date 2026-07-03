@@ -14,7 +14,6 @@ const EMPTY_FORM = {
   backupDrive: "",
   cleaned: false,
   backupCompleted: false,
-  verified: false,
   notes: "",
   tags: [],
 };
@@ -69,6 +68,9 @@ const NEW_CLIENT_VALUE = "__new__";
 function ClientCombobox({ clients, value, onChange }) {
   const [addingNew, setAddingNew] = useState(false);
   const [newName, setNewName] = useState("");
+  const [localExtra, setLocalExtra] = useState([]);
+
+  const allClients = [...clients, ...localExtra.filter((n) => !clients.includes(n))];
 
   function handleSelectChange(e) {
     if (e.target.value === NEW_CLIENT_VALUE) {
@@ -81,7 +83,10 @@ function ClientCombobox({ clients, value, onChange }) {
 
   function confirmNew() {
     const name = newName.trim();
-    if (name) onChange(name);
+    if (name) {
+      setLocalExtra((prev) => (prev.includes(name) ? prev : [...prev, name]));
+      onChange(name);
+    }
     setAddingNew(false);
     setNewName("");
   }
@@ -132,7 +137,7 @@ function ClientCombobox({ clients, value, onChange }) {
         onChange={handleSelectChange}
       >
         <option value="">— Select —</option>
-        {clients.map((c) => (
+        {allClients.map((c) => (
           <option key={c} value={c}>
             {c}
           </option>
@@ -515,12 +520,6 @@ export function ProjectDrawer({
                   label="Backup completed"
                   checked={form.backupCompleted}
                   onChange={(v) => set("backupCompleted", v)}
-                />
-                <ToggleCheckbox
-                  id="f-verified"
-                  label="Archive verified"
-                  checked={form.verified}
-                  onChange={(v) => set("verified", v)}
                 />
               </div>
             </section>
