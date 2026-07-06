@@ -9,4 +9,5 @@
 | Testi di sezione homepage (short description) | [home-section-copy.md](./home-section-copy.md) |
 | Tuning rotella / inerzia / hint scroll | [horizontal-wheel-tuning.md](./horizontal-wheel-tuning.md) |
 | Form contatti (Resend) | [contact-form-resend.md](./contact-form-resend.md) |
+| Archivio progetti privato (Turso) | [archive.md](./archive.md) |
 | Player video (VidStack + Vimeo) | [vidstack-player.md](./vidstack-player.md) |
