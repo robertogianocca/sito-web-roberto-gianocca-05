@@ -1,17 +1,17 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 const EMPTY_FORM = {
   projectId: "",
   invoiceNumber: "",
   title: "",
-  client: "",
-  type: "",
+  client: [],
+  type: [],
   date: "",
   location: "",
-  archiveDrive: "",
-  backupDrive: "",
+  archiveDrive: [],
+  backupDrive: [],
   cleaned: false,
   backupCompleted: false,
   notes: "",
@@ -63,97 +63,235 @@ function ToggleCheckbox({ id, label, checked, onChange }) {
   );
 }
 
-const NEW_CLIENT_VALUE = "__new__";
+function MultiSelectPills({ options, selected, onChange, placeholder }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
 
-function ClientCombobox({ clients, value, onChange }) {
+  useEffect(() => {
+    if (!open) return;
+    function handleClick(e) {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [open]);
+
+  function toggle(option) {
+    if (selected.includes(option)) {
+      onChange(selected.filter((s) => s !== option));
+    } else {
+      onChange([...selected, option]);
+    }
+  }
+
+  function remove(option) {
+    onChange(selected.filter((s) => s !== option));
+  }
+
+  return (
+    <div ref={ref} className="relative">
+      <div
+        className="min-h-9 cursor-pointer rounded-lg border border-zinc-300 bg-background px-2 py-1.5 focus-within:ring-2 focus-within:ring-zinc-400"
+        onClick={() => setOpen((v) => !v)}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setOpen((v) => !v); }}}
+      >
+        <div className="flex flex-wrap gap-1">
+          {selected.length === 0 && (
+            <span className="py-0.5 text-sm text-zinc-400">{placeholder ?? "— Select —"}</span>
+          )}
+          {selected.map((item) => (
+            <span
+              key={item}
+              className="flex items-center gap-1 rounded-md bg-zinc-200 px-2 py-0.5 text-xs font-medium text-zinc-700"
+            >
+              {item}
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); remove(item); }}
+                className="ml-0.5 text-zinc-400 transition hover:text-zinc-700"
+                aria-label={`Remove ${item}`}
+              >
+                ×
+              </button>
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {open && options.length > 0 && (
+        <div className="absolute z-50 mt-1 w-full rounded-lg border border-zinc-200 bg-white py-1 shadow-lg">
+          {options.map((option) => {
+            const active = selected.includes(option);
+            return (
+              <button
+                key={option}
+                type="button"
+                onClick={() => toggle(option)}
+                className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm transition ${
+                  active ? "bg-zinc-100 font-medium text-zinc-900" : "text-zinc-700 hover:bg-zinc-50"
+                }`}
+              >
+                <span
+                  className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
+                    active ? "border-zinc-700 bg-zinc-700" : "border-zinc-300"
+                  }`}
+                >
+                  {active && (
+                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3} className="h-2.5 w-2.5 text-white" aria-hidden>
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  )}
+                </span>
+                {option}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MultiClientPills({ clients, selected, onChange }) {
+  const [open, setOpen] = useState(false);
   const [addingNew, setAddingNew] = useState(false);
   const [newName, setNewName] = useState("");
   const [localExtra, setLocalExtra] = useState([]);
+  const ref = useRef(null);
 
   const allClients = [...clients, ...localExtra.filter((n) => !clients.includes(n))];
 
-  function handleSelectChange(e) {
-    if (e.target.value === NEW_CLIENT_VALUE) {
-      setAddingNew(true);
-      setNewName("");
-    } else {
-      onChange(e.target.value);
+  useEffect(() => {
+    if (!open) return;
+    function handleClick(e) {
+      if (ref.current && !ref.current.contains(e.target)) {
+        setOpen(false);
+        setAddingNew(false);
+        setNewName("");
+      }
     }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [open]);
+
+  function toggle(name) {
+    if (selected.includes(name)) {
+      onChange(selected.filter((s) => s !== name));
+    } else {
+      onChange([...selected, name]);
+    }
+  }
+
+  function remove(name) {
+    onChange(selected.filter((s) => s !== name));
   }
 
   function confirmNew() {
     const name = newName.trim();
     if (name) {
       setLocalExtra((prev) => (prev.includes(name) ? prev : [...prev, name]));
-      onChange(name);
+      if (!selected.includes(name)) {
+        onChange([...selected, name]);
+      }
     }
     setAddingNew(false);
     setNewName("");
   }
 
-  function cancelNew() {
-    setAddingNew(false);
-    setNewName("");
-  }
-
-  if (addingNew) {
-    return (
-      <div className="flex gap-1.5">
-        <input
-          autoFocus
-          className={`${inputClass} flex-1`}
-          value={newName}
-          onChange={(e) => setNewName(e.target.value)}
-          placeholder="New client name"
-          onKeyDown={(e) => {
-            if (e.key === "Enter") { e.preventDefault(); confirmNew(); }
-            if (e.key === "Escape") cancelNew();
-          }}
-        />
-        <button
-          type="button"
-          onClick={confirmNew}
-          className="rounded-lg bg-zinc-900 px-2.5 text-xs font-medium text-zinc-50 transition hover:bg-zinc-700"
-        >
-          Add
-        </button>
-        <button
-          type="button"
-          onClick={cancelNew}
-          className="rounded-lg border border-zinc-200 px-2.5 text-xs text-zinc-500 transition hover:bg-zinc-100"
-        >
-          ×
-        </button>
-      </div>
-    );
-  }
-
   return (
-    <div className="relative">
-      <select
-        id="f-client"
-        className={`${inputClass} appearance-none pr-7`}
-        value={value}
-        onChange={handleSelectChange}
+    <div ref={ref} className="relative">
+      <div
+        className="min-h-9 cursor-pointer rounded-lg border border-zinc-300 bg-background px-2 py-1.5 focus-within:ring-2 focus-within:ring-zinc-400"
+        onClick={() => setOpen((v) => !v)}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setOpen((v) => !v); }}}
       >
-        <option value="">— Select —</option>
-        {allClients.map((c) => (
-          <option key={c} value={c}>
-            {c}
-          </option>
-        ))}
-        <option value={NEW_CLIENT_VALUE}>＋ New client…</option>
-      </select>
-      <svg
-        className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-        strokeWidth={2}
-        aria-hidden
-      >
-        <path d="m6 9 6 6 6-6" />
-      </svg>
+        <div className="flex flex-wrap gap-1">
+          {selected.length === 0 && (
+            <span className="py-0.5 text-sm text-zinc-400">— Select —</span>
+          )}
+          {selected.map((name) => (
+            <span
+              key={name}
+              className="flex items-center gap-1 rounded-md bg-zinc-200 px-2 py-0.5 text-xs font-medium text-zinc-700"
+            >
+              {name}
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); remove(name); }}
+                className="ml-0.5 text-zinc-400 transition hover:text-zinc-700"
+                aria-label={`Remove ${name}`}
+              >
+                ×
+              </button>
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {open && (
+        <div className="absolute z-50 mt-1 w-full rounded-lg border border-zinc-200 bg-white py-1 shadow-lg">
+          {allClients.map((name) => {
+            const active = selected.includes(name);
+            return (
+              <button
+                key={name}
+                type="button"
+                onClick={() => toggle(name)}
+                className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm transition ${
+                  active ? "bg-zinc-100 font-medium text-zinc-900" : "text-zinc-700 hover:bg-zinc-50"
+                }`}
+              >
+                <span
+                  className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
+                    active ? "border-zinc-700 bg-zinc-700" : "border-zinc-300"
+                  }`}
+                >
+                  {active && (
+                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3} className="h-2.5 w-2.5 text-white" aria-hidden>
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  )}
+                </span>
+                {name}
+              </button>
+            );
+          })}
+
+          {addingNew ? (
+            <div className="flex gap-1.5 px-3 py-1.5">
+              <input
+                autoFocus
+                className="flex-1 rounded border border-zinc-300 px-2 py-1 text-xs text-foreground outline-none focus:border-zinc-400"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                placeholder="New client name"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") { e.preventDefault(); confirmNew(); }
+                  if (e.key === "Escape") { setAddingNew(false); setNewName(""); }
+                }}
+              />
+              <button type="button" onClick={confirmNew} className="rounded bg-zinc-900 px-2 text-xs font-medium text-white transition hover:bg-zinc-700">
+                Add
+              </button>
+              <button type="button" onClick={() => { setAddingNew(false); setNewName(""); }} className="rounded border border-zinc-200 px-2 text-xs text-zinc-500 transition hover:bg-zinc-100">
+                ×
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); setAddingNew(true); }}
+              className="flex w-full items-center gap-2 border-t border-zinc-100 px-3 py-1.5 text-left text-sm text-zinc-500 transition hover:bg-zinc-50"
+            >
+              <span className="text-base leading-none">＋</span> New client…
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -233,7 +371,18 @@ export function ProjectDrawer({
 
   useEffect(() => {
     if (open) {
-      setForm(project ? { ...EMPTY_FORM, ...project } : { ...EMPTY_FORM });
+      if (project) {
+        setForm({
+          ...EMPTY_FORM,
+          ...project,
+          client: Array.isArray(project.client) ? project.client : (project.client ? [project.client] : []),
+          type: Array.isArray(project.type) ? project.type : (project.type ? [project.type] : []),
+          archiveDrive: Array.isArray(project.archiveDrive) ? project.archiveDrive : (project.archiveDrive ? [project.archiveDrive] : []),
+          backupDrive: Array.isArray(project.backupDrive) ? project.backupDrive : (project.backupDrive ? [project.backupDrive] : []),
+        });
+      } else {
+        setForm({ ...EMPTY_FORM });
+      }
       setConfirmDelete(false);
       setError(null);
     }
@@ -370,44 +519,20 @@ export function ProjectDrawer({
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className={labelClass} htmlFor="f-client">
-                      Client
-                    </label>
-                    <ClientCombobox
+                    <label className={labelClass}>Client</label>
+                    <MultiClientPills
                       clients={clients}
-                      value={form.client}
+                      selected={form.client}
                       onChange={(v) => set("client", v)}
                     />
                   </div>
                   <div>
-                    <label className={labelClass} htmlFor="f-type">
-                      Type
-                    </label>
-                    <div className="relative">
-                      <select
-                        id="f-type"
-                        className={`${inputClass} appearance-none pr-7`}
-                        value={form.type}
-                        onChange={(e) => set("type", e.target.value)}
-                      >
-                        <option value="">— Select —</option>
-                        {projectTypes.map((t) => (
-                          <option key={t} value={t}>
-                            {t}
-                          </option>
-                        ))}
-                      </select>
-                      <svg
-                        className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        strokeWidth={2}
-                        aria-hidden
-                      >
-                        <path d="m6 9 6 6 6-6" />
-                      </svg>
-                    </div>
+                    <label className={labelClass}>Type</label>
+                    <MultiSelectPills
+                      options={projectTypes}
+                      selected={form.type}
+                      onChange={(v) => set("type", v)}
+                    />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
@@ -444,64 +569,22 @@ export function ProjectDrawer({
               <p className={sectionTitle}>Storage</p>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className={labelClass} htmlFor="f-archiveDrive">
-                    Archive drive
-                  </label>
-                  <div className="relative">
-                    <select
-                      id="f-archiveDrive"
-                      className={`${inputClass} appearance-none pr-7`}
-                      value={form.archiveDrive}
-                      onChange={(e) => set("archiveDrive", e.target.value)}
-                    >
-                      <option value="">— None —</option>
-                      {archiveDrives.map((d) => (
-                        <option key={d} value={d}>
-                          {d}
-                        </option>
-                      ))}
-                    </select>
-                    <svg
-                      className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                      aria-hidden
-                    >
-                      <path d="m6 9 6 6 6-6" />
-                    </svg>
-                  </div>
+                  <label className={labelClass}>Archive drive</label>
+                  <MultiSelectPills
+                    options={archiveDrives}
+                    selected={form.archiveDrive}
+                    onChange={(v) => set("archiveDrive", v)}
+                    placeholder="— None —"
+                  />
                 </div>
                 <div>
-                  <label className={labelClass} htmlFor="f-backupDrive">
-                    Backup drive
-                  </label>
-                  <div className="relative">
-                    <select
-                      id="f-backupDrive"
-                      className={`${inputClass} appearance-none pr-7`}
-                      value={form.backupDrive}
-                      onChange={(e) => set("backupDrive", e.target.value)}
-                    >
-                      <option value="">— None —</option>
-                      {backupDrives.map((d) => (
-                        <option key={d} value={d}>
-                          {d}
-                        </option>
-                      ))}
-                    </select>
-                    <svg
-                      className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                      aria-hidden
-                    >
-                      <path d="m6 9 6 6 6-6" />
-                    </svg>
-                  </div>
+                  <label className={labelClass}>Backup drive</label>
+                  <MultiSelectPills
+                    options={backupDrives}
+                    selected={form.backupDrive}
+                    onChange={(v) => set("backupDrive", v)}
+                    placeholder="— None —"
+                  />
                 </div>
               </div>
             </section>

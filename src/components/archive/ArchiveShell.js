@@ -66,7 +66,7 @@ export function ArchiveShell({ initialSettings, initialClients, locale, logoutAc
       result = result.filter(
         (p) =>
           p.title?.toLowerCase().includes(q) ||
-          p.client?.toLowerCase().includes(q) ||
+          (Array.isArray(p.client) ? p.client.some((c) => c.toLowerCase().includes(q)) : p.client?.toLowerCase().includes(q)) ||
           p.projectId?.toLowerCase().includes(q) ||
           p.invoiceNumber?.toLowerCase().includes(q) ||
           p.tags?.some((t) => t.toLowerCase().includes(q))
@@ -74,7 +74,9 @@ export function ArchiveShell({ initialSettings, initialClients, locale, logoutAc
     }
 
     if (filterType !== "all") {
-      result = result.filter((p) => p.type === filterType);
+      result = result.filter((p) =>
+        Array.isArray(p.type) ? p.type.includes(filterType) : p.type === filterType
+      );
     }
 
     if (filterYear !== "all") {
@@ -86,8 +88,8 @@ export function ArchiveShell({ initialSettings, initialClients, locale, logoutAc
     }
 
     return [...result].sort((a, b) => {
-      let av = a[sortKey] ?? "";
-      let bv = b[sortKey] ?? "";
+      let av = Array.isArray(a[sortKey]) ? (a[sortKey][0] ?? "") : (a[sortKey] ?? "");
+      let bv = Array.isArray(b[sortKey]) ? (b[sortKey][0] ?? "") : (b[sortKey] ?? "");
       if (typeof av === "string") av = av.toLowerCase();
       if (typeof bv === "string") bv = bv.toLowerCase();
       if (av < bv) return sortDir === "asc" ? -1 : 1;
@@ -112,17 +114,19 @@ export function ArchiveShell({ initialSettings, initialClients, locale, logoutAc
   }, []);
 
   const handleSave = useCallback(async (form) => {
-    const clientName = form.client?.trim();
-    if (clientName && !clients.includes(clientName)) {
-      const res = await fetch("/api/archive/clients", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: clientName }),
-      });
-      if (res.ok) {
-        const updated = await res.json();
-        setClients(updated);
+    const newClients = (Array.isArray(form.client) ? form.client : [])
+      .filter((name) => name && !clients.includes(name));
+    if (newClients.length > 0) {
+      let updated = clients;
+      for (const name of newClients) {
+        const res = await fetch("/api/archive/clients", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name }),
+        });
+        if (res.ok) updated = await res.json();
       }
+      setClients(updated);
     }
 
     if (form.id) {

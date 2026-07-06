@@ -86,6 +86,10 @@ export async function GET(request) {
   for (const p of projects) {
     const row = sheet.addRow({
       ...p,
+      client: Array.isArray(p.client) ? p.client.join(", ") : (p.client ?? ""),
+      type: Array.isArray(p.type) ? p.type.join(", ") : (p.type ?? ""),
+      archiveDrive: Array.isArray(p.archiveDrive) ? p.archiveDrive.join(", ") : (p.archiveDrive ?? ""),
+      backupDrive: Array.isArray(p.backupDrive) ? p.backupDrive.join(", ") : (p.backupDrive ?? ""),
       cleaned: boolStr(p.cleaned),
       backupCompleted: boolStr(p.backupCompleted),
       tags: Array.isArray(p.tags) ? p.tags.join(", ") : "",

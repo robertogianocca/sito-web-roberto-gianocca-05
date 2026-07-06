@@ -1,27 +1,31 @@
 import { getTursoClient } from "./turso";
 
+function parseArrayField(val) {
+  if (!val) return [];
+  try {
+    const parsed = JSON.parse(val);
+    return Array.isArray(parsed) ? parsed : [String(parsed)];
+  } catch {
+    return [val];
+  }
+}
+
 function rowToProject(row) {
   return {
     id: row.id,
     projectId: row.projectId ?? "",
     invoiceNumber: row.invoiceNumber ?? "",
     title: row.title ?? "",
-    client: row.client ?? "",
-    type: row.type ?? "",
+    client: parseArrayField(row.client),
+    type: parseArrayField(row.type),
     date: row.date ?? "",
     location: row.location ?? "",
-    archiveDrive: row.archiveDrive ?? "",
-    backupDrive: row.backupDrive ?? "",
+    archiveDrive: parseArrayField(row.archiveDrive),
+    backupDrive: parseArrayField(row.backupDrive),
     cleaned: Boolean(row.cleaned),
     backupCompleted: Boolean(row.backupCompleted),
     notes: row.notes ?? "",
-    tags: (() => {
-      try {
-        return JSON.parse(row.tags || "[]");
-      } catch {
-        return [];
-      }
-    })(),
+    tags: parseArrayField(row.tags),
     createdAt: row.createdAt ?? "",
     updatedAt: row.updatedAt ?? "",
   };
@@ -47,16 +51,16 @@ export async function createProject(project) {
       project.projectId ?? "",
       project.invoiceNumber ?? "",
       project.title ?? "",
-      project.client ?? "",
-      project.type ?? "",
+      JSON.stringify(Array.isArray(project.client) ? project.client : []),
+      JSON.stringify(Array.isArray(project.type) ? project.type : []),
       project.date ?? "",
       project.location ?? "",
-      project.archiveDrive ?? "",
-      project.backupDrive ?? "",
+      JSON.stringify(Array.isArray(project.archiveDrive) ? project.archiveDrive : []),
+      JSON.stringify(Array.isArray(project.backupDrive) ? project.backupDrive : []),
       project.cleaned ? 1 : 0,
       project.backupCompleted ? 1 : 0,
       project.notes ?? "",
-      JSON.stringify(project.tags ?? []),
+      JSON.stringify(Array.isArray(project.tags) ? project.tags : []),
       project.createdAt ?? "",
       project.updatedAt ?? "",
     ],
@@ -74,16 +78,16 @@ export async function updateProject(id, fields) {
       fields.projectId ?? "",
       fields.invoiceNumber ?? "",
       fields.title ?? "",
-      fields.client ?? "",
-      fields.type ?? "",
+      JSON.stringify(Array.isArray(fields.client) ? fields.client : []),
+      JSON.stringify(Array.isArray(fields.type) ? fields.type : []),
       fields.date ?? "",
       fields.location ?? "",
-      fields.archiveDrive ?? "",
-      fields.backupDrive ?? "",
+      JSON.stringify(Array.isArray(fields.archiveDrive) ? fields.archiveDrive : []),
+      JSON.stringify(Array.isArray(fields.backupDrive) ? fields.backupDrive : []),
       fields.cleaned ? 1 : 0,
       fields.backupCompleted ? 1 : 0,
       fields.notes ?? "",
-      JSON.stringify(fields.tags ?? []),
+      JSON.stringify(Array.isArray(fields.tags) ? fields.tags : []),
       fields.updatedAt ?? new Date().toISOString(),
       id,
     ],
