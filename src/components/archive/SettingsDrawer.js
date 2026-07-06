@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 const inputClass =
   "w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-foreground placeholder-zinc-400 outline-none transition focus:border-zinc-400 focus:ring-1 focus:ring-zinc-300";
 
 const labelClass = "mb-1 block text-xs font-semibold uppercase tracking-wider text-zinc-500";
 
-function EditableList({ label, items, onChange }) {
+function EditableList({ label, items, onChange, onRename }) {
   const [newValue, setNewValue] = useState("");
   const [editingIndex, setEditingIndex] = useState(null);
   const [editValue, setEditValue] = useState("");
@@ -31,7 +31,11 @@ function EditableList({ label, items, onChange }) {
 
   function confirmEdit() {
     const trimmed = editValue.trim();
-    if (trimmed && (trimmed === items[editingIndex] || !items.includes(trimmed))) {
+    const oldName = items[editingIndex];
+    if (trimmed && (trimmed === oldName || !items.includes(trimmed))) {
+      if (trimmed !== oldName && onRename) {
+        onRename(oldName, trimmed);
+      }
       const next = [...items];
       next[editingIndex] = trimmed;
       onChange(next);
@@ -145,6 +149,16 @@ export function SettingsDrawer({ open, settings, clients, onClose, onSaved }) {
   const [localClients, setLocalClients] = useState([]);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
+  const renamesRef = useRef({
+    projectTypes: [],
+    archiveDrives: [],
+    backupDrives: [],
+    clients: [],
+  });
+
+  function pushRename(key, from, to) {
+    renamesRef.current[key].push({ from, to });
+  }
 
   useEffect(() => {
     if (open) {
@@ -153,6 +167,12 @@ export function SettingsDrawer({ open, settings, clients, onClose, onSaved }) {
       setBackupDrives(settings?.backupDrives ?? []);
       setLocalClients(clients ?? []);
       setSaveError(null);
+      renamesRef.current = {
+        projectTypes: [],
+        archiveDrives: [],
+        backupDrives: [],
+        clients: [],
+      };
     }
   }, [open, settings, clients]);
 
@@ -169,16 +189,41 @@ export function SettingsDrawer({ open, settings, clients, onClose, onSaved }) {
     setSaving(true);
     setSaveError(null);
     try {
+      const renames = renamesRef.current;
       const settingsRes = await fetch("/api/archive/settings", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ projectTypes, archiveDrives, backupDrives }),
+        body: JSON.stringify({
+          projectTypes,
+          archiveDrives,
+          backupDrives,
+          renames: {
+            projectTypes: renames.projectTypes,
+            archiveDrives: renames.archiveDrives,
+            backupDrives: renames.backupDrives,
+          },
+        }),
       });
       if (!settingsRes.ok) throw new Error("Failed to save settings.");
 
+      for (const { from, to } of renames.clients) {
+        const res = await fetch("/api/archive/clients", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ from, to }),
+        });
+        if (!res.ok) throw new Error("Failed to rename client.");
+      }
+
+      const renamedFrom = new Set(renames.clients.map((r) => r.from));
+      const renamedTo = new Set(renames.clients.map((r) => r.to));
       const currentClients = clients ?? [];
-      const toAdd = localClients.filter((c) => !currentClients.includes(c));
-      const toRemove = currentClients.filter((c) => !localClients.includes(c));
+      const toAdd = localClients.filter(
+        (c) => !currentClients.includes(c) && !renamedTo.has(c)
+      );
+      const toRemove = currentClients.filter(
+        (c) => !localClients.includes(c) && !renamedFrom.has(c)
+      );
 
       for (const name of toAdd) {
         await fetch("/api/archive/clients", {
@@ -196,7 +241,9 @@ export function SettingsDrawer({ open, settings, clients, onClose, onSaved }) {
       }
 
       const newSettings = await settingsRes.json();
-      onSaved(newSettings, localClients);
+      const clientsRes = await fetch("/api/archive/clients");
+      const updatedClients = clientsRes.ok ? await clientsRes.json() : localClients;
+      onSaved(newSettings, updatedClients);
       onClose();
     } catch (err) {
       setSaveError(err.message);
@@ -242,21 +289,25 @@ export function SettingsDrawer({ open, settings, clients, onClose, onSaved }) {
             label="Project Types"
             items={projectTypes}
             onChange={setProjectTypes}
+            onRename={(from, to) => pushRename("projectTypes", from, to)}
           />
           <EditableList
             label="Archive Drives"
             items={archiveDrives}
             onChange={setArchiveDrives}
+            onRename={(from, to) => pushRename("archiveDrives", from, to)}
           />
           <EditableList
             label="Backup Drives"
             items={backupDrives}
             onChange={setBackupDrives}
+            onRename={(from, to) => pushRename("backupDrives", from, to)}
           />
           <EditableList
             label="Clients"
             items={localClients}
             onChange={setLocalClients}
+            onRename={(from, to) => pushRename("clients", from, to)}
           />
         </div>
 

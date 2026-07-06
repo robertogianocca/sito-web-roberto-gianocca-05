@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { readSettings, writeSettings } from "@/lib/archive";
+import { readSettings, writeSettings, cascadeFieldRename } from "@/lib/archive";
 import { ensureInit } from "@/lib/turso";
 
 function checkAuth(request) {
@@ -37,5 +37,19 @@ export async function PUT(request) {
 
   await ensureInit();
   await writeSettings(settings);
+
+  const fieldMap = {
+    projectTypes: "type",
+    archiveDrives: "archiveDrive",
+    backupDrives: "backupDrive",
+  };
+  for (const [key, dbField] of Object.entries(fieldMap)) {
+    for (const { from, to } of body.renames?.[key] ?? []) {
+      if (typeof from === "string" && typeof to === "string") {
+        await cascadeFieldRename(dbField, from.trim(), to.trim());
+      }
+    }
+  }
+
   return NextResponse.json(settings);
 }

@@ -161,6 +161,22 @@ export async function writeSettings(settings) {
   );
 }
 
+const RENAMEABLE_FIELDS = new Set([
+  "type",
+  "archiveDrive",
+  "backupDrive",
+  "client",
+]);
+
+export async function cascadeFieldRename(dbField, from, to) {
+  if (!RENAMEABLE_FIELDS.has(dbField) || !from || !to || from === to) return;
+  const db = getTursoClient();
+  await db.execute({
+    sql: `UPDATE projects SET ${dbField} = REPLACE(${dbField}, ?, ?) WHERE ${dbField} LIKE ?`,
+    args: [`"${from}"`, `"${to}"`, `%"${from}"%`],
+  });
+}
+
 export function generateId() {
   return `arc_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 }

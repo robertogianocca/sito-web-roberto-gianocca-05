@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { readClients, addClient, deleteClient } from "@/lib/archive";
+import { readClients, addClient, deleteClient, cascadeFieldRename } from "@/lib/archive";
 import { ensureInit } from "@/lib/turso";
 
 function checkAuth(request) {
@@ -36,6 +36,36 @@ export async function POST(request) {
 
   await ensureInit();
   const clients = await addClient(name);
+  return NextResponse.json(clients);
+}
+
+export async function PUT(request) {
+  if (!checkAuth(request)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+
+  const from = String(body.from ?? "").trim();
+  const to = String(body.to ?? "").trim();
+  if (!from || !to) {
+    return NextResponse.json({ error: "from and to are required" }, { status: 400 });
+  }
+  if (from === to) {
+    await ensureInit();
+    const clients = await readClients();
+    return NextResponse.json(clients);
+  }
+
+  await ensureInit();
+  await deleteClient(from);
+  const clients = await addClient(to);
+  await cascadeFieldRename("client", from, to);
   return NextResponse.json(clients);
 }
 

@@ -158,9 +158,15 @@ export function ArchiveShell({ initialSettings, initialClients, locale, logoutAc
     setProjects((prev) => prev.filter((p) => p.id !== id));
   }, []);
 
-  const handleSettingsSaved = useCallback((newSettings, newClients) => {
+  const handleSettingsSaved = useCallback(async (newSettings, newClients) => {
     setSettings(newSettings);
     setClients(newClients);
+    try {
+      const res = await fetch("/api/archive");
+      if (res.ok) setProjects(await res.json());
+    } catch {
+      // ignore refetch errors
+    }
   }, []);
 
   return (
