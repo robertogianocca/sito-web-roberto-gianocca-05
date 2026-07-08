@@ -34,6 +34,7 @@ export async function PUT(request, { params }) {
     location: body.location ?? "",
     archiveDrive: Array.isArray(body.archiveDrive) ? body.archiveDrive : [],
     backupDrive: Array.isArray(body.backupDrive) ? body.backupDrive : [],
+    size: body.size ?? "",
     cleaned: Boolean(body.cleaned),
     backupCompleted: Boolean(body.backupCompleted),
     notes: body.notes ?? "",

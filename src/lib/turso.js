@@ -53,6 +53,10 @@ export async function ensureInit() {
     value TEXT NOT NULL
   )`);
 
+  await db
+    .execute("ALTER TABLE projects ADD COLUMN size TEXT NOT NULL DEFAULT ''")
+    .catch(() => {});
+
   const { rows } = await db.execute("SELECT COUNT(*) as count FROM settings");
   const count = Number(rows[0]?.count ?? 0);
 

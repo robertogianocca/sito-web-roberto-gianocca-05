@@ -22,6 +22,7 @@ function rowToProject(row) {
     location: row.location ?? "",
     archiveDrive: parseArrayField(row.archiveDrive),
     backupDrive: parseArrayField(row.backupDrive),
+    size: row.size ?? "",
     cleaned: Boolean(row.cleaned),
     backupCompleted: Boolean(row.backupCompleted),
     notes: row.notes ?? "",
@@ -44,8 +45,8 @@ export async function createProject(project) {
   await db.execute({
     sql: `INSERT INTO projects
       (id, projectId, invoiceNumber, title, client, type, date, location,
-       archiveDrive, backupDrive, cleaned, backupCompleted, notes, tags, createdAt, updatedAt)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+       archiveDrive, backupDrive, size, cleaned, backupCompleted, notes, tags, createdAt, updatedAt)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     args: [
       project.id,
       project.projectId ?? "",
@@ -57,6 +58,7 @@ export async function createProject(project) {
       project.location ?? "",
       JSON.stringify(Array.isArray(project.archiveDrive) ? project.archiveDrive : []),
       JSON.stringify(Array.isArray(project.backupDrive) ? project.backupDrive : []),
+      project.size ?? "",
       project.cleaned ? 1 : 0,
       project.backupCompleted ? 1 : 0,
       project.notes ?? "",
@@ -72,7 +74,7 @@ export async function updateProject(id, fields) {
   await db.execute({
     sql: `UPDATE projects SET
       projectId=?, invoiceNumber=?, title=?, client=?, type=?, date=?, location=?,
-      archiveDrive=?, backupDrive=?, cleaned=?, backupCompleted=?, notes=?, tags=?, updatedAt=?
+      archiveDrive=?, backupDrive=?, size=?, cleaned=?, backupCompleted=?, notes=?, tags=?, updatedAt=?
       WHERE id=?`,
     args: [
       fields.projectId ?? "",
@@ -84,6 +86,7 @@ export async function updateProject(id, fields) {
       fields.location ?? "",
       JSON.stringify(Array.isArray(fields.archiveDrive) ? fields.archiveDrive : []),
       JSON.stringify(Array.isArray(fields.backupDrive) ? fields.backupDrive : []),
+      fields.size ?? "",
       fields.cleaned ? 1 : 0,
       fields.backupCompleted ? 1 : 0,
       fields.notes ?? "",

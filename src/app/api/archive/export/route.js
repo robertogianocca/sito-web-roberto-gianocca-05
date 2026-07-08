@@ -19,6 +19,7 @@ const COLUMNS = [
   { header: "Location", key: "location", width: 22 },
   { header: "Archive Drive", key: "archiveDrive", width: 16 },
   { header: "Backup Drive", key: "backupDrive", width: 16 },
+  { header: "Size", key: "size", width: 12 },
   { header: "Cleaned", key: "cleaned", width: 10 },
   { header: "Backup Completed", key: "backupCompleted", width: 18 },
   { header: "Notes", key: "notes", width: 40 },

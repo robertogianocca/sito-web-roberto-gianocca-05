@@ -12,6 +12,7 @@ const EMPTY_FORM = {
   location: "",
   archiveDrive: [],
   backupDrive: [],
+  size: "",
   cleaned: false,
   backupCompleted: false,
   notes: "",
@@ -586,6 +587,19 @@ export function ProjectDrawer({
                     placeholder="— None —"
                   />
                 </div>
+              </div>
+              <div className="mt-3">
+                <label className={labelClass} htmlFor="f-size">
+                  Size
+                </label>
+                <input
+                  id="f-size"
+                  type="text"
+                  className={inputClass}
+                  value={form.size}
+                  onChange={(e) => set("size", e.target.value)}
+                  placeholder="3 GB"
+                />
               </div>
             </section>
 

@@ -58,6 +58,7 @@ export function ArchiveRow({ project, onEdit }) {
       <td className={mutedCellClass}>{project.date || "—"}</td>
       <td className={mutedCellClass}>{Array.isArray(project.archiveDrive) ? (project.archiveDrive.join(", ") || "—") : (project.archiveDrive || "—")}</td>
       <td className={mutedCellClass}>{Array.isArray(project.backupDrive) ? (project.backupDrive.join(", ") || "—") : (project.backupDrive || "—")}</td>
+      <td className={mutedCellClass}>{project.size || "—"}</td>
       <td className="px-3 py-2 text-center">
         <Check value={project.cleaned} />
       </td>
