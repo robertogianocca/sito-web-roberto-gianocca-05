@@ -1,6 +1,6 @@
 "use client";
 
-import { getStatus, STATUS_META } from "./archiveStatus";
+import { getStatus, STATUS_META, formatProjectId } from "./archiveStatus";
 
 function Check({ value }) {
   if (value) {
@@ -44,7 +44,7 @@ export function ArchiveRow({ project, onEdit }) {
       onClick={() => onEdit(project)}
       className={`border-b border-zinc-200 border-l-4 cursor-pointer transition-colors hover:brightness-95 ${rowClass}`}
     >
-      <td className={mutedCellClass}>{project.projectId || "—"}</td>
+      <td className={mutedCellClass}>{formatProjectId(project.projectId) || "—"}</td>
       <td className={cellClass}>
         <span className="font-medium">{project.title || "Untitled"}</span>
         {project.tags?.length > 0 && (

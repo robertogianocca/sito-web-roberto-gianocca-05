@@ -1,3 +1,7 @@
+import { formatProjectId } from "@/lib/archiveFormat";
+
+export { formatProjectId };
+
 /**
  * Derives the 4-level status of a project from its fields.
  *

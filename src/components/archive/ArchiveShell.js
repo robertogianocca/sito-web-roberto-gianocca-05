@@ -8,7 +8,7 @@ import { StatusLegend } from "./StatusLegend";
 import { ArchiveTable } from "./ArchiveTable";
 import { ProjectDrawer } from "./ProjectDrawer";
 import { SettingsDrawer } from "./SettingsDrawer";
-import { getStatus } from "./archiveStatus";
+import { getStatus, formatProjectId } from "./archiveStatus";
 
 export function ArchiveShell({ initialSettings, initialClients, locale, logoutAction }) {
   const [settings, setSettings] = useState(
@@ -68,6 +68,7 @@ export function ArchiveShell({ initialSettings, initialClients, locale, logoutAc
           p.title?.toLowerCase().includes(q) ||
           (Array.isArray(p.client) ? p.client.some((c) => c.toLowerCase().includes(q)) : p.client?.toLowerCase().includes(q)) ||
           p.projectId?.toLowerCase().includes(q) ||
+          formatProjectId(p.projectId).toLowerCase().includes(q) ||
           p.invoiceNumber?.toLowerCase().includes(q) ||
           p.tags?.some((t) => t.toLowerCase().includes(q))
       );
@@ -88,13 +89,24 @@ export function ArchiveShell({ initialSettings, initialClients, locale, logoutAc
     }
 
     return [...result].sort((a, b) => {
-      let av = Array.isArray(a[sortKey]) ? (a[sortKey][0] ?? "") : (a[sortKey] ?? "");
-      let bv = Array.isArray(b[sortKey]) ? (b[sortKey][0] ?? "") : (b[sortKey] ?? "");
-      if (typeof av === "string") av = av.toLowerCase();
-      if (typeof bv === "string") bv = bv.toLowerCase();
-      if (av < bv) return sortDir === "asc" ? -1 : 1;
-      if (av > bv) return sortDir === "asc" ? 1 : -1;
-      return 0;
+      const dir = sortDir === "asc" ? 1 : -1;
+      if (sortKey === "cleaned" || sortKey === "backupCompleted") {
+        return (Number(Boolean(a[sortKey])) - Number(Boolean(b[sortKey]))) * dir;
+      }
+      const av = Array.isArray(a[sortKey])
+        ? a[sortKey].join(", ")
+        : sortKey === "projectId"
+          ? formatProjectId(a.projectId)
+          : (a[sortKey] ?? "");
+      const bv = Array.isArray(b[sortKey])
+        ? b[sortKey].join(", ")
+        : sortKey === "projectId"
+          ? formatProjectId(b.projectId)
+          : (b[sortKey] ?? "");
+      return String(av).localeCompare(String(bv), undefined, {
+        numeric: true,
+        sensitivity: "base",
+      }) * dir;
     });
   }, [projects, search, filterType, filterYear, filterStatus, sortKey, sortDir]);
 
@@ -114,7 +126,9 @@ export function ArchiveShell({ initialSettings, initialClients, locale, logoutAc
   }, []);
 
   const handleSave = useCallback(async (form) => {
-    const newClients = (Array.isArray(form.client) ? form.client : [])
+    const payload = { ...form, projectId: formatProjectId(form.projectId) };
+
+    const newClients = (Array.isArray(payload.client) ? payload.client : [])
       .filter((name) => name && !clients.includes(name));
     if (newClients.length > 0) {
       let updated = clients;
@@ -129,11 +143,27 @@ export function ArchiveShell({ initialSettings, initialClients, locale, logoutAc
       setClients(updated);
     }
 
-    if (form.id) {
-      const res = await fetch(`/api/archive/${form.id}`, {
+    const existingDrives = settings.archiveDrives ?? [];
+    const newDrives = (Array.isArray(payload.archiveDrive) ? payload.archiveDrive : [])
+      .filter((name) => name && !existingDrives.includes(name));
+    if (newDrives.length > 0) {
+      const nextSettings = {
+        ...settings,
+        archiveDrives: [...existingDrives, ...newDrives],
+      };
+      const res = await fetch("/api/archive/settings", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify(nextSettings),
+      });
+      if (res.ok) setSettings(await res.json());
+    }
+
+    if (payload.id) {
+      const res = await fetch(`/api/archive/${payload.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error("Failed to update project.");
       const updated = await res.json();
@@ -144,13 +174,13 @@ export function ArchiveShell({ initialSettings, initialClients, locale, logoutAc
       const res = await fetch("/api/archive", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error("Failed to create project.");
       const created = await res.json();
       setProjects((prev) => [...prev, created]);
     }
-  }, [clients]);
+  }, [clients, settings]);
 
   const handleDelete = useCallback(async (id) => {
     const res = await fetch(`/api/archive/${id}`, { method: "DELETE" });
@@ -251,15 +281,11 @@ export function ArchiveShell({ initialSettings, initialClients, locale, logoutAc
               filterType={filterType}
               filterYear={filterYear}
               filterStatus={filterStatus}
-              sortKey={sortKey}
-              sortDir={sortDir}
               projectTypes={settings.projectTypes}
               availableYears={availableYears}
               onFilterType={setFilterType}
               onFilterYear={setFilterYear}
               onFilterStatus={setFilterStatus}
-              onSortKey={setSortKey}
-              onSortDir={setSortDir}
             />
           </div>
         </div>
@@ -281,7 +307,20 @@ export function ArchiveShell({ initialSettings, initialClients, locale, logoutAc
           </div>
         )}
         {!loading && !error && (
-          <ArchiveTable projects={filtered} onEdit={openEdit} />
+          <ArchiveTable
+            projects={filtered}
+            onEdit={openEdit}
+            sortKey={sortKey}
+            sortDir={sortDir}
+            onSort={(key) => {
+              if (key === sortKey) {
+                setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+              } else {
+                setSortKey(key);
+                setSortDir(key === "date" ? "desc" : "asc");
+              }
+            }}
+          />
         )}
       </main>
 

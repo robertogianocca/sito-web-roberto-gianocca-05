@@ -2,12 +2,56 @@
 
 import { ArchiveRow } from "./ArchiveRow";
 
-const thClass =
-  "px-3 py-2.5 text-left text-2xs font-semibold uppercase tracking-wider text-zinc-500 whitespace-nowrap";
-const thCenterClass =
-  "px-3 py-2.5 text-center text-2xs font-semibold uppercase tracking-wider text-zinc-500 whitespace-nowrap";
+const COLUMNS = [
+  { key: "projectId", label: "ID", align: "left" },
+  { key: "title", label: "Title", align: "left" },
+  { key: "client", label: "Client", align: "left" },
+  { key: "type", label: "Type", align: "left" },
+  { key: "date", label: "Date", align: "left" },
+  { key: "archiveDrive", label: "Archive", align: "left" },
+  { key: "backupDrive", label: "Backup", align: "left" },
+  { key: "size", label: "Size", align: "left" },
+  { key: "cleaned", label: "Cleaned", align: "center" },
+  { key: "backupCompleted", label: "Backed up", align: "center" },
+];
 
-export function ArchiveTable({ projects, onEdit }) {
+function SortableTh({ column, sortKey, sortDir, onSort }) {
+  const active = sortKey === column.key;
+  const alignClass = column.align === "center" ? "text-center" : "text-left";
+
+  return (
+    <th className={`px-3 py-2.5 ${alignClass}`}>
+      <button
+        type="button"
+        onClick={() => onSort(column.key)}
+        className={`inline-flex max-w-24 items-center gap-1 text-2xs font-semibold uppercase tracking-wider transition ${
+          active ? "text-zinc-800" : "text-zinc-500 hover:text-zinc-700"
+        }`}
+        title={`Sort by ${column.label}`}
+      >
+        <span className="truncate">{column.label}</span>
+        {active && (
+          <svg
+            className="h-3 w-3 shrink-0"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2.5}
+            aria-hidden
+          >
+            {sortDir === "asc" ? (
+              <path d="m18 15-6-6-6 6" />
+            ) : (
+              <path d="m6 9 6 6 6-6" />
+            )}
+          </svg>
+        )}
+      </button>
+    </th>
+  );
+}
+
+export function ArchiveTable({ projects, onEdit, sortKey, sortDir, onSort }) {
   if (projects.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-zinc-400">
@@ -32,16 +76,15 @@ export function ArchiveTable({ projects, onEdit }) {
       <table className="w-full min-w-[900px] border-collapse">
         <thead className="sticky top-0 z-10 border-b border-zinc-200 bg-zinc-50/95 backdrop-blur-sm">
           <tr>
-            <th className={thClass}>ID</th>
-            <th className={thClass}>Title</th>
-            <th className={thClass}>Client</th>
-            <th className={thClass}>Type</th>
-            <th className={thClass}>Date</th>
-            <th className={thClass}>Archive</th>
-            <th className={thClass}>Backup</th>
-            <th className={thClass}>Size</th>
-            <th className={thCenterClass}>Cleaned</th>
-            <th className={thCenterClass}>Backed up</th>
+            {COLUMNS.map((column) => (
+              <SortableTh
+                key={column.key}
+                column={column}
+                sortKey={sortKey}
+                sortDir={sortDir}
+                onSort={onSort}
+              />
+            ))}
           </tr>
         </thead>
         <tbody>

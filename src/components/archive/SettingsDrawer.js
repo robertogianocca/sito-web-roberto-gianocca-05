@@ -7,6 +7,12 @@ const inputClass =
 
 const labelClass = "mb-1 block text-xs font-semibold uppercase tracking-wider text-zinc-500";
 
+function sortAlpha(list) {
+  return [...(list ?? [])].sort((a, b) =>
+    String(a).localeCompare(String(b), undefined, { sensitivity: "base" })
+  );
+}
+
 function EditableList({ label, items, onChange, onRename }) {
   const [newValue, setNewValue] = useState("");
   const [editingIndex, setEditingIndex] = useState(null);
@@ -56,10 +62,10 @@ function EditableList({ label, items, onChange, onRename }) {
         {items.length === 0 && (
           <span className="text-xs text-zinc-400 italic">No items yet</span>
         )}
-        {items.map((item, index) =>
-          editingIndex === index ? (
+        {sortAlpha(items).map((item) =>
+          editingIndex === items.indexOf(item) ? (
             <span
-              key={index}
+              key={item}
               className="flex items-center gap-1 rounded-full bg-zinc-200 px-2 py-0.5"
             >
               <input
@@ -95,13 +101,13 @@ function EditableList({ label, items, onChange, onRename }) {
             </span>
           ) : (
             <span
-              key={index}
+              key={item}
               className="flex items-center gap-1 rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-700"
             >
               <button
                 type="button"
                 aria-label={`Rename ${item}`}
-                onClick={() => startEdit(index)}
+                onClick={() => startEdit(items.indexOf(item))}
                 className="transition hover:text-zinc-900"
               >
                 {item}
@@ -109,7 +115,7 @@ function EditableList({ label, items, onChange, onRename }) {
               <button
                 type="button"
                 aria-label={`Remove ${item}`}
-                onClick={() => removeItem(index)}
+                onClick={() => removeItem(items.indexOf(item))}
                 className="ml-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full text-zinc-400 transition hover:bg-zinc-300 hover:text-zinc-700"
               >
                 <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} className="h-2.5 w-2.5" aria-hidden>

@@ -1,4 +1,5 @@
 import { getTursoClient } from "./turso";
+import { formatProjectId } from "./archiveFormat";
 
 function parseArrayField(val) {
   if (!val) return [];
@@ -13,7 +14,7 @@ function parseArrayField(val) {
 function rowToProject(row) {
   return {
     id: row.id,
-    projectId: row.projectId ?? "",
+    projectId: formatProjectId(row.projectId),
     invoiceNumber: row.invoiceNumber ?? "",
     title: row.title ?? "",
     client: parseArrayField(row.client),
@@ -49,7 +50,7 @@ export async function createProject(project) {
       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     args: [
       project.id,
-      project.projectId ?? "",
+      formatProjectId(project.projectId),
       project.invoiceNumber ?? "",
       project.title ?? "",
       JSON.stringify(Array.isArray(project.client) ? project.client : []),
@@ -77,7 +78,7 @@ export async function updateProject(id, fields) {
       archiveDrive=?, backupDrive=?, size=?, cleaned=?, backupCompleted=?, notes=?, tags=?, updatedAt=?
       WHERE id=?`,
     args: [
-      fields.projectId ?? "",
+      formatProjectId(fields.projectId),
       fields.invoiceNumber ?? "",
       fields.title ?? "",
       JSON.stringify(Array.isArray(fields.client) ? fields.client : []),

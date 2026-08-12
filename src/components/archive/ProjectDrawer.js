@@ -1,6 +1,13 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { formatProjectId } from "./archiveStatus";
+
+function sortAlpha(list) {
+  return [...(list ?? [])].sort((a, b) =>
+    String(a).localeCompare(String(b), undefined, { sensitivity: "base" })
+  );
+}
 
 const EMPTY_FORM = {
   projectId: "",
@@ -123,7 +130,7 @@ function MultiSelectPills({ options, selected, onChange, placeholder }) {
 
       {open && options.length > 0 && (
         <div className="absolute z-50 mt-1 w-full rounded-lg border border-zinc-200 bg-white py-1 shadow-lg">
-          {options.map((option) => {
+          {sortAlpha(options).map((option) => {
             const active = selected.includes(option);
             return (
               <button
@@ -155,14 +162,17 @@ function MultiSelectPills({ options, selected, onChange, placeholder }) {
   );
 }
 
-function MultiClientPills({ clients, selected, onChange }) {
+function CreatableMultiPills({ options, selected, onChange, placeholder, addLabel, addPlaceholder }) {
   const [open, setOpen] = useState(false);
   const [addingNew, setAddingNew] = useState(false);
   const [newName, setNewName] = useState("");
   const [localExtra, setLocalExtra] = useState([]);
   const ref = useRef(null);
 
-  const allClients = [...clients, ...localExtra.filter((n) => !clients.includes(n))];
+  const allOptions = sortAlpha([
+    ...(options ?? []),
+    ...localExtra.filter((n) => !(options ?? []).includes(n)),
+  ]);
 
   useEffect(() => {
     if (!open) return;
@@ -212,7 +222,7 @@ function MultiClientPills({ clients, selected, onChange }) {
       >
         <div className="flex flex-wrap gap-1">
           {selected.length === 0 && (
-            <span className="py-0.5 text-sm text-zinc-400">— Select —</span>
+            <span className="py-0.5 text-sm text-zinc-400">{placeholder ?? "— Select —"}</span>
           )}
           {selected.map((name) => (
             <span
@@ -235,7 +245,7 @@ function MultiClientPills({ clients, selected, onChange }) {
 
       {open && (
         <div className="absolute z-50 mt-1 w-full rounded-lg border border-zinc-200 bg-white py-1 shadow-lg">
-          {allClients.map((name) => {
+          {allOptions.map((name) => {
             const active = selected.includes(name);
             return (
               <button
@@ -269,7 +279,7 @@ function MultiClientPills({ clients, selected, onChange }) {
                 className="flex-1 rounded border border-zinc-300 px-2 py-1 text-xs text-foreground outline-none focus:border-zinc-400"
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
-                placeholder="New client name"
+                placeholder={addPlaceholder ?? "New name"}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") { e.preventDefault(); confirmNew(); }
                   if (e.key === "Escape") { setAddingNew(false); setNewName(""); }
@@ -288,7 +298,7 @@ function MultiClientPills({ clients, selected, onChange }) {
               onClick={(e) => { e.stopPropagation(); setAddingNew(true); }}
               className="flex w-full items-center gap-2 border-t border-zinc-100 px-3 py-1.5 text-left text-sm text-zinc-500 transition hover:bg-zinc-50"
             >
-              <span className="text-base leading-none">＋</span> New client…
+              <span className="text-base leading-none">＋</span> {addLabel ?? "New…"}
             </button>
           )}
         </div>
@@ -402,7 +412,7 @@ export function ProjectDrawer({
     setSaving(true);
     setError(null);
     try {
-      await onSave(form);
+      await onSave({ ...form, projectId: formatProjectId(form.projectId) });
       onClose();
     } catch (err) {
       setError(err.message ?? "Failed to save.");
@@ -484,7 +494,8 @@ export function ProjectDrawer({
                     className={inputClass}
                     value={form.projectId}
                     onChange={(e) => set("projectId", e.target.value)}
-                    placeholder="2024-001"
+                    onBlur={() => set("projectId", formatProjectId(form.projectId))}
+                    placeholder="011"
                   />
                 </div>
                 <div>
@@ -521,10 +532,12 @@ export function ProjectDrawer({
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className={labelClass}>Client</label>
-                    <MultiClientPills
-                      clients={clients}
+                    <CreatableMultiPills
+                      options={clients}
                       selected={form.client}
                       onChange={(v) => set("client", v)}
+                      addLabel="New client…"
+                      addPlaceholder="New client name"
                     />
                   </div>
                   <div>
@@ -571,11 +584,13 @@ export function ProjectDrawer({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className={labelClass}>Archive drive</label>
-                  <MultiSelectPills
+                  <CreatableMultiPills
                     options={archiveDrives}
                     selected={form.archiveDrive}
                     onChange={(v) => set("archiveDrive", v)}
                     placeholder="— None —"
+                    addLabel="New archive drive…"
+                    addPlaceholder="New archive drive"
                   />
                 </div>
                 <div>
