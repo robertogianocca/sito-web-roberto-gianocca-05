@@ -160,10 +160,13 @@ export default async function Home({ params }) {
         >
           <div className="flex min-h-0 flex-1 flex-col gap-6">
             <div className="grid gap-6 lg:grid-cols-12 lg:items-start lg:gap-10">
-              <p className="col-span-12">
-                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor
-                incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
-                exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+              <p className="col-span-12 max-w-prose text-lg">
+                {getHomeSectionCopy("intro", locale).description.split(/\r?\n/).map((line, idx, arr) => (
+                  <span key={idx}>
+                    {line}
+                    {idx < arr.length - 1 ? <br /> : null}
+                  </span>
+                ))}
               </p>
               <div className="lg:col-span-6">
                 <HomeIntroNav />
