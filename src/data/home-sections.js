@@ -21,8 +21,8 @@ export const HOME_SECTIONS = {
     // Body text for the first "intro" panel on the homepage.
     // (We intentionally don't provide a `shortDescription` for this section.)
     description: {
-      it: "Benvenuti!\nScorrendo liberamente la pagina potete farvi un'idea generale della mia attività.\nSe invece volete accedere ad una sezione specifica usate il menu sottostante.\nBuona esplorazione!",
-      en: "Welcome!\nBy freely scrolling through the page you can get a general idea of my work.\nIf instead you'd like to jump to a specific section, use the menu below.\nEnjoy exploring!",
+      it: "Benvenuti! Sono un creativo con base in Ticino.\nScorrendo liberamente la pagina potete farvi un'idea generale della mia attività.\nSe invece volete accedere ad una sezione specifica usate il menu sottostante.\nBuona esplorazione!",
+      en: "Welcome! I’m a creative based in Ticino.\nBy freely scrolling through the page you can get a general idea of my work.\nIf instead you'd like to jump to a specific section, use the menu below.\nEnjoy exploring!",
     },
   },
   photography: {

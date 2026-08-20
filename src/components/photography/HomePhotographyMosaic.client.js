@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useEffect, useRef, useState } from 'react';
-import { Link } from '@/i18n/navigation';
+import { useEffect, useRef, useState } from "react";
+import { Link } from "@/i18n/navigation";
 
 /**
  * Mosaico asimmetrico per la sezione Photography in homepage.
@@ -17,7 +17,7 @@ import { Link } from '@/i18n/navigation';
  *
  * Slot A: cicla `carouselImages` ogni 4s con crossfade fluido.
  *   - L'altezza del mosaico è determinata dalla proporzione di slot A (`imageAspect`).
- *   - Le immagini usano `object-cover` per riempire sempre il contenitore.
+ *   - Le immagini usano `object-contain` (letterbox scuro se le proporzioni non coincidono).
  * Testo (titolo, descrizione, CTA): riga 2, colonna 1 → stessa larghezza di slot A.
  * Slot B e C: riga 1, colonna 2, con `object-cover` decorativo.
  *
@@ -38,7 +38,7 @@ export function HomePhotographyMosaic({
   description,
   detailHref,
   seeGalleryLabel,
-  imageAspect = '4/3',
+  imageAspect = "4/3",
 }) {
   const [currentIdx, setCurrentIdx] = useState(0);
   const [nextIdx, setNextIdx] = useState(null);
@@ -87,7 +87,7 @@ export function HomePhotographyMosaic({
       {/* Slot A — col 1, row 1: carousel, configurable aspect ratio */}
       <Link
         href={detailHref}
-        className="relative block overflow-hidden rounded-lg border border-zinc-200/90 bg-zinc-900 dark:border-zinc-800/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400"
+        className="relative block overflow-hidden border border-zinc-200/90 bg-black dark:border-zinc-800/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400"
         style={{ aspectRatio: imageAspect }}
       >
         {carouselImages.length === 0 ? (
@@ -100,7 +100,7 @@ export function HomePhotographyMosaic({
               <img
                 src={carouselImages[currentIdx].src}
                 alt={carouselImages[currentIdx].alt}
-                className="absolute inset-0 h-full w-full object-cover"
+                className="absolute inset-0 h-full w-full object-contain"
                 draggable={false}
               />
             )}
@@ -110,7 +110,7 @@ export function HomePhotographyMosaic({
               <img
                 src={carouselImages[nextIdx].src}
                 alt={carouselImages[nextIdx].alt}
-                className="absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ease-in-out"
+                className="absolute inset-0 h-full w-full object-contain transition-opacity duration-700 ease-in-out"
                 style={{ opacity: transitioning ? 1 : 0 }}
                 onTransitionEnd={handleTransitionEnd}
                 draggable={false}
@@ -150,14 +150,14 @@ export function HomePhotographyMosaic({
 function SlotStatic({ gallery }) {
   if (!gallery) {
     return (
-      <div className="relative flex-1 min-h-0 rounded-lg border border-dashed border-zinc-300/80 bg-zinc-100 dark:border-zinc-700/80 dark:bg-zinc-900" />
+      <div className="relative flex-1 min-h-0 border border-dashed border-zinc-300/80 bg-zinc-100 dark:border-zinc-700/80 dark:bg-zinc-900" />
     );
   }
 
   return (
     <Link
       href={gallery.href}
-      className="relative flex-1 min-h-0 block overflow-hidden rounded-lg border border-zinc-200/90 bg-zinc-900 dark:border-zinc-800/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400"
+      className="relative flex-1 min-h-0 block overflow-hidden border border-zinc-200/90 bg-zinc-900 dark:border-zinc-800/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400"
     >
       {gallery.src ? (
         // eslint-disable-next-line @next/next/no-img-element

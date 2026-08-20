@@ -16,11 +16,11 @@ export function HomeGalleryThumb({ title, coverSrc, href, aspect = '4/3' }) {
   return (
     <Link
       href={href}
-      className="group block rounded-lg outline-offset-2 focus-visible:outline-2 focus-visible:outline-zinc-400 dark:focus-visible:outline-zinc-500"
+      className="group block outline-offset-2 focus-visible:outline-2 focus-visible:outline-zinc-400 dark:focus-visible:outline-zinc-500"
     >
       <div className="flex flex-col gap-1.5">
         <div
-          className="relative w-full overflow-hidden rounded-lg border border-zinc-200/90 bg-zinc-100 dark:border-zinc-800/90 dark:bg-zinc-900"
+          className="relative w-full overflow-hidden border border-zinc-200/90 bg-zinc-100 dark:border-zinc-800/90 dark:bg-zinc-900"
           style={{ aspectRatio: aspect }}
         >
           {coverSrc ? (

@@ -92,7 +92,7 @@ export default async function Home({ params }) {
         src: buildCloudinaryImageUrl(cloudName, publicId, {
           width: cropW,
           height: cropH,
-          crop: "fill",
+          crop: "fit",
         }),
         alt: publicId.split("/").pop()?.replace(/[-_]/g, " ") ?? "Photography",
       }));

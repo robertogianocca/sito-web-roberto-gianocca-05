@@ -70,7 +70,7 @@ export function HorizontalSection({
               </h2>
             </div>
             {shortDescription ? (
-              <p className="max-w-prose text-sm leading-relaxed text-zinc-600 dark:text-zinc-400 lg:pt-1">
+              <p className="max-w-prose text-sm text-zinc-600 dark:text-zinc-400 lg:pt-1">
                 {shortDescription}
               </p>
             ) : null}
