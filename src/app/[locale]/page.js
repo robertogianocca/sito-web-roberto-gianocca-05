@@ -85,22 +85,31 @@ export default async function Home({ params }) {
   const cropW = 1200;
   const cropH = Math.round((cropW * cropHRatio) / cropWRatio);
 
+  const toCarouselImage = (publicId, alt) => ({
+    src: buildCloudinaryImageUrl(cloudName, publicId, {
+      width: cropW,
+      height: cropH,
+      crop: "fit",
+    }),
+    alt,
+  });
+
   let carouselImages = [];
   if (featuredGallery && cloudinaryReady) {
     if (featuredGallery.homeImages?.length) {
-      carouselImages = featuredGallery.homeImages.map((publicId) => ({
-        src: buildCloudinaryImageUrl(cloudName, publicId, {
-          width: cropW,
-          height: cropH,
-          crop: "fit",
-        }),
-        alt: publicId.split("/").pop()?.replace(/[-_]/g, " ") ?? "Photography",
-      }));
+      carouselImages = featuredGallery.homeImages.map((publicId) =>
+        toCarouselImage(
+          publicId,
+          publicId.split("/").pop()?.replace(/[-_]/g, " ") ?? "Photography",
+        ),
+      );
     } else {
       const detail = await fetchFolderGalleryDetail(featuredGallery.folder);
       const count = featuredGallery.homeImageCount ?? 4;
       if (detail.ok) {
-        carouselImages = detail.slides.slice(0, count).map((s) => ({ src: s.src, alt: s.alt }));
+        carouselImages = detail.slides
+          .slice(0, count)
+          .map((s) => toCarouselImage(s.publicId, s.alt));
       }
     }
   }
@@ -195,7 +204,7 @@ export default async function Home({ params }) {
                 description={getGalleryDescription(featuredGallery)}
                 detailHref={`/photography/${featuredGallery.slug}`}
                 seeGalleryLabel={t("photographySeeGallery")}
-                imageAspect={featuredGallery.homeImageAspect ?? "3/4"}
+                imageAspect={featuredGallery.homeImageAspect ?? "4/3"}
               />
               <div className="flex items-end gap-3">
                 <ul className="grid flex-1 grid-cols-3 gap-3">

@@ -3,6 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "@/i18n/navigation";
 
+const INTERVAL_MS = 4000;
+const FADE_MS = 700;
+const SETTLE_BUFFER_MS = 50;
+
 /**
  * Mosaico asimmetrico per la sezione Photography in homepage.
  *
@@ -15,7 +19,7 @@ import { Link } from "@/i18n/navigation";
  *   │  Titolo · Descrizione · CTA    │  ← riga 2, colonna 1 soltanto
  *   └────────────────────────────────┘
  *
- * Slot A: cicla `carouselImages` ogni 4s con crossfade fluido.
+ * Slot A: cicla `carouselImages` ogni 4s con crossfade a due layer opachi.
  *   - L'altezza del mosaico è determinata dalla proporzione di slot A (`imageAspect`).
  *   - Le immagini usano `object-contain` (letterbox scuro se le proporzioni non coincidono).
  * Testo (titolo, descrizione, CTA): riga 2, colonna 1 → stessa larghezza di slot A.
@@ -40,44 +44,90 @@ export function HomePhotographyMosaic({
   seeGalleryLabel,
   imageAspect = "4/3",
 }) {
-  const [currentIdx, setCurrentIdx] = useState(0);
-  const [nextIdx, setNextIdx] = useState(null);
-  const [transitioning, setTransitioning] = useState(false);
-  const timerRef = useRef(null);
-
   const hasCarousel = carouselImages.length > 1;
 
-  // Advance to the next slide index every 4s.
-  // Does NOT set transitioning here — React 18 batches both state updates into
-  // one render, which would make the next image appear at opacity:1 immediately,
-  // skipping the CSS transition and preventing onTransitionEnd from firing.
+  /** Which layer (0 | 1) is the visible front (z-0, opacity 1). */
+  const [front, setFront] = useState(0);
+  /** Image currently shown in each layer. Back is pre-warmed with slide 1 when possible. */
+  const [layerImages, setLayerImages] = useState(() => [
+    carouselImages[0] ?? null,
+    carouselImages[1] ?? carouselImages[0] ?? null,
+  ]);
+  /** Carousel index of the front image. */
+  const [currentIdx, setCurrentIdx] = useState(0);
+  /** Carousel index being faded in on the back layer, or null when idle. */
+  const [pending, setPending] = useState(null);
+  const [fading, setFading] = useState(false);
+
+  const img0Ref = useRef(null);
+  const img1Ref = useRef(null);
+  const imgRefs = [img0Ref, img1Ref];
+
+  // Warm the full carousel so later slides are not still decoding mid-fade.
   useEffect(() => {
-    if (!hasCarousel) return;
-
-    timerRef.current = setInterval(() => {
-      const next = (currentIdx + 1) % carouselImages.length;
-      setNextIdx(next);
-    }, 4000);
-
-    return () => clearInterval(timerRef.current);
-  }, [currentIdx, carouselImages.length, hasCarousel]);
-
-  // Once nextIdx is set and the image has rendered at opacity:0, kick off the
-  // fade. Double rAF guarantees the element is in the DOM before we change opacity.
-  useEffect(() => {
-    if (nextIdx === null) return;
-    const id = requestAnimationFrame(() => {
-      requestAnimationFrame(() => setTransitioning(true));
+    carouselImages.forEach((img) => {
+      if (!img?.src) return;
+      const preloader = new window.Image();
+      preloader.src = img.src;
     });
-    return () => cancelAnimationFrame(id);
-  }, [nextIdx]);
+  }, [carouselImages]);
 
-  function handleTransitionEnd() {
-    if (nextIdx === null) return;
-    setCurrentIdx(nextIdx);
-    setNextIdx(null);
-    setTransitioning(false);
-  }
+  // Schedule next slide after INTERVAL_MS when idle.
+  useEffect(() => {
+    if (!hasCarousel || pending !== null) return;
+
+    const id = setTimeout(() => {
+      const next = (currentIdx + 1) % carouselImages.length;
+      const back = 1 - front;
+      setLayerImages((prev) => {
+        const nextLayers = [...prev];
+        nextLayers[back] = carouselImages[next];
+        return nextLayers;
+      });
+      setPending(next);
+    }, INTERVAL_MS);
+
+    return () => clearTimeout(id);
+  }, [front, currentIdx, pending, hasCarousel, carouselImages]);
+
+  // When pending is set: wait until the back image is decoded, then fade in and settle.
+  useEffect(() => {
+    if (pending === null) return;
+
+    const back = 1 - front;
+    const img = imgRefs[back].current;
+    let cancelled = false;
+    let settleId = 0;
+
+    async function startFade() {
+      if (img) {
+        try {
+          await img.decode();
+        } catch {
+          // Rejected decode still means we should move on rather than stall.
+        }
+      }
+      if (cancelled) return;
+
+      setFading(true);
+      settleId = setTimeout(() => {
+        if (cancelled) return;
+        setFront(back);
+        setCurrentIdx(pending);
+        setPending(null);
+        setFading(false);
+      }, FADE_MS + SETTLE_BUFFER_MS);
+    }
+
+    startFade();
+
+    return () => {
+      cancelled = true;
+      clearTimeout(settleId);
+    };
+    // imgRefs is stable; pending/front drive the cycle.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pending, front]);
 
   const sideB = sideGalleries[0] ?? null;
   const sideC = sideGalleries[1] ?? null;
@@ -93,33 +143,43 @@ export function HomePhotographyMosaic({
         {carouselImages.length === 0 ? (
           <div className="absolute inset-0 bg-zinc-800" />
         ) : (
-          <>
-            {/* Current image — always visible */}
-            {carouselImages[currentIdx] && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={carouselImages[currentIdx].src}
-                alt={carouselImages[currentIdx].alt}
-                className="absolute inset-0 h-full w-full object-contain"
-                draggable={false}
-              />
-            )}
-            {/* Next image — fades in over the current one */}
-            {nextIdx !== null && carouselImages[nextIdx] && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={carouselImages[nextIdx].src}
-                alt={carouselImages[nextIdx].alt}
-                className="absolute inset-0 h-full w-full object-contain transition-opacity duration-700 ease-in-out"
-                style={{ opacity: transitioning ? 1 : 0 }}
-                onTransitionEnd={handleTransitionEnd}
-                draggable={false}
-              />
-            )}
-          </>
+          [0, 1].map((layer) => {
+            const image = layerImages[layer];
+            if (!image) return null;
+
+            const isFront = layer === front;
+            const isBack = !isFront;
+            const opacity = isFront || fading ? 1 : 0;
+            // Transition only on the back layer so idle opacity:0 and settle
+            // opacity drops do not animate the wrong direction unexpectedly.
+            // While pending && !fading the back already has the transition class
+            // at opacity 0, so setFading(true) can animate 0 → 1 cleanly.
+            const transitionClass =
+              isBack && pending !== null
+                ? "transition-opacity duration-700 ease-in-out motion-reduce:transition-none"
+                : "";
+
+            return (
+              <div
+                key={layer}
+                className={`absolute inset-0 bg-black ${isFront ? "z-0" : "z-1"} ${transitionClass}`}
+                style={{ opacity }}
+                aria-hidden={!isFront}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  ref={imgRefs[layer]}
+                  src={image.src}
+                  alt={isFront ? image.alt : ""}
+                  className="absolute inset-0 h-full w-full object-contain"
+                  draggable={false}
+                />
+              </div>
+            );
+          })
         )}
-        {/* Subtle hover overlay */}
-        <div className="absolute inset-0 bg-black/0 transition-colors duration-300 hover:bg-black/10" />
+        {/* Subtle hover overlay — above both carousel layers */}
+        <div className="absolute inset-0 z-2 bg-black/0 transition-colors duration-300 hover:bg-black/10" />
       </Link>
 
       {/* Col 2, row 1: slots B and C stacked, same height as slot A */}
