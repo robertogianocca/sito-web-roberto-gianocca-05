@@ -161,22 +161,25 @@ export default async function Home({ params }) {
         className="flex min-h-0 flex-1 flex-col lg:flex-row lg:flex-nowrap lg:overflow-x-auto lg:overflow-y-hidden"
         aria-label={t("portfolioAriaLabel")}
       >
-        <HorizontalSection
-          id="intro"
-          title="Roberto Gianocca"
-          span={5}
-          shortDescription={getHomeSectionCopy("intro", locale).shortDescription}
-        >
+        <HorizontalSection id="intro" title={null} span={5}>
           <div className="flex min-h-0 flex-1 flex-col gap-6">
+            <h2 className="sr-only">Roberto Gianocca</h2>
             <div className="grid gap-6 lg:grid-cols-12 lg:items-start lg:gap-10">
-              <p className="col-span-12 max-w-prose text-lg">
-                {getHomeSectionCopy("intro", locale).description.split(/\r?\n/).map((line, idx, arr) => (
-                  <span key={idx}>
-                    {line}
-                    {idx < arr.length - 1 ? <br /> : null}
-                  </span>
-                ))}
-              </p>
+              <div className="col-span-12 max-w-prose">
+                <p className="text-2xl font-bold">
+                  {getHomeSectionCopy("intro", locale)
+                    .description.split(/\r?\n/)
+                    .map((line, idx, arr) => (
+                      <span key={idx}>
+                        {line}
+                        {idx < arr.length - 1 ? <br /> : null}
+                      </span>
+                    ))}
+                </p>
+                <p className="mt-4 text-right text-base italic font-bold text-foreground">
+                  Roberto Gianocca
+                </p>
+              </div>
               <div className="lg:col-span-6">
                 <HomeIntroNav />
               </div>

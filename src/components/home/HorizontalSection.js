@@ -36,6 +36,9 @@ export function HorizontalSection({
   shortDescription,
   children,
 }) {
+  const hasTitle = title != null && title !== "";
+  const hasHeader = hasTitle || Boolean(eyebrow) || Boolean(shortDescription);
+
   const titleContent =
     titleHref != null && titleHref !== "" ? (
       <Link
@@ -57,25 +60,31 @@ export function HorizontalSection({
       style={{ "--span": span }}
     >
       <div className="flex min-h-0 flex-1 flex-col gap-6 p-6 md:gap-8 md:p-8">
-        <header className="shrink-0">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:gap-5">
-            <div className="shrink-0 space-y-2">
-              {eyebrow ? (
-                <p className="text-xs font-medium uppercase tracking-widest text-zinc-500 dark:text-zinc-400">
-                  {eyebrow}
+        {hasHeader ? (
+          <header className="shrink-0">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:gap-5">
+              {hasTitle || eyebrow ? (
+                <div className="shrink-0 space-y-2">
+                  {eyebrow ? (
+                    <p className="text-xs font-medium uppercase tracking-widest text-zinc-500 dark:text-zinc-400">
+                      {eyebrow}
+                    </p>
+                  ) : null}
+                  {hasTitle ? (
+                    <h2 className="text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
+                      {titleContent}
+                    </h2>
+                  ) : null}
+                </div>
+              ) : null}
+              {shortDescription ? (
+                <p className="max-w-prose text-sm text-zinc-600 dark:text-zinc-400 lg:pt-1">
+                  {shortDescription}
                 </p>
               ) : null}
-              <h2 className="text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
-                {titleContent}
-              </h2>
             </div>
-            {shortDescription ? (
-              <p className="max-w-prose text-sm text-zinc-600 dark:text-zinc-400 lg:pt-1">
-                {shortDescription}
-              </p>
-            ) : null}
-          </div>
-        </header>
+          </header>
+        ) : null}
         <div className="min-h-0 flex-1 overflow-y-auto lg:overflow-hidden">{children}</div>
       </div>
     </section>
