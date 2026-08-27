@@ -1,6 +1,6 @@
 /**
- * Archive configuration — edit this file to manage drives and project types.
- * Changes here are reflected everywhere in the archive UI automatically.
+ * Archive configuration — seed defaults for first DB init only.
+ * After init, lists live in Turso settings and are edited in the Archive UI.
  */
 
 export const ARCHIVE_DRIVES = [
@@ -10,16 +10,9 @@ export const ARCHIVE_DRIVES = [
   "NAS",
 ];
 
-export const BACKUP_DRIVES = [
-  "Backup 01",
-  "Backup 02",
-  "NAS Backup",
-];
-
 export const PROJECT_TYPES = [
   "Photography",
   "Video",
   "Graphic Design",
   "Drone",
 ];
-

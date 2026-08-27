@@ -37,11 +37,14 @@ export function FilterBar({
   filterType,
   filterYear,
   filterStatus,
+  filterArchiveDrive,
   projectTypes,
+  archiveDrives,
   availableYears,
   onFilterType,
   onFilterYear,
   onFilterStatus,
+  onFilterArchiveDrive,
 }) {
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -69,6 +72,15 @@ export function FilterBar({
         <option value="partial">In progress</option>
         <option value="open">Incomplete</option>
         <option value="unarchived">Not archived</option>
+      </Select>
+
+      <Select value={filterArchiveDrive} onChange={onFilterArchiveDrive}>
+        <option value="all">All archive drives</option>
+        {sortAlpha(archiveDrives).map((d) => (
+          <option key={d} value={d}>
+            {d}
+          </option>
+        ))}
       </Select>
     </div>
   );

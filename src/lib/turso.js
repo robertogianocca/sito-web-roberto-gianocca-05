@@ -1,5 +1,5 @@
 import { createClient } from "@libsql/client";
-import { ARCHIVE_DRIVES, BACKUP_DRIVES, PROJECT_TYPES } from "@/data/archive/config";
+import { ARCHIVE_DRIVES, PROJECT_TYPES } from "@/data/archive/config";
 
 let client = null;
 
@@ -70,10 +70,6 @@ export async function ensureInit() {
         {
           sql: "INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)",
           args: ["archiveDrives", JSON.stringify(ARCHIVE_DRIVES)],
-        },
-        {
-          sql: "INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)",
-          args: ["backupDrives", JSON.stringify(BACKUP_DRIVES)],
         },
       ],
       "write"

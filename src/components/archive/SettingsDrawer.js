@@ -148,17 +148,181 @@ function EditableList({ label, items, onChange, onRename }) {
   );
 }
 
+function DrivesEditor({ drives, capacities, onChangeDrives, onChangeCapacities, onRename }) {
+  const [newValue, setNewValue] = useState("");
+  const [editingIndex, setEditingIndex] = useState(null);
+  const [editValue, setEditValue] = useState("");
+
+  function addItem() {
+    const trimmed = newValue.trim();
+    if (trimmed && !drives.includes(trimmed)) {
+      onChangeDrives([...drives, trimmed]);
+    }
+    setNewValue("");
+  }
+
+  function removeItem(index) {
+    const name = drives[index];
+    onChangeDrives(drives.filter((_, i) => i !== index));
+    if (name && capacities[name] != null) {
+      const next = { ...capacities };
+      delete next[name];
+      onChangeCapacities(next);
+    }
+  }
+
+  function startEdit(index) {
+    setEditingIndex(index);
+    setEditValue(drives[index]);
+  }
+
+  function confirmEdit() {
+    const trimmed = editValue.trim();
+    const oldName = drives[editingIndex];
+    if (trimmed && (trimmed === oldName || !drives.includes(trimmed))) {
+      if (trimmed !== oldName && onRename) {
+        onRename(oldName, trimmed);
+      }
+      const nextDrives = [...drives];
+      nextDrives[editingIndex] = trimmed;
+      onChangeDrives(nextDrives);
+
+      if (trimmed !== oldName) {
+        const nextCap = { ...capacities };
+        if (Object.prototype.hasOwnProperty.call(nextCap, oldName)) {
+          nextCap[trimmed] = nextCap[oldName];
+          delete nextCap[oldName];
+        }
+        onChangeCapacities(nextCap);
+      }
+    }
+    setEditingIndex(null);
+    setEditValue("");
+  }
+
+  function cancelEdit() {
+    setEditingIndex(null);
+    setEditValue("");
+  }
+
+  function setCapacity(name, value) {
+    onChangeCapacities({ ...capacities, [name]: value });
+  }
+
+  return (
+    <section>
+      <p className={labelClass}>Drives</p>
+      <div className="mb-2 space-y-2">
+        {drives.length === 0 && (
+          <span className="text-xs text-zinc-400 italic">No items yet</span>
+        )}
+        {sortAlpha(drives).map((item) => {
+          const index = drives.indexOf(item);
+          return (
+            <div
+              key={item}
+              className="flex items-center gap-2 rounded-lg border border-zinc-200 bg-zinc-50 px-2.5 py-2"
+            >
+              <div className="min-w-0 flex-1">
+                {editingIndex === index ? (
+                  <span className="flex items-center gap-1">
+                    <input
+                      autoFocus
+                      className="w-full rounded bg-white px-1.5 py-0.5 text-xs text-foreground outline-none ring-1 ring-zinc-300 focus:ring-zinc-400"
+                      value={editValue}
+                      onChange={(e) => setEditValue(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") { e.preventDefault(); confirmEdit(); }
+                        if (e.key === "Escape") cancelEdit();
+                      }}
+                    />
+                    <button
+                      type="button"
+                      aria-label="Confirm rename"
+                      onClick={confirmEdit}
+                      className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-emerald-600 transition hover:bg-emerald-100"
+                    >
+                      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} className="h-3 w-3" aria-hidden>
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Cancel rename"
+                      onClick={cancelEdit}
+                      className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-zinc-400 transition hover:bg-zinc-200 hover:text-zinc-700"
+                    >
+                      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} className="h-3 w-3" aria-hidden>
+                        <path d="M18 6 6 18M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </span>
+                ) : (
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      aria-label={`Rename ${item}`}
+                      onClick={() => startEdit(index)}
+                      className="truncate text-left text-xs font-medium text-zinc-700 transition hover:text-zinc-900"
+                    >
+                      {item}
+                    </button>
+                    <button
+                      type="button"
+                      aria-label={`Remove ${item}`}
+                      onClick={() => removeItem(index)}
+                      className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-zinc-400 transition hover:bg-zinc-200 hover:text-zinc-700"
+                    >
+                      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} className="h-2.5 w-2.5" aria-hidden>
+                        <path d="M18 6 6 18M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
+              </div>
+              <input
+                className="w-24 shrink-0 rounded-md border border-zinc-200 bg-white px-2 py-1 text-xs text-foreground placeholder-zinc-400 outline-none transition focus:border-zinc-400 focus:ring-1 focus:ring-zinc-300"
+                value={capacities[item] ?? ""}
+                onChange={(e) => setCapacity(item, e.target.value)}
+                placeholder="4 TB"
+                aria-label={`Capacity for ${item}`}
+              />
+            </div>
+          );
+        })}
+      </div>
+      <div className="flex gap-1.5">
+        <input
+          className={`${inputClass} flex-1`}
+          value={newValue}
+          onChange={(e) => setNewValue(e.target.value)}
+          placeholder="Add drive…"
+          onKeyDown={(e) => {
+            if (e.key === "Enter") { e.preventDefault(); addItem(); }
+          }}
+        />
+        <button
+          type="button"
+          onClick={addItem}
+          className="rounded-lg bg-zinc-900 px-3 text-xs font-medium text-zinc-50 transition hover:bg-zinc-700"
+        >
+          Add
+        </button>
+      </div>
+    </section>
+  );
+}
+
 export function SettingsDrawer({ open, settings, clients, onClose, onSaved }) {
   const [projectTypes, setProjectTypes] = useState([]);
   const [archiveDrives, setArchiveDrives] = useState([]);
-  const [backupDrives, setBackupDrives] = useState([]);
+  const [driveCapacities, setDriveCapacities] = useState({});
   const [localClients, setLocalClients] = useState([]);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
   const renamesRef = useRef({
     projectTypes: [],
     archiveDrives: [],
-    backupDrives: [],
     clients: [],
   });
 
@@ -170,13 +334,12 @@ export function SettingsDrawer({ open, settings, clients, onClose, onSaved }) {
     if (open) {
       setProjectTypes(settings?.projectTypes ?? []);
       setArchiveDrives(settings?.archiveDrives ?? []);
-      setBackupDrives(settings?.backupDrives ?? []);
+      setDriveCapacities(settings?.driveCapacities ?? {});
       setLocalClients(clients ?? []);
       setSaveError(null);
       renamesRef.current = {
         projectTypes: [],
         archiveDrives: [],
-        backupDrives: [],
         clients: [],
       };
     }
@@ -202,11 +365,10 @@ export function SettingsDrawer({ open, settings, clients, onClose, onSaved }) {
         body: JSON.stringify({
           projectTypes,
           archiveDrives,
-          backupDrives,
+          driveCapacities,
           renames: {
             projectTypes: renames.projectTypes,
             archiveDrives: renames.archiveDrives,
-            backupDrives: renames.backupDrives,
           },
         }),
       });
@@ -297,17 +459,12 @@ export function SettingsDrawer({ open, settings, clients, onClose, onSaved }) {
             onChange={setProjectTypes}
             onRename={(from, to) => pushRename("projectTypes", from, to)}
           />
-          <EditableList
-            label="Archive Drives"
-            items={archiveDrives}
-            onChange={setArchiveDrives}
+          <DrivesEditor
+            drives={archiveDrives}
+            capacities={driveCapacities}
+            onChangeDrives={setArchiveDrives}
+            onChangeCapacities={setDriveCapacities}
             onRename={(from, to) => pushRename("archiveDrives", from, to)}
-          />
-          <EditableList
-            label="Backup Drives"
-            items={backupDrives}
-            onChange={setBackupDrives}
-            onRename={(from, to) => pushRename("backupDrives", from, to)}
           />
           <EditableList
             label="Clients"

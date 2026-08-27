@@ -9,10 +9,17 @@ import { ArchiveTable } from "./ArchiveTable";
 import { ProjectDrawer } from "./ProjectDrawer";
 import { SettingsDrawer } from "./SettingsDrawer";
 import { getStatus, formatProjectId } from "./archiveStatus";
+import { parseSize, formatBytes } from "@/lib/archiveSize";
+
+function projectArchiveDrives(project) {
+  if (Array.isArray(project.archiveDrive)) return project.archiveDrive;
+  if (project.archiveDrive) return [project.archiveDrive];
+  return [];
+}
 
 export function ArchiveShell({ initialSettings, initialClients, locale, logoutAction }) {
   const [settings, setSettings] = useState(
-    initialSettings ?? { projectTypes: [], archiveDrives: [], backupDrives: [] }
+    initialSettings ?? { projectTypes: [], archiveDrives: [], driveCapacities: {} }
   );
   const [projects, setProjects] = useState([]);
   const [clients, setClients] = useState(initialClients ?? []);
@@ -23,6 +30,7 @@ export function ArchiveShell({ initialSettings, initialClients, locale, logoutAc
   const [filterType, setFilterType] = useState("all");
   const [filterYear, setFilterYear] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [filterArchiveDrive, setFilterArchiveDrive] = useState("all");
   const [sortKey, setSortKey] = useState("date");
   const [sortDir, setSortDir] = useState("desc");
 
@@ -88,6 +96,14 @@ export function ArchiveShell({ initialSettings, initialClients, locale, logoutAc
       result = result.filter((p) => getStatus(p) === filterStatus);
     }
 
+    if (filterArchiveDrive !== "all") {
+      result = result.filter((p) =>
+        Array.isArray(p.archiveDrive)
+          ? p.archiveDrive.includes(filterArchiveDrive)
+          : p.archiveDrive === filterArchiveDrive
+      );
+    }
+
     return [...result].sort((a, b) => {
       const dir = sortDir === "asc" ? 1 : -1;
       if (sortKey === "cleaned" || sortKey === "backupCompleted") {
@@ -108,7 +124,33 @@ export function ArchiveShell({ initialSettings, initialClients, locale, logoutAc
         sensitivity: "base",
       }) * dir;
     });
-  }, [projects, search, filterType, filterYear, filterStatus, sortKey, sortDir]);
+  }, [projects, search, filterType, filterYear, filterStatus, filterArchiveDrive, sortKey, sortDir]);
+
+  const driveUsageSummary = useMemo(() => {
+    if (filterArchiveDrive === "all") return null;
+
+    let usedBytes = 0;
+    for (const project of filtered) {
+      const drives = projectArchiveDrives(project);
+      if (drives.length === 1 && drives[0] === filterArchiveDrive) {
+        usedBytes += parseSize(project.size);
+      }
+    }
+
+    const capacityStr = settings.driveCapacities?.[filterArchiveDrive] ?? "";
+    const capacityBytes = parseSize(capacityStr);
+    const usedLabel = formatBytes(usedBytes);
+
+    if (capacityBytes > 0) {
+      const freeBytes = capacityBytes - usedBytes;
+      if (freeBytes >= 0) {
+        return `${filterArchiveDrive} · ${usedLabel} used · ${formatBytes(freeBytes)} free of ${formatBytes(capacityBytes)}`;
+      }
+      return `${filterArchiveDrive} · ${usedLabel} used · ${formatBytes(-freeBytes)} over ${formatBytes(capacityBytes)}`;
+    }
+
+    return `${filterArchiveDrive} · ${usedLabel} used · capacity not set`;
+  }, [filterArchiveDrive, filtered, settings.driveCapacities]);
 
   const openNew = useCallback(() => {
     setEditingProject(null);
@@ -143,12 +185,18 @@ export function ArchiveShell({ initialSettings, initialClients, locale, logoutAc
       setClients(updated);
     }
 
+    const existingTypes = settings.projectTypes ?? [];
+    const newTypes = (Array.isArray(payload.type) ? payload.type : [])
+      .filter((name) => name && !existingTypes.includes(name));
+
     const existingDrives = settings.archiveDrives ?? [];
     const newDrives = (Array.isArray(payload.archiveDrive) ? payload.archiveDrive : [])
       .filter((name) => name && !existingDrives.includes(name));
-    if (newDrives.length > 0) {
+
+    if (newTypes.length > 0 || newDrives.length > 0) {
       const nextSettings = {
         ...settings,
+        projectTypes: [...existingTypes, ...newTypes],
         archiveDrives: [...existingDrives, ...newDrives],
       };
       const res = await fetch("/api/archive/settings", {
@@ -281,14 +329,23 @@ export function ArchiveShell({ initialSettings, initialClients, locale, logoutAc
               filterType={filterType}
               filterYear={filterYear}
               filterStatus={filterStatus}
+              filterArchiveDrive={filterArchiveDrive}
               projectTypes={settings.projectTypes}
+              archiveDrives={settings.archiveDrives}
               availableYears={availableYears}
               onFilterType={setFilterType}
               onFilterYear={setFilterYear}
               onFilterStatus={setFilterStatus}
+              onFilterArchiveDrive={setFilterArchiveDrive}
             />
           </div>
         </div>
+
+        {driveUsageSummary && (
+          <p className="mt-3 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm font-medium text-zinc-800">
+            {driveUsageSummary}
+          </p>
+        )}
 
         <div className="mt-3">
           <StatusLegend />
@@ -328,7 +385,6 @@ export function ArchiveShell({ initialSettings, initialClients, locale, logoutAc
         open={drawerOpen}
         project={editingProject}
         archiveDrives={settings.archiveDrives}
-        backupDrives={settings.backupDrives}
         projectTypes={settings.projectTypes}
         clients={clients}
         onClose={closeDrawer}

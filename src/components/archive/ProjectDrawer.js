@@ -368,7 +368,6 @@ export function ProjectDrawer({
   open,
   project,
   archiveDrives,
-  backupDrives,
   projectTypes,
   clients,
   onClose,
@@ -542,10 +541,12 @@ export function ProjectDrawer({
                   </div>
                   <div>
                     <label className={labelClass}>Type</label>
-                    <MultiSelectPills
+                    <CreatableMultiPills
                       options={projectTypes}
                       selected={form.type}
                       onChange={(v) => set("type", v)}
+                      addLabel="New type…"
+                      addPlaceholder="New type name"
                     />
                   </div>
                 </div>
@@ -596,7 +597,7 @@ export function ProjectDrawer({
                 <div>
                   <label className={labelClass}>Backup drive</label>
                   <MultiSelectPills
-                    options={backupDrives}
+                    options={archiveDrives}
                     selected={form.backupDrive}
                     onChange={(v) => set("backupDrive", v)}
                     placeholder="— None —"

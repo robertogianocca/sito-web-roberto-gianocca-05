@@ -63,7 +63,8 @@ Se sembra che l’archivio non sia protetto, prova in finestra anonima: potresti
 ### Tabella progetti
 
 - Ricerca per titolo, cliente, ID progetto, numero fattura, tag
-- Filtri per tipologia, anno (estratto dalla data testuale), stato
+- Filtri per tipologia, anno (estratto dalla data testuale), stato, disco archivio
+- Con filtro su un disco specifico: riepilogo capacità / usato / libero (vedi sotto)
 - Ordinamento per data, cliente, ID
 - Colori riga per stato:
   - **Not archived** — nessun disco archivio
@@ -71,24 +72,34 @@ Se sembra che l’archivio non sia protetto, prova in finestra anonima: potresti
   - **In progress** — almeno uno tra pulizia e backup completato
   - **Complete** — pulizia e backup entrambi completati
 
+### Capacità dischi
+
+In Impostazioni, ogni drive ha un campo **capacity** (testo libero, es. `4 TB`).
+
+Quando filtri per un singolo Archive drive, sotto i filtri compare un riepilogo:
+`Archive 01 · 2.1 TB used · 1.9 TB free of 4 TB`.
+
+**Regola di calcolo dello spazio usato:** viene sommata solo la `size` dei progetti che hanno **esattamente un** Archive drive, uguale al disco filtrato. I progetti con più Archive drive non contano nell’uso. Size vuote o non parseabili contano come 0. Se la capacity non è impostata, viene mostrato solo l’usato.
+
 ### Form progetto (drawer)
 
 Campi principali: Project ID, Invoice #, Title, Client, Type, Date (testo libero, es. `Maggio 2026`), Location, Archive drive, Backup drive, Cleaned, Backup completed, Notes, Tags.
 
 **Multi-selezione:** Client, Type, Archive drive e Backup drive accettano più valori (array salvati come JSON nel DB).
 
+**Creazione inline:** Client, Type e Archive drive permettono di aggiungere un nuovo valore direttamente dal form progetto (salvato nelle impostazioni). Backup drive usa la stessa lista dischi di Archive drive.
+
 ### Impostazioni (icona ingranaggio)
 
 Gestione in pagina di:
 
 - Project Types
-- Archive Drives
-- Backup Drives
+- Drives (lista condivisa per Archive drive e Backup drive; ogni drive può avere una capacity)
 - Clients
 
-Ogni lista: pill rimovibili, rinomina inline (click sul nome), aggiunta con input + Add.
+Ogni lista: pill rimovibili, rinomina inline (click sul nome), aggiunta con input + Add. I drive mostrano anche un campo capacity.
 
-**Rinomina a cascata:** quando rinomini un elemento e clicchi Save, tutti i progetti che usano il vecchio nome vengono aggiornati automaticamente (es. `Drone` → `Drone Video` su tutti i progetti con quel type).
+**Rinomina a cascata:** quando rinomini un elemento e clicchi Save, tutti i progetti che usano il vecchio nome vengono aggiornati automaticamente (es. `Drone` → `Drone Video` su tutti i progetti con quel type). La rinomina di un disco aggiorna sia `archiveDrive` sia `backupDrive`.
 
 ### Export
 
@@ -110,7 +121,7 @@ Elenco nomi clienti (`name TEXT PRIMARY KEY`).
 
 ### Tabella `settings`
 
-Chiavi `projectTypes`, `archiveDrives`, `backupDrives` — valori JSON array.
+Chiavi `projectTypes`, `archiveDrives` (JSON array) e `driveCapacities` (JSON object nome → capacity, es. `{"Archive 01":"4 TB"}`). Archive drive e Backup drive sul progetto usano la stessa lista `archiveDrives`. Eventuali valori legacy in `backupDrives` vengono uniti in `archiveDrives` alla lettura.
 
 ### Seed iniziale
 

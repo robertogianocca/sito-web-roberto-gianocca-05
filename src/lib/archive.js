@@ -132,35 +132,95 @@ export async function deleteClient(name) {
 const DEFAULT_SETTINGS = {
   projectTypes: [],
   archiveDrives: [],
-  backupDrives: [],
+  driveCapacities: {},
 };
+
+function normalizeStringList(value) {
+  return Array.isArray(value) ? value.filter((v) => typeof v === "string" && v) : [];
+}
+
+function normalizeDriveCapacities(value, driveNames) {
+  const raw =
+    value && typeof value === "object" && !Array.isArray(value) ? value : {};
+  const names = new Set(driveNames);
+  const out = {};
+  for (const [key, capacity] of Object.entries(raw)) {
+    if (!names.has(key)) continue;
+    if (typeof capacity !== "string") continue;
+    const trimmed = capacity.trim();
+    if (trimmed) out[key] = trimmed;
+  }
+  return out;
+}
 
 export async function readSettings() {
   const db = getTursoClient();
   const { rows } = await db.execute("SELECT key, value FROM settings");
   const settings = { ...DEFAULT_SETTINGS };
+  let legacyBackupDrives = [];
+
   for (const row of rows) {
     try {
-      settings[row.key] = JSON.parse(row.value);
+      const parsed = JSON.parse(row.value);
+      if (row.key === "backupDrives") {
+        legacyBackupDrives = normalizeStringList(parsed);
+        continue;
+      }
+      settings[row.key] = parsed;
     } catch {
       // ignore malformed rows
     }
   }
+
+  settings.projectTypes = normalizeStringList(settings.projectTypes);
+  settings.archiveDrives = normalizeStringList(settings.archiveDrives);
+  settings.driveCapacities = normalizeDriveCapacities(
+    settings.driveCapacities,
+    settings.archiveDrives
+  );
+
+  const extras = legacyBackupDrives.filter((d) => !settings.archiveDrives.includes(d));
+  if (extras.length > 0 || legacyBackupDrives.length > 0) {
+    if (extras.length > 0) {
+      settings.archiveDrives = [...settings.archiveDrives, ...extras];
+      settings.driveCapacities = normalizeDriveCapacities(
+        settings.driveCapacities,
+        settings.archiveDrives
+      );
+    }
+    await writeSettings(settings);
+  }
+
   return settings;
 }
 
 export async function writeSettings(settings) {
   const db = getTursoClient();
-  const entries = [
-    ["projectTypes", settings.projectTypes],
-    ["archiveDrives", settings.archiveDrives],
-    ["backupDrives", settings.backupDrives],
-  ];
+  const archiveDrives = normalizeStringList(settings.archiveDrives);
+  const driveCapacities = normalizeDriveCapacities(
+    settings.driveCapacities,
+    archiveDrives
+  );
+
   await db.batch(
-    entries.map(([key, value]) => ({
-      sql: "INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)",
-      args: [key, JSON.stringify(value)],
-    })),
+    [
+      {
+        sql: "INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)",
+        args: ["projectTypes", JSON.stringify(normalizeStringList(settings.projectTypes))],
+      },
+      {
+        sql: "INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)",
+        args: ["archiveDrives", JSON.stringify(archiveDrives)],
+      },
+      {
+        sql: "INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)",
+        args: ["driveCapacities", JSON.stringify(driveCapacities)],
+      },
+      {
+        sql: "DELETE FROM settings WHERE key = ?",
+        args: ["backupDrives"],
+      },
+    ],
     "write"
   );
 }
