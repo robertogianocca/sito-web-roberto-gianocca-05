@@ -1,6 +1,7 @@
 "use client";
 
 import { getStatus, STATUS_META, formatProjectId } from "./archiveStatus";
+import { backupTypeLabel } from "@/lib/archiveBackup";
 
 function Check({ value }) {
   if (value) {
@@ -79,7 +80,9 @@ export function ArchiveRow({ project, onEdit }) {
         <Check value={project.cleaned} />
       </td>
       <td className="px-3 py-2 text-center">
-        <Check value={project.backupCompleted} />
+        <span className="text-xs font-medium text-zinc-600">
+          {backupTypeLabel(project.backupType) || "—"}
+        </span>
       </td>
     </tr>
   );

@@ -11,7 +11,7 @@
 import { NextResponse } from "next/server";
 import { readFile } from "fs/promises";
 import path from "path";
-import { createProject, addClient } from "@/lib/archive";
+import { createProject, addClient, normalizeBackupType } from "@/lib/archive";
 import { ensureInit } from "@/lib/turso";
 
 function checkAuth(request) {
@@ -63,7 +63,7 @@ export async function POST(request) {
           archiveDrive: p.archiveDrive ?? "",
           backupDrive: p.backupDrive ?? "",
           cleaned: Boolean(p.cleaned),
-          backupCompleted: Boolean(p.backupCompleted),
+          backupType: normalizeBackupType(p.backupType, p.backupCompleted),
           notes: p.notes ?? "",
           tags: Array.isArray(p.tags) ? p.tags : [],
           createdAt: p.createdAt ?? new Date().toISOString(),

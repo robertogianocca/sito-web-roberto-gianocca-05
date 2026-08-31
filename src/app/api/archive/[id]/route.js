@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
-import { readProjects, updateProject, deleteProject } from "@/lib/archive";
+import {
+  readProjects,
+  updateProject,
+  deleteProject,
+  normalizeBackupType,
+} from "@/lib/archive";
 import { ensureInit } from "@/lib/turso";
 
 function checkAuth(request) {
@@ -36,7 +41,7 @@ export async function PUT(request, { params }) {
     backupDrive: Array.isArray(body.backupDrive) ? body.backupDrive : [],
     size: body.size ?? "",
     cleaned: Boolean(body.cleaned),
-    backupCompleted: Boolean(body.backupCompleted),
+    backupType: normalizeBackupType(body.backupType),
     notes: body.notes ?? "",
     tags: Array.isArray(body.tags) ? body.tags : [],
     updatedAt: new Date().toISOString(),

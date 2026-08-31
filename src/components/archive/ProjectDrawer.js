@@ -21,7 +21,7 @@ const EMPTY_FORM = {
   backupDrive: [],
   size: "",
   cleaned: false,
-  backupCompleted: false,
+  backupType: "",
   notes: "",
   tags: [],
 };
@@ -68,6 +68,44 @@ function ToggleCheckbox({ id, label, checked, onChange }) {
         className="sr-only"
       />
     </label>
+  );
+}
+
+const BACKUP_TYPE_OPTIONS = [
+  { value: "", label: "None" },
+  { value: "full", label: "Full", hint: "Original files" },
+  { value: "export", label: "Export", hint: "Exported files only" },
+];
+
+function BackupTypeSelect({ value, onChange }) {
+  return (
+    <div>
+      <p className={`${labelClass} mb-2`}>Backup type</p>
+      <div className="grid grid-cols-3 gap-1.5">
+        {BACKUP_TYPE_OPTIONS.map((option) => {
+          const selected = value === option.value;
+          return (
+            <button
+              key={option.value || "none"}
+              type="button"
+              onClick={() => onChange(option.value)}
+              className={`rounded-lg border px-2 py-2 text-center transition ${
+                selected
+                  ? "border-emerald-300 bg-emerald-50/80 text-emerald-800"
+                  : "border-zinc-200 bg-zinc-50/80 text-zinc-500 hover:border-zinc-300 hover:text-zinc-700"
+              }`}
+            >
+              <span className="block text-sm font-medium">{option.label}</span>
+              {option.hint && (
+                <span className="mt-0.5 block text-2xs leading-tight opacity-80">
+                  {option.hint}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
@@ -389,6 +427,7 @@ export function ProjectDrawer({
           type: Array.isArray(project.type) ? project.type : (project.type ? [project.type] : []),
           archiveDrive: Array.isArray(project.archiveDrive) ? project.archiveDrive : (project.archiveDrive ? [project.archiveDrive] : []),
           backupDrive: Array.isArray(project.backupDrive) ? project.backupDrive : (project.backupDrive ? [project.backupDrive] : []),
+          backupType: project.backupType ?? "",
         });
       } else {
         setForm({ ...EMPTY_FORM });
@@ -628,11 +667,9 @@ export function ProjectDrawer({
                   checked={form.cleaned}
                   onChange={(v) => set("cleaned", v)}
                 />
-                <ToggleCheckbox
-                  id="f-backupCompleted"
-                  label="Backup completed"
-                  checked={form.backupCompleted}
-                  onChange={(v) => set("backupCompleted", v)}
+                <BackupTypeSelect
+                  value={form.backupType}
+                  onChange={(v) => set("backupType", v)}
                 />
               </div>
             </section>

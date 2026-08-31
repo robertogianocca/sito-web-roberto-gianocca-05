@@ -106,8 +106,14 @@ export function ArchiveShell({ initialSettings, initialClients, locale, logoutAc
 
     return [...result].sort((a, b) => {
       const dir = sortDir === "asc" ? 1 : -1;
-      if (sortKey === "cleaned" || sortKey === "backupCompleted") {
-        return (Number(Boolean(a[sortKey])) - Number(Boolean(b[sortKey]))) * dir;
+      if (sortKey === "cleaned") {
+        return (Number(Boolean(a.cleaned)) - Number(Boolean(b.cleaned))) * dir;
+      }
+      if (sortKey === "backupType") {
+        const order = { "": 0, export: 1, full: 2 };
+        const av = order[a.backupType] ?? 0;
+        const bv = order[b.backupType] ?? 0;
+        return (av - bv) * dir;
       }
       const av = Array.isArray(a[sortKey])
         ? a[sortKey].join(", ")

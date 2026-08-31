@@ -1,5 +1,8 @@
 import { getTursoClient } from "./turso";
 import { formatProjectId } from "./archiveFormat";
+import { normalizeBackupType, isBackupDone } from "./archiveBackup";
+
+export { normalizeBackupType, isBackupDone, backupTypeLabel } from "./archiveBackup";
 
 function parseArrayField(val) {
   if (!val) return [];
@@ -25,7 +28,7 @@ function rowToProject(row) {
     backupDrive: parseArrayField(row.backupDrive),
     size: row.size ?? "",
     cleaned: Boolean(row.cleaned),
-    backupCompleted: Boolean(row.backupCompleted),
+    backupType: normalizeBackupType(row.backupType),
     notes: row.notes ?? "",
     tags: parseArrayField(row.tags),
     createdAt: row.createdAt ?? "",
@@ -43,11 +46,12 @@ export async function readProjects() {
 
 export async function createProject(project) {
   const db = getTursoClient();
+  const backupType = normalizeBackupType(project.backupType);
   await db.execute({
     sql: `INSERT INTO projects
       (id, projectId, invoiceNumber, title, client, type, date, location,
-       archiveDrive, backupDrive, size, cleaned, backupCompleted, notes, tags, createdAt, updatedAt)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+       archiveDrive, backupDrive, size, cleaned, backupCompleted, backupType, notes, tags, createdAt, updatedAt)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     args: [
       project.id,
       formatProjectId(project.projectId),
@@ -61,7 +65,8 @@ export async function createProject(project) {
       JSON.stringify(Array.isArray(project.backupDrive) ? project.backupDrive : []),
       project.size ?? "",
       project.cleaned ? 1 : 0,
-      project.backupCompleted ? 1 : 0,
+      isBackupDone(backupType) ? 1 : 0,
+      backupType,
       project.notes ?? "",
       JSON.stringify(Array.isArray(project.tags) ? project.tags : []),
       project.createdAt ?? "",
@@ -72,10 +77,11 @@ export async function createProject(project) {
 
 export async function updateProject(id, fields) {
   const db = getTursoClient();
+  const backupType = normalizeBackupType(fields.backupType);
   await db.execute({
     sql: `UPDATE projects SET
       projectId=?, invoiceNumber=?, title=?, client=?, type=?, date=?, location=?,
-      archiveDrive=?, backupDrive=?, size=?, cleaned=?, backupCompleted=?, notes=?, tags=?, updatedAt=?
+      archiveDrive=?, backupDrive=?, size=?, cleaned=?, backupCompleted=?, backupType=?, notes=?, tags=?, updatedAt=?
       WHERE id=?`,
     args: [
       formatProjectId(fields.projectId),
@@ -89,7 +95,8 @@ export async function updateProject(id, fields) {
       JSON.stringify(Array.isArray(fields.backupDrive) ? fields.backupDrive : []),
       fields.size ?? "",
       fields.cleaned ? 1 : 0,
-      fields.backupCompleted ? 1 : 0,
+      isBackupDone(backupType) ? 1 : 0,
+      backupType,
       fields.notes ?? "",
       JSON.stringify(Array.isArray(fields.tags) ? fields.tags : []),
       fields.updatedAt ?? new Date().toISOString(),

@@ -38,6 +38,7 @@ export async function ensureInit() {
     backupDrive TEXT NOT NULL DEFAULT '',
     cleaned INTEGER NOT NULL DEFAULT 0,
     backupCompleted INTEGER NOT NULL DEFAULT 0,
+    backupType TEXT NOT NULL DEFAULT '',
     notes TEXT NOT NULL DEFAULT '',
     tags TEXT NOT NULL DEFAULT '[]',
     createdAt TEXT NOT NULL DEFAULT '',
@@ -56,6 +57,23 @@ export async function ensureInit() {
   await db
     .execute("ALTER TABLE projects ADD COLUMN size TEXT NOT NULL DEFAULT ''")
     .catch(() => {});
+
+  await db
+    .execute("ALTER TABLE projects ADD COLUMN backupType TEXT NOT NULL DEFAULT ''")
+    .catch(() => {});
+
+  const { rows: migrationRows } = await db.execute(
+    "SELECT value FROM settings WHERE key = 'backupTypeLegacyMigrated'"
+  );
+  if (migrationRows.length === 0) {
+    await db.execute(
+      "UPDATE projects SET backupType = 'full' WHERE backupCompleted = 1 AND backupType = ''"
+    );
+    await db.execute({
+      sql: "INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)",
+      args: ["backupTypeLegacyMigrated", "1"],
+    });
+  }
 
   const { rows } = await db.execute("SELECT COUNT(*) as count FROM settings");
   const count = Number(rows[0]?.count ?? 0);

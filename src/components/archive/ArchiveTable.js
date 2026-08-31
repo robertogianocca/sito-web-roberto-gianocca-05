@@ -12,7 +12,7 @@ const COLUMNS = [
   { key: "backupDrive", label: "Backup", align: "left" },
   { key: "size", label: "Size", align: "left" },
   { key: "cleaned", label: "Cleaned", align: "center" },
-  { key: "backupCompleted", label: "Backed up", align: "center" },
+  { key: "backupType", label: "Backup", align: "center" },
 ];
 
 function SortableTh({ column, sortKey, sortDir, onSort }) {

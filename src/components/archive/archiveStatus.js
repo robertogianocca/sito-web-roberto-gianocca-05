@@ -1,11 +1,12 @@
 import { formatProjectId } from "@/lib/archiveFormat";
+import { isBackupDone } from "@/lib/archiveBackup";
 
 export { formatProjectId };
 
 /**
  * Derives the 4-level status of a project from its fields.
  *
- * complete    — cleaned + backupCompleted both true
+ * complete    — cleaned + backup done (full or export)
  * partial     — at least one is true
  * open        — archiveDrive set but nothing done yet
  * unarchived  — no archiveDrive set
@@ -15,8 +16,9 @@ export function getStatus(project) {
     ? project.archiveDrive.length > 0
     : Boolean(project.archiveDrive);
   if (!hasArchive) return "unarchived";
-  if (project.cleaned && project.backupCompleted) return "complete";
-  if (project.cleaned || project.backupCompleted) return "partial";
+  const backupDone = isBackupDone(project.backupType);
+  if (project.cleaned && backupDone) return "complete";
+  if (project.cleaned || backupDone) return "partial";
   return "open";
 }
 

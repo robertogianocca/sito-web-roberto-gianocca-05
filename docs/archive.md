@@ -70,7 +70,21 @@ Se sembra che l’archivio non sia protetto, prova in finestra anonima: potresti
   - **Not archived** — nessun disco archivio
   - **Incomplete** — disco impostato, pulizia/backup non completati
   - **In progress** — almeno uno tra pulizia e backup completato
-  - **Complete** — pulizia e backup entrambi completati
+  - **Complete** — pulizia e backup entrambi completati (backup = Full o Export)
+
+### Tipo backup
+
+Nel form progetto, **Backup type** ha tre stati:
+
+| Valore | Significato |
+|--------|-------------|
+| None | Non ancora backuppato |
+| Full | Backup completo con file originali |
+| Export | Solo file esportati / deliverable |
+
+Entrambi Full e Export contano come backup completato per i colori riga (**In progress** / **Complete**). La colonna tabella **Backup** mostra `Full`, `Export` o `—`.
+
+**Migrazione:** i progetti con il vecchio flag `backupCompleted` attivo sono stati convertiti in `backupType = full` al primo avvio dopo l’aggiornamento.
 
 ### Capacità dischi
 
@@ -83,7 +97,7 @@ Quando filtri per un singolo Archive drive, sotto i filtri compare un riepilogo:
 
 ### Form progetto (drawer)
 
-Campi principali: Project ID, Invoice #, Title, Client, Type, Date (testo libero, es. `Maggio 2026`), Location, Archive drive, Backup drive, Cleaned, Backup completed, Notes, Tags.
+Campi principali: Project ID, Invoice #, Title, Client, Type, Date (testo libero, es. `Maggio 2026`), Location, Archive drive, Backup drive, Size, Cleaned, Backup type, Notes, Tags.
 
 **Multi-selezione:** Client, Type, Archive drive e Backup drive accettano più valori (array salvati come JSON nel DB).
 

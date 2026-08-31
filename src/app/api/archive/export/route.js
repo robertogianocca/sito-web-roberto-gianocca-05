@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { readProjects } from "@/lib/archive";
+import { readProjects, backupTypeLabel } from "@/lib/archive";
 import { ensureInit } from "@/lib/turso";
 import ExcelJS from "exceljs";
 
@@ -21,7 +21,7 @@ const COLUMNS = [
   { header: "Backup Drive", key: "backupDrive", width: 16 },
   { header: "Size", key: "size", width: 12 },
   { header: "Cleaned", key: "cleaned", width: 10 },
-  { header: "Backup Completed", key: "backupCompleted", width: 18 },
+  { header: "Backup Type", key: "backupType", width: 14 },
   { header: "Notes", key: "notes", width: 40 },
   { header: "Tags", key: "tags", width: 30 },
   { header: "Created At", key: "createdAt", width: 22 },
@@ -92,7 +92,7 @@ export async function GET(request) {
       archiveDrive: Array.isArray(p.archiveDrive) ? p.archiveDrive.join(", ") : (p.archiveDrive ?? ""),
       backupDrive: Array.isArray(p.backupDrive) ? p.backupDrive.join(", ") : (p.backupDrive ?? ""),
       cleaned: boolStr(p.cleaned),
-      backupCompleted: boolStr(p.backupCompleted),
+      backupType: backupTypeLabel(p.backupType),
       tags: Array.isArray(p.tags) ? p.tags.join(", ") : "",
     });
     row.height = 18;
