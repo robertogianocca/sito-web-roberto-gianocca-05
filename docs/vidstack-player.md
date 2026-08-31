@@ -25,7 +25,7 @@ ma il progetto usa React 19.
 ## Architettura del componente
 
 ```
-VimeoPlayer({ vimeoId, title })
+VimeoPlayer({ vimeoId, title, className? })
 └── <MediaPlayer viewType="video" src="vimeo/{id}">
       ├── <MediaProvider />          ← iframe Vimeo gestito da VidStack
       └── <PlayerUI />               ← inner component (useMediaState vive qui)

@@ -14,7 +14,7 @@ Per il layout orizzontale generale, vedi [Scroll orizzontale homepage](./homepag
 | Descrizione del **progetto in evidenza** (mosaico / player) | [`src/data/videos.js`](../src/data/videos.js), [`src/data/photography-galleries.js`](../src/data/photography-galleries.js) |
 | Label UI (CTA, aria-label, titolo Contatti) | [`src/messages/it.json`](../src/messages/it.json), [`src/messages/en.json`](../src/messages/en.json) |
 
-Non duplicare: l’header parla dell’area del portfolio; il blocco sotto continua a usare la `shortDescription` del singolo video o galleria featured.
+Non duplicare: l’header parla dell’area del portfolio; il blocco sotto continua a usare il `subtitle` del video featured o la `shortDescription` della galleria featured.
 
 ---
 

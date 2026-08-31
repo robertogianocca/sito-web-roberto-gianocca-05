@@ -11,3 +11,4 @@
 | Form contatti (Resend) | [contact-form-resend.md](./contact-form-resend.md) |
 | Archivio progetti privato (Turso) | [archive.md](./archive.md) |
 | Player video (VidStack + Vimeo) | [vidstack-player.md](./vidstack-player.md) |
+| Sezione Video (manifest, dettaglio, crediti) | [video.md](./video.md) |

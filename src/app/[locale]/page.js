@@ -16,6 +16,7 @@ import { Link } from "@/i18n/navigation";
 import { getHomeSectionCopy } from "@/data/home-sections";
 import { getFeaturedVideo, getRecentVideos, normalizeVimeoId } from "@/data/videos";
 import { resolveLocalized } from "@/lib/i18n-content";
+import { plainTextFromMarkdown } from "@/lib/plain-text-from-markdown";
 import { fetchVimeoThumbnail } from "@/lib/vimeo";
 import {
   getFeaturedGallery,
@@ -54,7 +55,7 @@ export default async function Home({ params }) {
   }
 
   function getVideoDescription(video) {
-    return resolveLocalized(video?.shortDescription, locale);
+    return plainTextFromMarkdown(resolveLocalized(video?.subtitle, locale));
   }
 
   const featuredVimeoId = featuredVideo ? normalizeVimeoId(featuredVideo.vimeoId) : null;

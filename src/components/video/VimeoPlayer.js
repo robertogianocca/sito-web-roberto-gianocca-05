@@ -211,11 +211,11 @@ function PlayerUI() {
 // ─── VimeoPlayer ──────────────────────────────────────────────────────────────
 
 /**
- * @param {{ vimeoId: string; title: string }} props
+ * @param {{ vimeoId: string; title: string; className?: string }} props
  */
-export function VimeoPlayer({ vimeoId, title }) {
+export function VimeoPlayer({ vimeoId, title, className }) {
   return (
-    <div className="relative w-full max-w-5xl">
+    <div className={["relative w-full max-w-5xl", className].filter(Boolean).join(" ")}>
       {/*
         viewType="video"  → applies [data-view-type="video"] immediately so
                             controls.css transitions fire from the first render.

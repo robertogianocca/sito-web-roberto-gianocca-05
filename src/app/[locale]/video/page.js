@@ -6,6 +6,8 @@ import { VideoCard } from "@/components/video/VideoCard";
 import { BackLink } from "@/components/shared/BackLink";
 import { PageShell } from "@/components/shared/PageShell";
 import { TagFilter } from "@/components/shared/TagFilter";
+import { resolveLocalized } from "@/lib/i18n-content";
+import { plainTextFromMarkdown } from "@/lib/plain-text-from-markdown";
 
 export async function generateMetadata({ params }) {
   const { locale } = await params;
@@ -49,10 +51,8 @@ export default async function VideoPage({ params, searchParams }) {
       : video.title;
   }
 
-  function getDescription(video) {
-    return typeof video.shortDescription === "object"
-      ? (video.shortDescription[locale] ?? video.shortDescription.en)
-      : video.shortDescription;
+  function getSubtitle(video) {
+    return plainTextFromMarkdown(resolveLocalized(video.subtitle, locale));
   }
 
   return (
@@ -98,7 +98,7 @@ export default async function VideoPage({ params, searchParams }) {
             <li key={video.slug}>
               <VideoCard
                 title={getTitle(video)}
-                shortDescription={getDescription(video)}
+                shortDescription={getSubtitle(video)}
                 thumbnailUrl={video.thumbnailUrl}
                 thumbnailAlt={t("thumbnailAlt", { title: getTitle(video) })}
                 href={`/video/${video.slug}`}

@@ -25,7 +25,7 @@ src/
       en/                               ← post del blog in inglese
   data/
     photography-galleries.js            ← title/shortDescription: { it, en }
-    videos.js                           ← title/shortDescription: { it, en }
+    videos.js                           ← title/subtitle/credits: { it, en }
   lib/
     blog.js                             ← getAllPosts(locale), getPostBySlug(locale, slug)
     metadata.js                         ← buildAlternates() per hreflang SEO
@@ -86,20 +86,33 @@ Il frontmatter è identico per entrambe le versioni (vedi `docs/blog.md`); cambi
 
 ## Contenuti bilingui: fotografia e video
 
-I dati di fotografia e video in `src/data/photography-galleries.js` e `src/data/videos.js` supportano `title` e `shortDescription` come oggetti `{ it, en }`:
+I dati di fotografia e video in `src/data/photography-galleries.js` e `src/data/videos.js` supportano campi localizzati `{ it, en }`:
+
+**Fotografia** — `title`, `shortDescription` (markdown inline per grassetto, corsivo, link).
+
+**Video** — `title`, `subtitle` (markdown inline per corsivo, es. `*Matt Pascale & The Stomps*`), `credits[].role` (vedi [video.md](./video.md)).
 
 ```js
+// Galleria fotografica
 {
   slug: "nome-galleria",
-  title: {
-    it: "Titolo in italiano",
-    en: "English title",
-  },
-  shortDescription: {
-    it: "Descrizione in italiano.",
-    en: "Description in English.",
-  },
+  title: { it: "Titolo in italiano", en: "English title" },
+  shortDescription: { it: "Descrizione in italiano.", en: "Description in English." },
   folder: "...",
+}
+
+// Video
+{
+  slug: "sugar-mama",
+  title: "Sugar Mama",
+  subtitle: {
+    it: "Video musicale per *Matt Pascale & The Stomps*",
+    en: "Music video for *Matt Pascale & The Stomps*",
+  },
+  credits: [
+    { role: { it: "Regia", en: "Direction" }, names: "Roberto Gianocca" },
+  ],
+  vimeoId: "1132948199",
 }
 ```
 

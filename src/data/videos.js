@@ -2,7 +2,9 @@
  * Elenco video: testi e id Vimeo in repo; player da `https://player.vimeo.com/video/{id}`.
  * Anteprima card (opzionale): `thumbnailUrl` HTTPS; senza, la card mostra un segnaposto.
  *
- * `title` e `shortDescription` possono essere stringhe (una sola lingua) o oggetti `{ it, en }`.
+ * `title` e `subtitle` possono essere stringhe (una sola lingua) o oggetti `{ it, en }`.
+ * `subtitle` supporta markdown inline per parti in corsivo, es. `Music video for *Matt Pascale & The Stomps*`.
+ * `credits` (opzionale): array di `{ role, names }` — `role` localizzato, `names` testo piano.
  * `tags` (opzionale): array di stringhe per filtrare i video nella listing page (es. ["Drone", "Live"]).
  * `featured` (opzionale): `true` per il video in evidenza in homepage. Solo il primo `featured: true`
  *   viene usato; se nessuno è marcato si usa `VIDEOS[0]`.
@@ -10,8 +12,9 @@
  * @type {Array<{
  *   slug: string,
  *   title: string | { it: string, en: string },
- *   shortDescription: string | { it: string, en: string },
+ *   subtitle: string | { it: string, en: string },
  *   vimeoId: string | number,
+ *   credits?: Array<{ role: string | { it: string, en: string }, names: string }>,
  *   thumbnailUrl?: string,
  *   tags?: string[],
  *   featured?: boolean
@@ -19,15 +22,42 @@
  */
 export const VIDEOS = [
   {
-    slug: "esempio-vimeo",
-    title: {
-      it: "Esempio Vimeo",
-      en: "Vimeo Example",
+    slug: "sugar-mama",
+    title: "Sugar Mama",
+    subtitle: {
+      it: "Video musicale per *Matt Pascale & The Stomps*",
+      en: "Music video for *Matt Pascale & The Stomps*",
     },
-    shortDescription: {
-      it: "Video di esempio dal player Vimeo (sostituisci slug e vimeoId con i tuoi contenuti).",
-      en: "Sample video from Vimeo player (replace slug and vimeoId with your own content).",
-    },
+    credits: [
+      {
+        role: {
+          it: "Regia, Montaggio, Post-produzione",
+          en: "Direction, Editing, Post-production",
+        },
+        names: "Roberto Gianocca",
+      },
+      {
+        role: { it: "Assistente alla regia", en: "Assistant Director" },
+        names: "Shondel Bervini",
+      },
+      {
+        role: { it: "Styling e costumi", en: "Styling & Costumes" },
+        names: "Shondel Bervini, Sofia Buob",
+      },
+      {
+        role: { it: "Trucco e acconciatura", en: "Make-up & Hair" },
+        names: "Sofia Buob",
+      },
+      {
+        role: { it: "Interpreti", en: "Performers" },
+        names: "Matt Pascale, Sofia Buob, Shondel Bervini",
+      },
+      {
+        role: { it: "Ringraziamenti speciali", en: "Special Thanks" },
+        names:
+          "Elia Squartini, Gianni Muggeo, Andrea Zanni, Alan Fraquelli, Maurizio Faggi, Giulia Campiglia, Wabi the Dog",
+      },
+    ],
     vimeoId: "1132948199",
     featured: true,
   },
@@ -48,7 +78,7 @@ export function normalizeVimeoId(raw) {
 
 /**
  * @param {string} slug
- * @returns {{ slug: string, title: { it: string, en: string } | string, shortDescription: { it: string, en: string } | string, vimeoId: string | number, thumbnailUrl?: string, tags?: string[] } | null}
+ * @returns {(typeof VIDEOS)[number] | null}
  */
 export function getVideoBySlug(slug) {
   return VIDEOS.find((v) => v.slug === slug) ?? null;
