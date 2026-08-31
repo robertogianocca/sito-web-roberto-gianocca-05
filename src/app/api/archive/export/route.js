@@ -22,6 +22,7 @@ const COLUMNS = [
   { header: "Size", key: "size", width: 12 },
   { header: "Cleaned", key: "cleaned", width: 10 },
   { header: "Backup Type", key: "backupType", width: 14 },
+  { header: "Contact", key: "contact", width: 24 },
   { header: "Notes", key: "notes", width: 40 },
   { header: "Tags", key: "tags", width: 30 },
   { header: "Created At", key: "createdAt", width: 22 },

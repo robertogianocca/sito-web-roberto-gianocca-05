@@ -29,6 +29,7 @@ function rowToProject(row) {
     size: row.size ?? "",
     cleaned: Boolean(row.cleaned),
     backupType: normalizeBackupType(row.backupType),
+    contact: row.contact ?? "",
     notes: row.notes ?? "",
     tags: parseArrayField(row.tags),
     createdAt: row.createdAt ?? "",
@@ -50,8 +51,8 @@ export async function createProject(project) {
   await db.execute({
     sql: `INSERT INTO projects
       (id, projectId, invoiceNumber, title, client, type, date, location,
-       archiveDrive, backupDrive, size, cleaned, backupCompleted, backupType, notes, tags, createdAt, updatedAt)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+       archiveDrive, backupDrive, size, cleaned, backupCompleted, backupType, contact, notes, tags, createdAt, updatedAt)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     args: [
       project.id,
       formatProjectId(project.projectId),
@@ -67,6 +68,7 @@ export async function createProject(project) {
       project.cleaned ? 1 : 0,
       isBackupDone(backupType) ? 1 : 0,
       backupType,
+      project.contact ?? "",
       project.notes ?? "",
       JSON.stringify(Array.isArray(project.tags) ? project.tags : []),
       project.createdAt ?? "",
@@ -81,7 +83,7 @@ export async function updateProject(id, fields) {
   await db.execute({
     sql: `UPDATE projects SET
       projectId=?, invoiceNumber=?, title=?, client=?, type=?, date=?, location=?,
-      archiveDrive=?, backupDrive=?, size=?, cleaned=?, backupCompleted=?, backupType=?, notes=?, tags=?, updatedAt=?
+      archiveDrive=?, backupDrive=?, size=?, cleaned=?, backupCompleted=?, backupType=?, contact=?, notes=?, tags=?, updatedAt=?
       WHERE id=?`,
     args: [
       formatProjectId(fields.projectId),
@@ -97,6 +99,7 @@ export async function updateProject(id, fields) {
       fields.cleaned ? 1 : 0,
       isBackupDone(backupType) ? 1 : 0,
       backupType,
+      fields.contact ?? "",
       fields.notes ?? "",
       JSON.stringify(Array.isArray(fields.tags) ? fields.tags : []),
       fields.updatedAt ?? new Date().toISOString(),

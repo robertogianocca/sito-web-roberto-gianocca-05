@@ -31,8 +31,8 @@ export function ArchiveShell({ initialSettings, initialClients, locale, logoutAc
   const [filterYear, setFilterYear] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterArchiveDrive, setFilterArchiveDrive] = useState("all");
-  const [sortKey, setSortKey] = useState("date");
-  const [sortDir, setSortDir] = useState("desc");
+  const [sortKey, setSortKey] = useState("projectId");
+  const [sortDir, setSortDir] = useState("asc");
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingProject, setEditingProject] = useState(null);

@@ -51,6 +51,7 @@ export async function POST(request) {
     size: body.size ?? "",
     cleaned: Boolean(body.cleaned),
     backupType: normalizeBackupType(body.backupType),
+    contact: body.contact ?? "",
     notes: body.notes ?? "",
     tags: Array.isArray(body.tags) ? body.tags : [],
     createdAt: now,

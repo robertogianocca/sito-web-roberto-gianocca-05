@@ -42,6 +42,7 @@ export async function PUT(request, { params }) {
     size: body.size ?? "",
     cleaned: Boolean(body.cleaned),
     backupType: normalizeBackupType(body.backupType),
+    contact: body.contact ?? "",
     notes: body.notes ?? "",
     tags: Array.isArray(body.tags) ? body.tags : [],
     updatedAt: new Date().toISOString(),

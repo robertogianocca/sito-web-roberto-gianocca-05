@@ -22,6 +22,7 @@ const EMPTY_FORM = {
   size: "",
   cleaned: false,
   backupType: "",
+  contact: "",
   notes: "",
   tags: [],
 };
@@ -428,6 +429,9 @@ export function ProjectDrawer({
           archiveDrive: Array.isArray(project.archiveDrive) ? project.archiveDrive : (project.archiveDrive ? [project.archiveDrive] : []),
           backupDrive: Array.isArray(project.backupDrive) ? project.backupDrive : (project.backupDrive ? [project.backupDrive] : []),
           backupType: project.backupType ?? "",
+          contact: project.contact ?? "",
+          size: project.size ?? "",
+          notes: project.notes ?? "",
         });
       } else {
         setForm({ ...EMPTY_FORM });
@@ -677,6 +681,19 @@ export function ProjectDrawer({
             <section>
               <p className={sectionTitle}>Notes & Tags</p>
               <div className="space-y-3">
+                <div>
+                  <label className={labelClass} htmlFor="f-contact">
+                    Contact
+                  </label>
+                  <input
+                    id="f-contact"
+                    type="text"
+                    className={inputClass}
+                    value={form.contact ?? ""}
+                    onChange={(e) => set("contact", e.target.value)}
+                    placeholder="Name, email, phone…"
+                  />
+                </div>
                 <div>
                   <label className={labelClass} htmlFor="f-notes">
                     Notes
