@@ -45,7 +45,7 @@ La risoluzione locale `{ it, en }` → stringa è in [`src/lib/i18n-content.js`]
 
 ## Layout header
 
-[`HorizontalSection`](../src/components/home/HorizontalSection.js) accetta la prop opzionale `shortDescription` (già localizzata, passata da [`page.js`](../src/app/[locale]/page.js)).
+[`HorizontalSection`](../src/components/home/HorizontalSection.js) accetta la prop opzionale `shortDescription` (già localizzata, passata da [`page.js`](../src/app/%5Blocale%5D/page.js)).
 
 | Viewport | Comportamento |
 |----------|----------------|
@@ -72,3 +72,5 @@ Se `shortDescription` è omessa, l’header resta solo titolo (comportamento pre
 ## Placeholder attuale
 
 Tutte le sezioni usano temporaneamente `LOREM_TWO_LINES` (~due righe a `max-w-prose`) per valutare il layout. Sostituire con copy reale per ogni chiave in `HOME_SECTIONS` quando pronto.
+
+Anche le pagine `/photography` e `/video` hanno una descrizione placeholder, più lunga (~cinque righe) perché lì il testo introduttivo ha più spazio. Quella **non** vive qui: sta in `src/messages/{it,en}.json` sotto `Photography.pageDescription` e `Video.pageDescription`. Quando scrivi il copy definitivo ricordati di entrambi i posti.

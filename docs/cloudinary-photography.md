@@ -40,8 +40,9 @@ flowchart LR
 |-------|----------|
 | Manifest gallerie (slug, testi, percorso cartella) | [`src/data/photography-galleries.js`](../src/data/photography-galleries.js) |
 | Fetch API, URL delivery, cache tag | [`src/lib/cloudinary-server.js`](../src/lib/cloudinary-server.js) |
-| Lista gallerie | [`src/app/photography/page.js`](../src/app/photography/page.js) |
-| Dettaglio / slideshow | [`src/app/photography/[slug]/page.js`](../src/app/photography/[slug]/page.js) |
+| Lista gallerie | [`src/app/[locale]/photography/page.js`](../src/app/%5Blocale%5D/photography/page.js) |
+| Dettaglio / slideshow | [`src/app/[locale]/photography/[slug]/page.js`](../src/app/%5Blocale%5D/photography/%5Bslug%5D/page.js) |
+| Preparazione dati mosaico homepage | [`src/lib/home-photography-data.js`](../src/lib/home-photography-data.js) |
 | Card in elenco | [`src/components/photography/PhotographyGalleryCard.js`](../src/components/photography/PhotographyGalleryCard.js) |
 | Carosello | [`src/components/photography/GallerySlideshow.client.js`](../src/components/photography/GallerySlideshow.client.js) |
 | Dominio immagini per `next/image` | [`next.config.mjs`](../next.config.mjs) (`res.cloudinary.com`) |

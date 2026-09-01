@@ -25,9 +25,14 @@ Il sito memorizza in cache i risultati delle chiamate a Cloudinary (lista immagi
 
 1. Apri nel browser (in produzione o in locale, a seconda di dove vuoi pulire la cache):
 
-   **`/photography/revalidate-cache`**
+   **`/<locale>/photography/revalidate-cache`**
 
-   Esempio in produzione: `https://<tuo-dominio>/photography/revalidate-cache`
+   Esempio in produzione: `https://<tuo-dominio>/it/photography/revalidate-cache`
+
+   L'URL senza locale (`/photography/revalidate-cache`) funziona lo stesso: il middleware
+   risponde `307` verso la lingua di default. In alternativa, in fondo alla descrizione
+   della pagina `/photography` c'è il link **«rigenera cache»**, che punta alla locale
+   corrente.
 
 2. Nel campo **“Segreto di rivalidazione”** incolla **esattamente** lo stesso valore di `REVALIDATION_SECRET`.
 
@@ -37,15 +42,15 @@ Il sito memorizza in cache i risultati delle chiamate a Cloudinary (lista immagi
 
 ## Cosa fa l’azione server
 
-Il form invia una **Server Action** (`src/app/photography/revalidate-cache/actions.js`) che:
+Il form invia una **Server Action** (`src/app/[locale]/photography/revalidate-cache/actions.js`) che:
 
 1. Verifica che il segreto inviato coincida con `process.env.REVALIDATION_SECRET`.
 2. Chiama `revalidateTag("photography-cloudinary")` per invalidare i dati in cache legati a Cloudinary.
 3. Chiama `revalidatePath("/photography", "layout")` per far rigenerare le pagine sotto il segmento `/photography` (lista e dettaglio gallerie).
 
-La route `/photography/revalidate-cache` ha `robots: noindex` nei metadata: non è pensata per l’indicizzazione.
+La route `/[locale]/photography/revalidate-cache` ha `robots: noindex` nei metadata: non è pensata per l’indicizzazione.
 
 ## Note
 
-- La pagina di rivalidazione è pensata per **chi conosce il segreto**; non condividere `REVALIDATION_SECRET` pubblicamente.
+- La pagina di rivalidazione è pensata per **chi conosce il segreto**; non condividere `REVALIDATION_SECRET` pubblicamente. Il link «rigenera cache» in `/photography` è però **visibile a tutti**: protegge il segreto, non l'esistenza della pagina. Se preferisci nasconderlo, va reso condizionale in `src/app/[locale]/photography/page.js`.
 - Se cambi solo testi in `photography-galleries.js` (titoli, descrizioni) **senza** toccare Cloudinary, di solito basta un **nuovo deploy**: la rivalidazione serve soprattutto ai dati cachati dall’API Cloudinary e alle pagine che li incorporano.

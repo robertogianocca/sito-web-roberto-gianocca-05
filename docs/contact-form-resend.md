@@ -1,6 +1,6 @@
 # Form contatti (Resend)
 
-Il form nella sezione **Contatti** della home invia un’email tramite [Resend](https://resend.com) usando una **Server Action** (`src/app/contact/actions.js`). La chiave API resta solo sul server.
+Il form nella sezione **Contatti** della home invia un’email tramite [Resend](https://resend.com) usando una **Server Action** (`src/app/[locale]/contact/actions.js`). La chiave API resta solo sul server.
 
 ## Variabili d’ambiente
 
@@ -54,6 +54,6 @@ Aggiungi le stesse tre variabili per l’ambiente **Production** (e **Preview** 
 
 ## File coinvolti
 
-- `src/app/contact/actions.js` — validazione, honeypot, invio Resend
+- `src/app/[locale]/contact/actions.js` — validazione, honeypot, invio Resend
 - `src/components/contact/ContactForm.client.js` — UI e `useActionState`
 - `src/app/[locale]/page.js` — sezione `#contact`

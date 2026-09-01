@@ -43,7 +43,8 @@ La riga thumbnail è il componente condiviso [`HomeThumbRow`](../src/components/
 | Ruolo | Percorso |
 |-------|----------|
 | Manifest gallerie (dati, proporzioni, immagini) | [`src/data/photography-galleries.js`](../src/data/photography-galleries.js) |
-| Preparazione dati server (fetch Cloudinary, crop, fill slot) | [`src/app/[locale]/page.js`](../src/app/%5Blocale%5D/page.js) |
+| Preparazione dati server (fetch Cloudinary, crop, fill slot) | [`src/lib/home-photography-data.js`](../src/lib/home-photography-data.js) |
+| Composizione della sezione in homepage | [`src/app/[locale]/page.js`](../src/app/%5Blocale%5D/page.js) |
 | Componente mosaico (carosello crossfade, grid) | [`src/components/photography/HomePhotographyMosaic.client.js`](../src/components/photography/HomePhotographyMosaic.client.js) |
 | Componente thumbnail recenti | [`src/components/photography/HomeGalleryThumb.js`](../src/components/photography/HomeGalleryThumb.js) |
 

@@ -60,7 +60,7 @@ Le pagine del blog usano SSG (Static Site Generation) con `generateStaticParams(
 
 - `src/lib/blog.js` legge tutti i file `.md` con `fs.readFileSync` al momento della build (server-only).
 - `gray-matter` ne estrae il frontmatter e il corpo.
-- `getBlogStaticParams()` genera i parametri per `generateStaticParams()` in `src/app/blog/[slug]/page.js`.
+- `getBlogStaticParams()` genera i parametri per `generateStaticParams()` in `src/app/[locale]/blog/[slug]/page.js`.
 - `dynamicParams = false`: qualsiasi slug non presente al momento della build restituisce 404.
 
 ## Homepage
