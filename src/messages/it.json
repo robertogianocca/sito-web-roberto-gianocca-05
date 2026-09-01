@@ -10,14 +10,17 @@
     "photographyAllGalleries": "Tutte le gallerie",
     "photographyPauseCarousel": "Metti in pausa le immagini",
     "photographyPlayCarousel": "Riprendi le immagini",
+    "photographyEmpty": "Nessuna galleria in elenco",
     "videoTitle": "Video",
     "videoAriaLabel": "Apri la pagina Video",
     "videoSeeProject": "Vedi progetto completo",
     "videoAllVideos": "Tutti i video",
     "videoPlayAriaLabel": "Riproduci {title}",
+    "videoEmpty": "Nessun video in elenco",
     "graphicDesignTitle": "Graphic design",
     "blogTitle": "Blog",
     "blogAriaLabel": "Apri la pagina Blog",
+    "blogEmpty": "Nessun post pubblicato",
     "contactTitle": "Contatti"
   },
   "Nav": {

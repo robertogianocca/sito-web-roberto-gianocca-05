@@ -4,6 +4,7 @@ import { BlogCard } from "@/components/blog/BlogCard";
 import { HomeIntroNav } from "@/components/home/HomeIntroNav";
 import { HorizontalScrollContainer } from "@/components/home/HorizontalScrollContainer.client";
 import { HorizontalSection } from "@/components/home/HorizontalSection";
+import { HomeSectionEmpty } from "@/components/home/HomeSectionEmpty";
 import { HomeThumbRow } from "@/components/home/HomeThumbRow";
 import { PlaceholderGrid } from "@/components/home/PlaceholderGrid";
 import { HomeFeaturedVideo } from "@/components/video/HomeFeaturedVideo.client";
@@ -15,20 +16,10 @@ import { buildAlternates } from "@/lib/metadata";
 import { routing } from "@/i18n/routing";
 import { getHomeSectionCopy } from "@/data/home-sections";
 import { getFeaturedVideo, getRecentVideos, normalizeVimeoId } from "@/data/videos";
+import { getHomePhotographyData } from "@/lib/home-photography-data";
 import { resolveLocalized } from "@/lib/i18n-content";
 import { plainTextFromMarkdown } from "@/lib/plain-text-from-markdown";
 import { fetchVimeoThumbnail } from "@/lib/vimeo";
-import {
-  getFeaturedGallery,
-  getSideGalleries,
-  getRecentGalleries,
-} from "@/data/photography-galleries";
-import {
-  buildCloudinaryImageUrl,
-  fetchFolderGallery,
-  fetchFolderGalleryDetail,
-  isCloudinaryConfigured,
-} from "@/lib/cloudinary-server";
 
 export async function generateMetadata({ params }) {
   const { locale } = await params;
@@ -63,97 +54,7 @@ export default async function Home({ params }) {
     featuredVideo?.thumbnailUrl ??
     (featuredVimeoId ? await fetchVimeoThumbnail(featuredVimeoId) : null);
 
-  // ── Photography mosaic data ────────────────────────────────────────────────
-  const featuredGallery = getFeaturedGallery();
-  const sideGalleriesList = getSideGalleries(2);
-  const recentGalleriesList = getRecentGalleries(2, 3);
-
-  function getGalleryTitle(gallery) {
-    return resolveLocalized(gallery?.title, locale);
-  }
-
-  function getGalleryDescription(gallery) {
-    const raw = resolveLocalized(gallery?.shortDescription, locale);
-    return raw.replace(/\*+([^*]+)\*+/g, "$1").replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");
-  }
-
-  const cloudName = process.env.CLOUDINARY_CLOUD_NAME ?? null;
-  const cloudinaryReady = isCloudinaryConfigured();
-
-  const [cropWRatio, cropHRatio] = (featuredGallery?.homeImageAspect ?? "4/3")
-    .split("/")
-    .map(Number);
-  const cropW = 1200;
-  const cropH = Math.round((cropW * cropHRatio) / cropWRatio);
-
-  const toCarouselImage = (publicId, alt) => ({
-    src: buildCloudinaryImageUrl(cloudName, publicId, {
-      width: cropW,
-      height: cropH,
-      crop: "fit",
-    }),
-    alt,
-  });
-
-  let carouselImages = [];
-  if (featuredGallery && cloudinaryReady) {
-    if (featuredGallery.homeImages?.length) {
-      carouselImages = featuredGallery.homeImages.map((publicId) =>
-        toCarouselImage(
-          publicId,
-          publicId.split("/").pop()?.replace(/[-_]/g, " ") ?? "Photography",
-        ),
-      );
-    } else {
-      const detail = await fetchFolderGalleryDetail(featuredGallery.folder);
-      const count = featuredGallery.homeImageCount ?? 4;
-      if (detail.ok) {
-        carouselImages = detail.slides
-          .slice(0, count)
-          .map((s) => toCarouselImage(s.publicId, s.alt));
-      }
-    }
-  }
-
-  const sideGalleriesData = await Promise.all(
-    sideGalleriesList.map(async (g) => {
-      if (!cloudinaryReady)
-        return { src: null, alt: getGalleryTitle(g), href: `/photography/${g.slug}` };
-      const data = await fetchFolderGallery(g.folder);
-      return {
-        src: data.ok ? data.coverSrc : null,
-        alt: getGalleryTitle(g),
-        href: `/photography/${g.slug}`,
-      };
-    }),
-  );
-
-  // If fewer than 2 other galleries exist, fill side slots with carousel images
-  // from the featured gallery so the mosaic is never visually empty.
-  const filledSideGalleries = [...sideGalleriesData];
-  if (featuredGallery) {
-    while (filledSideGalleries.length < 2) {
-      const fallbackIdx = filledSideGalleries.length + 1;
-      const fallbackSrc =
-        carouselImages[fallbackIdx % Math.max(carouselImages.length, 1)]?.src ??
-        carouselImages[0]?.src ??
-        null;
-      filledSideGalleries.push({
-        src: fallbackSrc,
-        alt: getGalleryTitle(featuredGallery),
-        href: `/photography/${featuredGallery.slug}`,
-      });
-    }
-  }
-
-  const recentGalleryCovers = await Promise.all(
-    recentGalleriesList.map(async (g) => {
-      if (!cloudinaryReady) return null;
-      const data = await fetchFolderGallery(g.folder);
-      return data.ok ? data.coverSrc : null;
-    }),
-  );
-  // ── end Photography mosaic data ───────────────────────────────────────────
+  const photography = await getHomePhotographyData(locale);
 
   return (
     <div className="relative flex min-h-0 flex-1 flex-col bg-zinc-50 dark:bg-zinc-950 lg:min-h-0">
@@ -199,36 +100,35 @@ export default async function Home({ params }) {
           titleHrefAriaLabel={t("photographyAriaLabel")}
           shortDescription={getHomeSectionCopy("photography", locale).shortDescription}
         >
-          {featuredGallery ? (
+          {photography ? (
             <div className="flex flex-col gap-4">
               <HomePhotographyMosaic
-                carouselImages={carouselImages}
-                sideGalleries={filledSideGalleries}
-                title={getGalleryTitle(featuredGallery)}
-                description={getGalleryDescription(featuredGallery)}
-                detailHref={`/photography/${featuredGallery.slug}`}
+                carouselImages={photography.carouselImages}
+                sideGalleries={photography.sideGalleries}
+                title={photography.title}
+                description={photography.description}
+                detailHref={photography.detailHref}
                 seeGalleryLabel={t("photographySeeGallery")}
-                imageAspect={featuredGallery.homeImageAspect ?? "4/3"}
+                imageAspect={photography.aspect}
                 pauseLabel={t("photographyPauseCarousel")}
                 playLabel={t("photographyPlayCarousel")}
               />
-              <HomeThumbRow
-                href="/photography"
-                label={t("photographyAllGalleries")}
-              >
-                {recentGalleriesList.map((g, i) => (
-                  <li key={g.slug}>
+              <HomeThumbRow href="/photography" label={t("photographyAllGalleries")}>
+                {photography.recentGalleries.map((gallery) => (
+                  <li key={gallery.slug}>
                     <HomeGalleryThumb
-                      title={getGalleryTitle(g)}
-                      coverSrc={recentGalleryCovers[i]}
-                      href={`/photography/${g.slug}`}
-                      aspect={featuredGallery.homeImageAspect ?? "4/3"}
+                      title={gallery.title}
+                      coverSrc={gallery.coverSrc}
+                      href={gallery.href}
+                      aspect={photography.aspect}
                     />
                   </li>
                 ))}
               </HomeThumbRow>
             </div>
-          ) : null}
+          ) : (
+            <HomeSectionEmpty message={t("photographyEmpty")} />
+          )}
         </HorizontalSection>
 
         <HorizontalSection
@@ -266,7 +166,9 @@ export default async function Home({ params }) {
                 ))}
               </HomeThumbRow>
             </div>
-          ) : null}
+          ) : (
+            <HomeSectionEmpty message={t("videoEmpty")} />
+          )}
         </HorizontalSection>
 
         <HorizontalSection
@@ -304,7 +206,9 @@ export default async function Home({ params }) {
                   </li>
                 ))}
               </ul>
-            ) : null}
+            ) : (
+              <HomeSectionEmpty message={t("blogEmpty")} />
+            )}
           </div>
         </HorizontalSection>
 

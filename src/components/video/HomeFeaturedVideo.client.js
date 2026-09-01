@@ -1,7 +1,8 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Link } from '@/i18n/navigation';
+import { useState } from "react";
+import Image from "next/image";
+import { Link } from "@/i18n/navigation";
 
 function PlayIcon() {
   return (
@@ -70,13 +71,13 @@ export function HomeFeaturedVideo({
               className="group absolute inset-0 flex h-full w-full items-center justify-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400 dark:focus-visible:outline-zinc-500"
             >
               {thumbnailUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
+                <Image
                   src={thumbnailUrl}
                   alt={thumbnailAlt}
-                  className="absolute inset-0 h-full w-full object-contain transition-transform duration-300 group-hover:scale-[1.02]"
+                  fill
+                  className="object-contain transition-transform duration-300 group-hover:scale-[1.02]"
+                  sizes="(max-width: 1023px) 100vw, 40vw"
                   loading="eager"
-                  decoding="async"
                 />
               ) : (
                 <div className="absolute inset-0 bg-zinc-900" />

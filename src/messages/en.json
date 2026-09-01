@@ -10,14 +10,17 @@
     "photographyAllGalleries": "All galleries",
     "photographyPauseCarousel": "Pause images",
     "photographyPlayCarousel": "Resume images",
+    "photographyEmpty": "No galleries listed",
     "videoTitle": "Video",
     "videoAriaLabel": "Open Video page",
     "videoSeeProject": "See full project",
     "videoAllVideos": "All videos",
     "videoPlayAriaLabel": "Play {title}",
+    "videoEmpty": "No videos listed",
     "graphicDesignTitle": "Graphic design",
     "blogTitle": "Blog",
     "blogAriaLabel": "Open Blog page",
+    "blogEmpty": "No published posts",
     "contactTitle": "Contact"
   },
   "Nav": {

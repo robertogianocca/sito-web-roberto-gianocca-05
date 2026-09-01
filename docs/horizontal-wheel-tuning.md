@@ -9,7 +9,7 @@ Questa guida descrive **solo i numeri e le soglie** che controllano sensibilità
 | Cosa | Percorso |
 |------|----------|
 | Implementazione (costanti + `impulseFromWheel` + RAF) | [`src/components/home/HorizontalScrollContainer.client.js`](../src/components/home/HorizontalScrollContainer.client.js) |
-| Uso del wrapper sulla home | [`src/app/page.js`](../src/app/page.js) (`HorizontalScrollContainer`) |
+| Uso del wrapper sulla home | [`src/app/[locale]/page.js`](../src/app/%5Blocale%5D/page.js) (`HorizontalScrollContainer`) |
 
 Dopo ogni modifica: salva il file e ricarica la pagina nel browser (hot reload in dev di solito basta).
 
@@ -55,7 +55,8 @@ Qui si decide **quanto ogni notch della rotella** si traduce in impulso orizzont
 ## Comportamento non numerico (senza cambiare costanti)
 
 - **Desktop**: l’handler è pensato per viewport `min-width: 1024px` (allineato al breakpoint `lg` del layout orizzontale).
-- **Hover**: `pointerenter` / `pointerleave` sul `<main>` aggiornano lo stato; in più, ogni `wheel` controlla se `clientX` / `clientY` cadono dentro il rettangolo del track (così dopo navigazione client verso la home il puntatore può essere già sopra il track senza un nuovo `pointerenter` e la rotella funziona lo stesso).
+- **Hover**: `pointerenter` / `pointerleave` sul `<main>` aggiornano lo stato; in più, ogni `wheel` verifica con `document.elementFromPoint` se il puntatore è davvero sopra il track (così dopo navigazione client verso la home il puntatore può essere già sopra il track senza un nuovo `pointerenter`). Usare l'elemento sotto il cursore — e non il rettangolo del `<main>` — esclude nav e footer fissi, che si sovrappongono al track: sulla pagina Video la filmstrip del footer scorre in orizzontale per conto suo e non deve essere intercettata.
+- **Scroll verticale interno**: se sotto il puntatore c'è un contenitore scrollabile in verticale con corsa residua nella direzione della rotella (`wantsNativeVerticalScroll`), l'evento **non** viene convertito. Su viewport bassi il contenuto di un pannello può superare la banda visibile: prima si scorre quel contenuto, poi la rotella torna a muovere il track in orizzontale.
 - **`Shift` + rotella**: non viene intercettato; resta il comportamento nativo del browser (spesso scroll orizzontale “classico”).
 - **`prefers-reduced-motion: reduce`**: niente inerzia; viene applicato solo uno `scrollBy` immediato per tick (accessibilità).
 - **Trackpad (gesto orizzontale)**: se `\|dy\| <= \|dx\|` (dominanza orizzontale), l’evento **non** viene convertito: resta lo scroll orizzontale nativo sul contenitore, utile al trackpad.

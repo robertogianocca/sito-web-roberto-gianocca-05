@@ -44,7 +44,7 @@ export const PHOTOGRAPHY_GALLERIES = [
     tags: ["Teatro"],
     featured: true,
     homeImageCount: 4,
-    homeImageAspect: '4/3',
+    homeImageAspect: "4/3",
   },
 ];
 

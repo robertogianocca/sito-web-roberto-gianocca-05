@@ -1,4 +1,5 @@
-import { Link } from '@/i18n/navigation';
+import Image from "next/image";
+import { Link } from "@/i18n/navigation";
 
 /**
  * Card thumbnail compatta per la riga dei video in homepage.
@@ -20,13 +21,12 @@ export function HomeVideoThumb({ title, thumbnailUrl, thumbnailAlt, href }) {
       <div className="flex flex-col gap-1.5">
         <div className="relative aspect-video w-full overflow-hidden rounded-lg border border-zinc-200/90 bg-zinc-100 dark:border-zinc-800/90 dark:bg-zinc-900">
           {thumbnailUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <Image
               src={thumbnailUrl}
               alt={thumbnailAlt}
-              className="absolute inset-0 h-full w-full object-contain transition-transform duration-300 group-hover:scale-[1.03]"
-              loading="lazy"
-              decoding="async"
+              fill
+              className="object-contain transition-transform duration-300 group-hover:scale-[1.03]"
+              sizes="(max-width: 640px) 50vw, 15vw"
             />
           ) : (
             <div className="absolute inset-0 flex items-center justify-center">

@@ -65,7 +65,9 @@ Le pagine del blog usano SSG (Static Site Generation) con `generateStaticParams(
 
 ## Homepage
 
-La sezione Blog in homepage (`src/app/page.js`) mostra gli ultimi 2 post (`getAllPosts().slice(0, 2)`) come `BlogCard`. L'ordine nella barra orizzontale è: Photography → Video → Graphic design → **Blog** → Contatti.
+La sezione Blog in homepage (`src/app/[locale]/page.js`) mostra gli ultimi 2 post (`getAllPosts().slice(0, 2)`) come `BlogCard`. L'ordine nella barra orizzontale è: Intro → Photography → Video → Graphic design → **Blog** → Contatti.
+
+In homepage le card ricevono `headingLevel={3}`: il titolo della sezione è già un `h2`, quindi il titolo del post scende a `h3`. Su `/blog` la prop è omessa e resta `h2` (default).
 
 ## Dipendenza aggiunta
 

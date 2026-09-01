@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 
-const LISTING_SCROLL_ROOT_SELECTOR = 'main[aria-label="Video projects"]';
+const LISTING_SCROLL_ROOT_SELECTOR = "main[data-video-listing]";
 
 /**
  * @param {{

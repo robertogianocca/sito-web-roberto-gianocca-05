@@ -56,4 +56,4 @@ Aggiungi le stesse tre variabili per l’ambiente **Production** (e **Preview** 
 
 - `src/app/contact/actions.js` — validazione, honeypot, invio Resend
 - `src/components/contact/ContactForm.client.js` — UI e `useActionState`
-- `src/app/page.js` — sezione `#contact`
+- `src/app/[locale]/page.js` — sezione `#contact`

@@ -89,6 +89,9 @@ export function BlogPostBody({ content }) {
           em: ({ children }) => (
             <em className="italic text-zinc-700 dark:text-zinc-300">{children}</em>
           ),
+          // Raw <img> on purpose: src comes from post markdown, so the host is not
+          // known ahead of time and next/image would throw on anything missing from
+          // next.config.mjs remotePatterns.
           img: ({ src, alt }) => (
             // eslint-disable-next-line @next/next/no-img-element
             <img

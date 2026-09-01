@@ -12,7 +12,7 @@ import { Link } from "@/i18n/navigation";
  *   aspect?: string;
  * }} props
  */
-export function HomeGalleryThumb({ title, coverSrc, href, aspect = '4/3' }) {
+export function HomeGalleryThumb({ title, coverSrc, href, aspect = "4/3" }) {
   return (
     <Link
       href={href}

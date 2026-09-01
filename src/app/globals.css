@@ -7,8 +7,6 @@
 :root {
   --background: #f5efe8;
   --foreground: #2f2b28;
-  /* Modular horizontal layout: one column = 1/12 viewport width */
-  --vw-col: calc(100vw / 12);
   /* Photographic grain on nav/footer chrome — tune opacity without touching components */
   --site-chrome-grain-opacity: 0.2;
   --site-nav-height: 2.25rem; /* 36px, matches 04 nav bar height */

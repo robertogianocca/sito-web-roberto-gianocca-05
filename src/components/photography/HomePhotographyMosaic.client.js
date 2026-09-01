@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import Image from "next/image";
 import { Link } from "@/i18n/navigation";
 
 const INTERVAL_MS = 4000;
@@ -199,6 +200,13 @@ export function HomePhotographyMosaic({
                 style={{ opacity }}
                 aria-hidden={!isFront}
               >
+                {/*
+                  Raw <img> on purpose: the crossfade preloads every slide with
+                  `new window.Image()` and gates the fade on `.decode()` of this exact
+                  element. Going through /_next/image would render a different URL than
+                  the preloaded one, so every transition would wait on a cold fetch.
+                  The src is already a fixed-width Cloudinary transform.
+                */}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   ref={imgRefs[layer]}
@@ -227,10 +235,12 @@ export function HomePhotographyMosaic({
       ) : null}
       </div>
 
-      {/* Col 2, row 1: slots B and C stacked, same height as slot A */}
-      <div className="order-3 flex flex-col gap-2 lg:order-none">
-        <SlotStatic gallery={sideB} />
-        <SlotStatic gallery={sideC} />
+      {/* Col 2, row 1: slots B and C stacked, same height as slot A.
+          Below lg there is no grid row to fill, so they sit side by side and take
+          their height from the aspect ratio instead of from flex-1. */}
+      <div className="order-3 grid grid-cols-2 gap-2 lg:order-none lg:flex lg:flex-col">
+        <SlotStatic gallery={sideB} aspect={imageAspect} />
+        <SlotStatic gallery={sideC} aspect={imageAspect} />
       </div>
 
       {/* Col 1, row 2: text — constrained to slot A's width */}
@@ -269,26 +279,31 @@ function PlayGlyph() {
   );
 }
 
-function SlotStatic({ gallery }) {
+function SlotStatic({ gallery, aspect }) {
+  const aspectStyle = { "--slot-aspect": aspect };
+
   if (!gallery) {
     return (
-      <div className="relative flex-1 min-h-0 border border-dashed border-zinc-300/80 bg-zinc-100 dark:border-zinc-700/80 dark:bg-zinc-900" />
+      <div
+        style={aspectStyle}
+        className="relative aspect-(--slot-aspect) border border-dashed border-zinc-300/80 bg-zinc-100 dark:border-zinc-700/80 dark:bg-zinc-900 lg:aspect-auto lg:min-h-0 lg:flex-1"
+      />
     );
   }
 
   return (
     <Link
       href={gallery.href}
-      className="relative flex-1 min-h-0 block overflow-hidden border border-zinc-200/90 bg-zinc-900 dark:border-zinc-800/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400"
+      style={aspectStyle}
+      className="relative block aspect-(--slot-aspect) overflow-hidden border border-zinc-200/90 bg-zinc-900 dark:border-zinc-800/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400 lg:aspect-auto lg:min-h-0 lg:flex-1"
     >
       {gallery.src ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
+        <Image
           src={gallery.src}
           alt={gallery.alt}
-          className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 hover:scale-[1.03]"
-          loading="lazy"
-          decoding="async"
+          fill
+          className="object-cover transition-transform duration-300 hover:scale-[1.03]"
+          sizes="(max-width: 1023px) 100vw, 22vw"
           draggable={false}
         />
       ) : (

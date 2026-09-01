@@ -11,6 +11,8 @@ Documentazione correlata:
 
 ## Layout visivo
 
+Da `lg` in su (griglia a 2 colonne):
+
 ```
 ┌─────────────────────────────┬─────────────┐
 │                             │  Slot B     │  ← altra galleria (cover)
@@ -21,6 +23,10 @@ Documentazione correlata:
 └───────────────────────────────────────────┘
 [ Thumb 1 ]  [ Thumb 2 ]  [ Thumb 3 ]   Tutte le gallerie →
 ```
+
+Sotto `lg` la griglia diventa **una colonna sola** e l'ordine passa a slot A → testo → slot B/C (via utility `order-*`). Con due colonne fisse su schermo stretto lo slot A scendeva a ~190px di larghezza. Stessa logica in `HomeFeaturedVideo`, che impila player e testo sotto `lg`.
+
+La riga thumbnail è il componente condiviso [`HomeThumbRow`](../src/components/home/HomeThumbRow.js), usato identico nella sezione Video: sotto `sm` il link «tutte» scende sotto la griglia invece di stringerla.
 
 | Elemento | Fonte dati | Comportamento |
 |----------|------------|---------------|
@@ -92,7 +98,7 @@ const cropH = Math.round((cropW * hRatio) / wRatio);
 // → 4/3: 1200×900 · 2/3: 1200×1800 · 4/5: 1200×1500
 ```
 
-Le immagini del carosello usano `object-cover` nel componente: riempiono il contenitore senza bande nere, con crop centrato.
+Le immagini del carosello usano `object-contain` su fondo nero, e il crop Cloudinary è `crop: "fit"`: l'immagine **non** viene tagliata, quindi se le proporzioni non coincidono con `homeImageAspect` restano bande nere ai lati. È voluto — meglio una banda che un soggetto tagliato. Gli slot B e C, decorativi, usano invece `object-cover`.
 
 ### `homeImages`
 
@@ -112,47 +118,44 @@ homeImages: [
 
 ## Carosello crossfade (componente)
 
-Il carosello in `HomePhotographyMosaic.client.js` cicla le immagini ogni **4 secondi** con un fade incrociato fluido da 700 ms.
+Il carosello in `HomePhotographyMosaic.client.js` cicla le immagini ogni **4 secondi** con un fade incrociato da 700 ms fra **due layer sovrapposti**.
 
 ### Meccanismo
 
+Lo stato è: `front` (quale dei due layer, `0` o `1`, è visibile), `layerImages` (l'immagine montata in ciascun layer), `currentIdx`, `pending` (indice in arrivo, `null` quando fermo) e `fading`.
+
 ```
-┌──────────────┐     setInterval 4s      ┌──────────────────────────────┐
-│ currentIdx=N │  ─── setNextIdx(N+1) ──▶│ nextIdx=N+1, opacity:0 in DOM│
-└──────────────┘                          └──────────┬─────────────────┘
-                                                     │ double rAF
-                                                     ▼
-                                          ┌──────────────────────────────┐
-                                          │ setTransitioning(true)       │
-                                          │ → opacity 0→1, CSS 700ms     │
-                                          └──────────┬─────────────────┘
-                                                     │ onTransitionEnd
-                                                     ▼
-                                          ┌──────────────────────────────┐
-                                          │ setCurrentIdx(N+1)           │
-                                          │ nextIdx=null, transitioning=F│
-                                          └──────────────────────────────┘
+┌────────────────────────┐   timeout 4s   ┌─────────────────────────────────┐
+│ idle: pending === null │ ──────────────▶│ layer back = slide N+1          │
+└────────────────────────┘                │ setPending(N+1), opacity 0      │
+                                          └───────────────┬─────────────────┘
+                                                          │ await img.decode()
+                                                          ▼
+                                          ┌─────────────────────────────────┐
+                                          │ setFading(true)                 │
+                                          │ → opacity 0→1, CSS 700ms        │
+                                          └───────────────┬─────────────────┘
+                                                          │ setTimeout(700 + 50)
+                                                          ▼
+                                          ┌─────────────────────────────────┐
+                                          │ front = back, currentIdx = N+1  │
+                                          │ pending = null, fading = false  │
+                                          └─────────────────────────────────┘
 ```
 
-**Perché il doppio `requestAnimationFrame`?**
+Due dettagli che sembrano ridondanti ma non lo sono:
 
-In React 18 gli aggiornamenti di stato dentro `setInterval` sono **batched**: se `setNextIdx` e `setTransitioning(true)` fossero chiamati insieme, il componente riceverebbe un solo re-render con l'immagine già a `opacity:1`. La transizione CSS non partirebbe, `onTransitionEnd` non scatterebbe e `currentIdx` non avanzerebbe mai — risultato: un unico cambio non animato e poi blocco.
+- **`await img.decode()` prima di avviare il fade.** Se l'immagine di destinazione non è ancora decodificata, il crossfade parte su un layer vuoto e si vede un lampo. Aspettare il decode sposta il costo prima dell'animazione. Un decode fallito non blocca: il `catch` prosegue comunque.
+- **La transizione è applicata solo al layer *back*, e solo mentre `pending !== null`.** Così il layer che torna a `opacity: 0` durante il settle non anima all'indietro.
 
-La soluzione separa i due aggiornamenti in render distinti:
+Tutte le slide vengono pre-caricate al mount (`new window.Image()`) perché le successive non arrivino a metà fade.
 
-1. `setNextIdx(next)` → l'immagine successiva entra nel DOM a `opacity:0`.
-2. Dopo due frame (`requestAnimationFrame × 2`) → `setTransitioning(true)` → il browser può ora interpolare da `0` a `1`, la transizione CSS gira, `onTransitionEnd` viene invocato.
+### Pausa e reduced motion
 
-```js
-// In HomePhotographyMosaic.client.js
-useEffect(() => {
-  if (nextIdx === null) return;
-  const id = requestAnimationFrame(() => {
-    requestAnimationFrame(() => setTransitioning(true));
-  });
-  return () => cancelAnimationFrame(id);
-}, [nextIdx]);
-```
+Il ciclo automatico gira solo se `carouselImages.length > 1 && !paused && !reducedMotion`:
+
+- **Pulsante di pausa** in basso a destra sullo slot A (`aria-pressed`, etichette `Home.photographyPauseCarousel` / `photographyPlayCarousel`). Richiesto da WCAG 2.2.2: un contenuto che si aggiorna da solo per più di 5 secondi deve poter essere fermato.
+- **`prefers-reduced-motion: reduce`** ferma l'avanzamento del tutto. Disattivare solo il fade non basterebbe: l'immagine cambierebbe di scatto ogni 4 secondi, che è più fastidioso dell'animazione. La preferenza è letta con `useSyncExternalStore`, così non serve un `setState` dentro un effetto.
 
 ---
 
