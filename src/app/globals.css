@@ -35,16 +35,26 @@
   --color-zinc-950: #141210; /* darkest canvas (dark mode) */
 }
 
-/* Mobile: full-width stacked sections. lg+: fixed viewport height + width from --span (1–12). */
+/* Mobile: full-width stacked sections. lg+: fixed viewport height + width from --span (1–12).
+   Heights subtract the fixed chrome: the nav is fixed at all sizes, the footer only from md up
+   (see SiteNavBar / SiteFooter). Without this the bottom of each panel sits under the footer. */
 .horizontal-section {
   width: 100%;
-  min-height: 100dvh;
+  min-height: calc(100dvh - var(--site-nav-height));
+}
+
+@media (min-width: 768px) {
+  .horizontal-section {
+    min-height: calc(
+      100dvh - var(--site-nav-height) - var(--site-footer-height)
+    );
+  }
 }
 
 @media (min-width: 1024px) {
   .horizontal-section {
-    height: 100dvh;
-    min-height: 100dvh;
+    height: calc(100dvh - var(--site-nav-height) - var(--site-footer-height));
+    min-height: 0;
     width: calc(100vw * var(--span, 12) / 12);
     flex-shrink: 0;
   }

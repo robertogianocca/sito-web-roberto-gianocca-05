@@ -32,6 +32,7 @@ function PlayIcon() {
  *   thumbnailAlt: string;
  *   detailHref: string;
  *   seeProjectLabel: string;
+ *   playLabel: string;
  * }} props
  */
 export function HomeFeaturedVideo({
@@ -42,13 +43,14 @@ export function HomeFeaturedVideo({
   thumbnailAlt,
   detailHref,
   seeProjectLabel,
+  playLabel,
 }) {
   const [playing, setPlaying] = useState(false);
 
   const iframeSrc = `https://player.vimeo.com/video/${vimeoId}?autoplay=1&dnt=1`;
 
   return (
-    <div className="grid grid-cols-[3fr_2fr] gap-4">
+    <div className="grid gap-4 lg:grid-cols-[3fr_2fr]">
       {/* Left: player */}
       <div className="relative overflow-hidden rounded-xl border border-zinc-200/90 bg-black shadow-sm dark:border-zinc-800/90">
         <div className="relative aspect-video w-full">
@@ -64,7 +66,7 @@ export function HomeFeaturedVideo({
             <button
               type="button"
               onClick={() => setPlaying(true)}
-              aria-label={`Riproduci ${title}`}
+              aria-label={playLabel}
               className="group absolute inset-0 flex h-full w-full items-center justify-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400 dark:focus-visible:outline-zinc-500"
             >
               {thumbnailUrl ? (

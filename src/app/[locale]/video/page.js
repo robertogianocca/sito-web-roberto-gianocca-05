@@ -71,7 +71,10 @@ export default async function VideoPage({ params, searchParams }) {
       </header>
 
       {filtered.length === 0 ? (
-        <div className="mx-6 my-8 rounded-xl border border-dashed border-zinc-300/80 bg-background p-8 text-zinc-600 md:mx-10 dark:border-zinc-700/80 dark:text-zinc-400">
+        <main
+          aria-label={t("projectsAriaLabel")}
+          className="mx-6 my-8 rounded-xl border border-dashed border-zinc-300/80 bg-background p-8 text-zinc-600 md:mx-10 dark:border-zinc-700/80 dark:text-zinc-400"
+        >
           <p className="font-medium text-foreground">
             {activeTag ? t("noVideoWithTag", { tag: activeTag }) : t("noVideos")}
           </p>
@@ -91,14 +94,17 @@ export default async function VideoPage({ params, searchParams }) {
               t("addVideos")
             )}
           </p>
-        </div>
+        </main>
       ) : (
         <VideoCardRow>
-          {filtered.map((video) => (
+          {filtered.map((video, index) => (
             <div
               key={video.slug}
               data-video-slug={video.slug}
-              className="w-[min(88vw,32rem)] shrink-0 md:w-[34rem] lg:w-[36rem]"
+              // From md up the footer is fixed, so the card has to fit between the page
+              // header and the footer. 34rem covers both plus the card's text block; the
+              // 16/9 factor turns the leftover height back into a card width.
+              className="w-[min(88vw,32rem)] shrink-0 md:w-[34rem] md:max-w-[max(18rem,calc((100dvh-34rem)*16/9))] lg:w-[36rem]"
             >
               <VideoCard
                 title={getTitle(video)}
@@ -106,6 +112,7 @@ export default async function VideoPage({ params, searchParams }) {
                 thumbnailUrl={video.thumbnailUrl}
                 thumbnailAlt={t("thumbnailAlt", { title: getTitle(video) })}
                 href={`/video/${video.slug}`}
+                priority={index === 0}
               />
             </div>
           ))}

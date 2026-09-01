@@ -4,18 +4,24 @@
   },
   "Home": {
     "portfolioAriaLabel": "Sezioni portfolio",
+    "photographyTitle": "Photography",
     "photographyAriaLabel": "Apri la pagina Photography",
     "photographySeeGallery": "Tutte le foto",
     "photographyAllGalleries": "Tutte le gallerie",
+    "photographyPauseCarousel": "Metti in pausa le immagini",
+    "photographyPlayCarousel": "Riprendi le immagini",
+    "videoTitle": "Video",
     "videoAriaLabel": "Apri la pagina Video",
     "videoSeeProject": "Vedi progetto completo",
     "videoAllVideos": "Tutti i video",
+    "videoPlayAriaLabel": "Riproduci {title}",
+    "graphicDesignTitle": "Graphic design",
+    "blogTitle": "Blog",
     "blogAriaLabel": "Apri la pagina Blog",
     "contactTitle": "Contatti"
   },
   "Nav": {
     "label": "Aree del portfolio",
-    "contact": "Contatti",
     "languageSwitcherLabel": "Cambia lingua"
   },
   "TagFilter": {
@@ -83,6 +89,7 @@
     "backLabel": "Torna al portfolio",
     "allLabel": "Tutte",
     "pageDescription": "Elenco in src/data/videos.js: slug, titolo, sottotitolo, vimeoId (solo cifre), opzionale thumbnailUrl e crediti.",
+    "projectsAriaLabel": "Progetti video",
     "thumbnailAlt": "Anteprima: {title}",
     "noVideoWithTag": "Nessun video con il tag \"{tag}\"",
     "noVideos": "Nessun video in elenco",

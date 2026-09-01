@@ -4,6 +4,7 @@ import { BlogCard } from "@/components/blog/BlogCard";
 import { HomeIntroNav } from "@/components/home/HomeIntroNav";
 import { HorizontalScrollContainer } from "@/components/home/HorizontalScrollContainer.client";
 import { HorizontalSection } from "@/components/home/HorizontalSection";
+import { HomeThumbRow } from "@/components/home/HomeThumbRow";
 import { PlaceholderGrid } from "@/components/home/PlaceholderGrid";
 import { HomeFeaturedVideo } from "@/components/video/HomeFeaturedVideo.client";
 import { HomeVideoThumb } from "@/components/video/HomeVideoThumb";
@@ -12,7 +13,6 @@ import { HomeGalleryThumb } from "@/components/photography/HomeGalleryThumb";
 import { getAllPosts } from "@/lib/blog";
 import { buildAlternates } from "@/lib/metadata";
 import { routing } from "@/i18n/routing";
-import { Link } from "@/i18n/navigation";
 import { getHomeSectionCopy } from "@/data/home-sections";
 import { getFeaturedVideo, getRecentVideos, normalizeVimeoId } from "@/data/videos";
 import { resolveLocalized } from "@/lib/i18n-content";
@@ -193,7 +193,7 @@ export default async function Home({ params }) {
 
         <HorizontalSection
           id="photography"
-          title="Photography"
+          title={t("photographyTitle")}
           span={8}
           titleHref="/photography"
           titleHrefAriaLabel={t("photographyAriaLabel")}
@@ -209,34 +209,31 @@ export default async function Home({ params }) {
                 detailHref={`/photography/${featuredGallery.slug}`}
                 seeGalleryLabel={t("photographySeeGallery")}
                 imageAspect={featuredGallery.homeImageAspect ?? "4/3"}
+                pauseLabel={t("photographyPauseCarousel")}
+                playLabel={t("photographyPlayCarousel")}
               />
-              <div className="flex items-end gap-3">
-                <ul className="grid flex-1 grid-cols-3 gap-3">
-                  {recentGalleriesList.map((g, i) => (
-                    <li key={g.slug}>
-                      <HomeGalleryThumb
-                        title={getGalleryTitle(g)}
-                        coverSrc={recentGalleryCovers[i]}
-                        href={`/photography/${g.slug}`}
-                        aspect={featuredGallery.homeImageAspect ?? "4/3"}
-                      />
-                    </li>
-                  ))}
-                </ul>
-                <Link
-                  href="/photography"
-                  className="shrink-0 text-xs font-medium text-zinc-500 underline-offset-2 hover:text-foreground hover:underline dark:text-zinc-400 dark:hover:text-zinc-200"
-                >
-                  {t("photographyAllGalleries")} →
-                </Link>
-              </div>
+              <HomeThumbRow
+                href="/photography"
+                label={t("photographyAllGalleries")}
+              >
+                {recentGalleriesList.map((g, i) => (
+                  <li key={g.slug}>
+                    <HomeGalleryThumb
+                      title={getGalleryTitle(g)}
+                      coverSrc={recentGalleryCovers[i]}
+                      href={`/photography/${g.slug}`}
+                      aspect={featuredGallery.homeImageAspect ?? "4/3"}
+                    />
+                  </li>
+                ))}
+              </HomeThumbRow>
             </div>
           ) : null}
         </HorizontalSection>
 
         <HorizontalSection
           id="video"
-          title="Video"
+          title={t("videoTitle")}
           span={8}
           titleHref="/video"
           titleHrefAriaLabel={t("videoAriaLabel")}
@@ -252,34 +249,29 @@ export default async function Home({ params }) {
                 thumbnailAlt={getVideoTitle(featuredVideo)}
                 detailHref={`/video/${featuredVideo.slug}`}
                 seeProjectLabel={t("videoSeeProject")}
+                playLabel={t("videoPlayAriaLabel", {
+                  title: getVideoTitle(featuredVideo),
+                })}
               />
-              <div className="flex items-end gap-3">
-                <ul className="grid flex-1 grid-cols-3 gap-3">
-                  {recentVideos.map((video, i) => (
-                    <li key={`${video.slug}-${i}`}>
-                      <HomeVideoThumb
-                        title={getVideoTitle(video)}
-                        thumbnailUrl={video.thumbnailUrl}
-                        thumbnailAlt={getVideoTitle(video)}
-                        href={`/video/${video.slug}`}
-                      />
-                    </li>
-                  ))}
-                </ul>
-                <Link
-                  href="/video"
-                  className="shrink-0 text-xs font-medium text-zinc-500 underline-offset-2 hover:text-foreground hover:underline dark:text-zinc-400 dark:hover:text-zinc-200"
-                >
-                  {t("videoAllVideos")} →
-                </Link>
-              </div>
+              <HomeThumbRow href="/video" label={t("videoAllVideos")}>
+                {recentVideos.map((video, i) => (
+                  <li key={`${video.slug}-${i}`}>
+                    <HomeVideoThumb
+                      title={getVideoTitle(video)}
+                      thumbnailUrl={video.thumbnailUrl}
+                      thumbnailAlt={getVideoTitle(video)}
+                      href={`/video/${video.slug}`}
+                    />
+                  </li>
+                ))}
+              </HomeThumbRow>
             </div>
           ) : null}
         </HorizontalSection>
 
         <HorizontalSection
           id="graphic-design"
-          title="Graphic design"
+          title={t("graphicDesignTitle")}
           span={10}
           shortDescription={getHomeSectionCopy("graphicDesign", locale).shortDescription}
         >
@@ -288,7 +280,7 @@ export default async function Home({ params }) {
 
         <HorizontalSection
           id="blog"
-          title="Blog"
+          title={t("blogTitle")}
           span={6}
           titleHref="/blog"
           titleHrefAriaLabel={t("blogAriaLabel")}
@@ -307,6 +299,7 @@ export default async function Home({ params }) {
                       coverImage={post.coverImage}
                       href={`/blog/${post.slug}`}
                       locale={locale}
+                      headingLevel={3}
                     />
                   </li>
                 ))}

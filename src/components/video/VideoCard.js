@@ -9,6 +9,7 @@ import Link from "next/link";
  *   thumbnailAlt: string;
  *   footnote?: string | null;
  *   href?: string;
+ *   priority?: boolean;
  * }} props
  */
 export function VideoCard({
@@ -18,6 +19,7 @@ export function VideoCard({
   thumbnailAlt,
   footnote,
   href,
+  priority = false,
 }) {
   const article = (
     <article
@@ -37,6 +39,7 @@ export function VideoCard({
             fill
             className="object-contain"
             sizes="(max-width: 768px) 90vw, 36rem"
+            priority={priority}
           />
         ) : (
           <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center text-sm text-zinc-500 dark:text-zinc-400">

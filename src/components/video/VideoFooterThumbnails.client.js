@@ -18,13 +18,9 @@ export function VideoFooterThumbnails({ videos, activeSlug: activeSlugProp = nul
   const t = useTranslations("Video");
   const stripRef = useRef(null);
   const thumbRefs = useRef(new Map());
-  const [activeSlug, setActiveSlug] = useState(activeSlugProp ?? videos[0]?.slug ?? null);
-
-  useEffect(() => {
-    if (mode === "detail") {
-      setActiveSlug(activeSlugProp);
-    }
-  }, [mode, activeSlugProp]);
+  /** Only the listing mode tracks its own active thumb; detail mode follows the route. */
+  const [scrolledSlug, setScrolledSlug] = useState(videos[0]?.slug ?? null);
+  const activeSlug = mode === "detail" ? activeSlugProp : scrolledSlug;
 
   const updateActiveFromScroll = useCallback(() => {
     const root = document.querySelector(LISTING_SCROLL_ROOT_SELECTOR);
@@ -50,7 +46,7 @@ export function VideoFooterThumbnails({ videos, activeSlug: activeSlugProp = nul
     }
 
     if (closestSlug) {
-      setActiveSlug(closestSlug);
+      setScrolledSlug(closestSlug);
     }
   }, []);
 
@@ -60,11 +56,13 @@ export function VideoFooterThumbnails({ videos, activeSlug: activeSlugProp = nul
     const root = document.querySelector(LISTING_SCROLL_ROOT_SELECTOR);
     if (!root) return;
 
-    updateActiveFromScroll();
+    // Read the restored scroll position after paint rather than during the effect.
+    const rafId = requestAnimationFrame(updateActiveFromScroll);
     root.addEventListener("scroll", updateActiveFromScroll, { passive: true });
     window.addEventListener("resize", updateActiveFromScroll);
 
     return () => {
+      cancelAnimationFrame(rafId);
       root.removeEventListener("scroll", updateActiveFromScroll);
       window.removeEventListener("resize", updateActiveFromScroll);
     };
@@ -80,7 +78,7 @@ export function VideoFooterThumbnails({ videos, activeSlug: activeSlugProp = nul
   const scrollToCard = useCallback((slug) => {
     const card = document.querySelector(`[data-video-slug="${slug}"]`);
     card?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
-    setActiveSlug(slug);
+    setScrolledSlug(slug);
   }, []);
 
   if (videos.length === 0) {

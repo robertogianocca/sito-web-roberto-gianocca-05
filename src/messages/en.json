@@ -4,18 +4,24 @@
   },
   "Home": {
     "portfolioAriaLabel": "Portfolio sections",
+    "photographyTitle": "Photography",
     "photographyAriaLabel": "Open Photography page",
     "photographySeeGallery": "All photos",
     "photographyAllGalleries": "All galleries",
+    "photographyPauseCarousel": "Pause images",
+    "photographyPlayCarousel": "Resume images",
+    "videoTitle": "Video",
     "videoAriaLabel": "Open Video page",
     "videoSeeProject": "See full project",
     "videoAllVideos": "All videos",
+    "videoPlayAriaLabel": "Play {title}",
+    "graphicDesignTitle": "Graphic design",
+    "blogTitle": "Blog",
     "blogAriaLabel": "Open Blog page",
     "contactTitle": "Contact"
   },
   "Nav": {
     "label": "Portfolio areas",
-    "contact": "Contact",
     "languageSwitcherLabel": "Change language"
   },
   "TagFilter": {
@@ -83,6 +89,7 @@
     "backLabel": "Back to portfolio",
     "allLabel": "All",
     "pageDescription": "List in src/data/videos.js: slug, title, subtitle, vimeoId (digits only), optional thumbnailUrl and credits.",
+    "projectsAriaLabel": "Video projects",
     "thumbnailAlt": "Preview: {title}",
     "noVideoWithTag": "No video with tag \"{tag}\"",
     "noVideos": "No videos listed",

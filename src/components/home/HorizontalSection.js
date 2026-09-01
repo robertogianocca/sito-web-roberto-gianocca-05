@@ -85,7 +85,10 @@ export function HorizontalSection({
             </div>
           </header>
         ) : null}
-        <div className="min-h-0 flex-1 overflow-y-auto lg:overflow-hidden">{children}</div>
+        {/* Panels are sized to the visible band between nav and footer, so on short
+            viewports the content can exceed it. Keep it scrollable rather than clipped;
+            the wheel handler yields to this scroller before scrolling horizontally. */}
+        <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
       </div>
     </section>
   );

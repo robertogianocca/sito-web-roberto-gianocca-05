@@ -28,12 +28,17 @@ export function PlaceholderGrid({ variant = "mixed" }) {
     );
   }
 
+  // On lg the panel has a fixed height and hides overflow, so the blocks fill the
+  // available space instead of deriving their height from an aspect ratio.
   return (
-    <div className="grid grid-cols-12 gap-3 md:gap-4">
-      <MediaPlaceholder className="col-span-12 aspect-4/3 md:col-span-7" label="4:3" />
-      <div className="col-span-12 grid grid-cols-2 gap-3 md:col-span-5 md:grid-cols-1 md:gap-4">
-        <MediaPlaceholder className="aspect-square" />
-        <MediaPlaceholder className="aspect-square" />
+    <div className="grid grid-cols-12 gap-3 md:gap-4 lg:h-full lg:min-h-0">
+      <MediaPlaceholder
+        className="col-span-12 aspect-4/3 md:col-span-7 lg:aspect-auto lg:h-full lg:min-h-0"
+        label="4:3"
+      />
+      <div className="col-span-12 grid grid-cols-2 gap-3 md:col-span-5 md:grid-cols-1 md:gap-4 lg:h-full lg:min-h-0 lg:grid-rows-2">
+        <MediaPlaceholder className="aspect-square lg:aspect-auto lg:h-full lg:min-h-0" />
+        <MediaPlaceholder className="aspect-square lg:aspect-auto lg:h-full lg:min-h-0" />
       </div>
     </div>
   );

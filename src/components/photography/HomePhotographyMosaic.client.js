@@ -1,11 +1,27 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Link } from "@/i18n/navigation";
 
 const INTERVAL_MS = 4000;
 const FADE_MS = 700;
 const SETTLE_BUFFER_MS = 50;
+
+const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
+
+function subscribeToReducedMotion(onChange) {
+  const mql = window.matchMedia(REDUCED_MOTION_QUERY);
+  mql.addEventListener("change", onChange);
+  return () => mql.removeEventListener("change", onChange);
+}
+
+function getReducedMotion() {
+  return window.matchMedia(REDUCED_MOTION_QUERY).matches;
+}
+
+function getReducedMotionOnServer() {
+  return false;
+}
 
 /**
  * Mosaico asimmetrico per la sezione Photography in homepage.
@@ -33,6 +49,8 @@ const SETTLE_BUFFER_MS = 50;
  *   detailHref: string;
  *   seeGalleryLabel: string;
  *   imageAspect?: string;
+ *   pauseLabel: string;
+ *   playLabel: string;
  * }} props
  */
 export function HomePhotographyMosaic({
@@ -43,8 +61,19 @@ export function HomePhotographyMosaic({
   detailHref,
   seeGalleryLabel,
   imageAspect = "4/3",
+  pauseLabel,
+  playLabel,
 }) {
-  const hasCarousel = carouselImages.length > 1;
+  /** User-facing pause toggle (WCAG 2.2.2: auto-updating content needs a stop). */
+  const [paused, setPaused] = useState(false);
+  const reducedMotion = useSyncExternalStore(
+    subscribeToReducedMotion,
+    getReducedMotion,
+    getReducedMotionOnServer,
+  );
+
+  // Reduced motion kills the crossfade, so advancing would become a hard cut: stop instead.
+  const autoAdvance = carouselImages.length > 1 && !paused && !reducedMotion;
 
   /** Which layer (0 | 1) is the visible front (z-0, opacity 1). */
   const [front, setFront] = useState(0);
@@ -74,7 +103,7 @@ export function HomePhotographyMosaic({
 
   // Schedule next slide after INTERVAL_MS when idle.
   useEffect(() => {
-    if (!hasCarousel || pending !== null) return;
+    if (!autoAdvance || pending !== null) return;
 
     const id = setTimeout(() => {
       const next = (currentIdx + 1) % carouselImages.length;
@@ -88,7 +117,7 @@ export function HomePhotographyMosaic({
     }, INTERVAL_MS);
 
     return () => clearTimeout(id);
-  }, [front, currentIdx, pending, hasCarousel, carouselImages]);
+  }, [front, currentIdx, pending, autoAdvance, carouselImages]);
 
   // When pending is set: wait until the back image is decoded, then fade in and settle.
   useEffect(() => {
@@ -132,9 +161,13 @@ export function HomePhotographyMosaic({
   const sideB = sideGalleries[0] ?? null;
   const sideC = sideGalleries[1] ?? null;
 
+  const canAutoAdvance = carouselImages.length > 1 && !reducedMotion;
+
   return (
-    <div className="grid grid-cols-[3fr_2fr] gap-x-2 gap-y-3">
-      {/* Slot A — col 1, row 1: carousel, configurable aspect ratio */}
+    <div className="grid gap-x-2 gap-y-3 lg:grid-cols-[3fr_2fr]">
+      {/* Slot A — col 1, row 1: carousel, configurable aspect ratio.
+          The wrapper exists so the pause control can sit over the link without nesting in it. */}
+      <div className="relative">
       <Link
         href={detailHref}
         className="relative block overflow-hidden border border-zinc-200/90 bg-black dark:border-zinc-800/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400"
@@ -181,15 +214,27 @@ export function HomePhotographyMosaic({
         {/* Subtle hover overlay — above both carousel layers */}
         <div className="absolute inset-0 z-2 bg-black/0 transition-colors duration-300 hover:bg-black/10" />
       </Link>
+      {canAutoAdvance ? (
+        <button
+          type="button"
+          onClick={() => setPaused((prev) => !prev)}
+          aria-pressed={paused}
+          aria-label={paused ? playLabel : pauseLabel}
+          className="absolute bottom-2 right-2 z-3 rounded-full bg-black/55 p-1.5 text-white backdrop-blur transition-colors hover:bg-black/75 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+        >
+          {paused ? <PlayGlyph /> : <PauseGlyph />}
+        </button>
+      ) : null}
+      </div>
 
       {/* Col 2, row 1: slots B and C stacked, same height as slot A */}
-      <div className="flex flex-col gap-2">
+      <div className="order-3 flex flex-col gap-2 lg:order-none">
         <SlotStatic gallery={sideB} />
         <SlotStatic gallery={sideC} />
       </div>
 
       {/* Col 1, row 2: text — constrained to slot A's width */}
-      <div className="flex flex-col gap-1 px-0.5">
+      <div className="order-2 flex flex-col gap-1 px-0.5 lg:order-none">
         <h3 className="text-base font-semibold leading-snug tracking-tight text-foreground">
           {title}
         </h3>
@@ -204,6 +249,23 @@ export function HomePhotographyMosaic({
         </Link>
       </div>
     </div>
+  );
+}
+
+function PauseGlyph() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" aria-hidden>
+      <rect x="3" y="2" width="3" height="10" rx="1" />
+      <rect x="8" y="2" width="3" height="10" rx="1" />
+    </svg>
+  );
+}
+
+function PlayGlyph() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" aria-hidden>
+      <polygon points="4,2 12,7 4,12" />
+    </svg>
   );
 }
 

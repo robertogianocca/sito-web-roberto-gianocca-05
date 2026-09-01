@@ -156,14 +156,38 @@ export const HorizontalScrollContainer = forwardRef(function HorizontalScrollCon
       if (!next) stopMomentum();
     };
 
+    // Hit-test the actual element under the pointer rather than the track's bounding
+    // rect: the fixed nav and footer overlay the track, and wheeling over them (the
+    // video page filmstrip scrolls horizontally itself) must stay native.
     const pointInsideEl = (clientX, clientY) => {
-      const r = el.getBoundingClientRect();
-      return (
-        clientX >= r.left &&
-        clientX < r.right &&
-        clientY >= r.top &&
-        clientY < r.bottom
-      );
+      const target = document.elementFromPoint(clientX, clientY);
+      return target ? el.contains(target) : false;
+    };
+
+    /**
+     * True when an ancestor of the pointer target still has vertical scroll left in the
+     * wheel direction. Short viewports make panel content taller than the visible band,
+     * and that content must stay reachable before the wheel turns into horizontal travel.
+     */
+    const wantsNativeVerticalScroll = (clientX, clientY, deltaY) => {
+      let node = document.elementFromPoint(clientX, clientY);
+
+      while (node && node !== el) {
+        const { overflowY } = getComputedStyle(node);
+        const scrollable = overflowY === "auto" || overflowY === "scroll";
+        const hasOverflow = node.scrollHeight > node.clientHeight + 1;
+
+        if (scrollable && hasOverflow) {
+          const maxScrollTop = node.scrollHeight - node.clientHeight;
+          const canScrollUp = deltaY < 0 && node.scrollTop > 0;
+          const canScrollDown = deltaY > 0 && node.scrollTop < maxScrollTop - 1;
+          if (canScrollUp || canScrollDown) return true;
+        }
+
+        node = node.parentElement;
+      }
+
+      return false;
     };
 
     const onEnter = () => {
@@ -245,6 +269,11 @@ export const HorizontalScrollContainer = forwardRef(function HorizontalScrollCon
         setHovering(true);
       } else {
         setHovering(false);
+        return;
+      }
+
+      if (wantsNativeVerticalScroll(e.clientX, e.clientY, e.deltaY)) {
+        stopMomentum();
         return;
       }
 

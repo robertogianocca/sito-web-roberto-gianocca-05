@@ -26,12 +26,24 @@ function formatDate(date, locale) {
  *   coverImage?: string | null;
  *   href: string;
  *   locale?: string;
+ *   headingLevel?: 2 | 3;
  * }} props
  */
-export function BlogCard({ title, date, excerpt, tags, coverImage, href, locale }) {
+export function BlogCard({
+  title,
+  date,
+  excerpt,
+  tags,
+  coverImage,
+  href,
+  locale,
+  headingLevel = 2,
+}) {
   const t = useTranslations("Blog");
   const currentLocale = useLocale();
   const resolvedLocale = locale ?? currentLocale;
+  // The homepage renders these under an h2 section title, so it asks for h3 there.
+  const Heading = `h${headingLevel}`;
 
   return (
     <Link
@@ -78,9 +90,9 @@ export function BlogCard({ title, date, excerpt, tags, coverImage, href, locale 
             ) : null}
           </div>
 
-          <h2 className="text-lg font-semibold leading-snug tracking-tight text-foreground">
+          <Heading className="text-lg font-semibold leading-snug tracking-tight text-foreground">
             {title}
-          </h2>
+          </Heading>
 
           {excerpt ? (
             <p className="line-clamp-3 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
