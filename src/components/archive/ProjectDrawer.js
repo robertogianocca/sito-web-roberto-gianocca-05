@@ -21,6 +21,7 @@ const EMPTY_FORM = {
   backupDrive: [],
   size: "",
   cleaned: false,
+  paid: true,
   backupType: "",
   contact: "",
   notes: "",
@@ -429,6 +430,7 @@ export function ProjectDrawer({
           archiveDrive: Array.isArray(project.archiveDrive) ? project.archiveDrive : (project.archiveDrive ? [project.archiveDrive] : []),
           backupDrive: Array.isArray(project.backupDrive) ? project.backupDrive : (project.backupDrive ? [project.backupDrive] : []),
           backupType: project.backupType ?? "",
+          paid: project.paid !== false,
           contact: project.contact ?? "",
           size: project.size ?? "",
           notes: project.notes ?? "",
@@ -670,6 +672,12 @@ export function ProjectDrawer({
                   label="Cleaned (duplicates removed, folders organised)"
                   checked={form.cleaned}
                   onChange={(v) => set("cleaned", v)}
+                />
+                <ToggleCheckbox
+                  id="f-paid"
+                  label="Paid"
+                  checked={form.paid}
+                  onChange={(v) => set("paid", v)}
                 />
                 <BackupTypeSelect
                   value={form.backupType}

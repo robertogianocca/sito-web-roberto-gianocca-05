@@ -30,6 +30,7 @@ function rowToProject(row) {
     cleaned: Boolean(row.cleaned),
     backupType: normalizeBackupType(row.backupType),
     contact: row.contact ?? "",
+    paid: row.paid !== 0 && row.paid !== false,
     notes: row.notes ?? "",
     tags: parseArrayField(row.tags),
     createdAt: row.createdAt ?? "",
@@ -51,8 +52,8 @@ export async function createProject(project) {
   await db.execute({
     sql: `INSERT INTO projects
       (id, projectId, invoiceNumber, title, client, type, date, location,
-       archiveDrive, backupDrive, size, cleaned, backupCompleted, backupType, contact, notes, tags, createdAt, updatedAt)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+       archiveDrive, backupDrive, size, cleaned, backupCompleted, backupType, contact, paid, notes, tags, createdAt, updatedAt)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     args: [
       project.id,
       formatProjectId(project.projectId),
@@ -69,6 +70,7 @@ export async function createProject(project) {
       isBackupDone(backupType) ? 1 : 0,
       backupType,
       project.contact ?? "",
+      project.paid !== false ? 1 : 0,
       project.notes ?? "",
       JSON.stringify(Array.isArray(project.tags) ? project.tags : []),
       project.createdAt ?? "",
@@ -83,7 +85,7 @@ export async function updateProject(id, fields) {
   await db.execute({
     sql: `UPDATE projects SET
       projectId=?, invoiceNumber=?, title=?, client=?, type=?, date=?, location=?,
-      archiveDrive=?, backupDrive=?, size=?, cleaned=?, backupCompleted=?, backupType=?, contact=?, notes=?, tags=?, updatedAt=?
+      archiveDrive=?, backupDrive=?, size=?, cleaned=?, backupCompleted=?, backupType=?, contact=?, paid=?, notes=?, tags=?, updatedAt=?
       WHERE id=?`,
     args: [
       formatProjectId(fields.projectId),
@@ -100,6 +102,7 @@ export async function updateProject(id, fields) {
       isBackupDone(backupType) ? 1 : 0,
       backupType,
       fields.contact ?? "",
+      fields.paid !== false ? 1 : 0,
       fields.notes ?? "",
       JSON.stringify(Array.isArray(fields.tags) ? fields.tags : []),
       fields.updatedAt ?? new Date().toISOString(),

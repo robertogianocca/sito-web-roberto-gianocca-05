@@ -4,12 +4,15 @@ import { usePathname } from "@/i18n/navigation";
 
 /**
  * Global footer shell (slate-400 + grain). Per-route content via @footer parallel route.
- * Hidden on photography routes. In-flow on mobile; fixed bottom bar from md up.
+ * Hidden on photography and archive routes. In-flow on mobile; fixed bottom bar from md up.
  */
 export function SiteFooter({ children }) {
   const pathname = usePathname();
   const hide =
-    pathname === "/photography" || pathname.startsWith("/photography/");
+    pathname === "/photography" ||
+    pathname.startsWith("/photography/") ||
+    pathname === "/archive" ||
+    pathname.startsWith("/archive/");
 
   if (hide) {
     return null;

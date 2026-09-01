@@ -64,6 +64,15 @@ export function ArchiveRow({ project, onEdit }) {
             </svg>
           </span>
         )}
+        {project.paid === false && (
+          <span
+            className="ml-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-emerald-600 px-1 text-2xs font-bold leading-none text-white"
+            title="Not paid"
+            aria-label="Not paid"
+          >
+            $
+          </span>
+        )}
         {project.tags?.length > 0 && (
           <span className="ml-2 text-2xs text-zinc-400">
             {project.tags.slice(0, 3).join(", ")}

@@ -97,7 +97,9 @@ Quando filtri per un singolo Archive drive, sotto i filtri compare un riepilogo:
 
 ### Form progetto (drawer)
 
-Campi principali: Project ID, Invoice #, Title, Client, Type, Date (testo libero, es. `Maggio 2026`), Location, Archive drive, Backup drive, Size, Cleaned, Backup type, Notes, Tags.
+Campi principali: Project ID, Invoice #, Title, Client, Type, Date (testo libero, es. `Maggio 2026`), Location, Archive drive, Backup drive, Size, Cleaned, Paid, Backup type, Contact, Notes, Tags.
+
+**Pagamento:** checkbox **Paid** in Status (attiva di default). Se disattivata, nella tabella compare **$** accanto al titolo (dopo l’icona note, se presente).
 
 **Multi-selezione:** Client, Type, Archive drive e Backup drive accettano più valori (array salvati come JSON nel DB).
 

@@ -22,6 +22,7 @@ const COLUMNS = [
   { header: "Size", key: "size", width: 12 },
   { header: "Cleaned", key: "cleaned", width: 10 },
   { header: "Backup Type", key: "backupType", width: 14 },
+  { header: "Paid", key: "paid", width: 8 },
   { header: "Contact", key: "contact", width: 24 },
   { header: "Notes", key: "notes", width: 40 },
   { header: "Tags", key: "tags", width: 30 },
@@ -94,6 +95,7 @@ export async function GET(request) {
       backupDrive: Array.isArray(p.backupDrive) ? p.backupDrive.join(", ") : (p.backupDrive ?? ""),
       cleaned: boolStr(p.cleaned),
       backupType: backupTypeLabel(p.backupType),
+      paid: boolStr(p.paid),
       tags: Array.isArray(p.tags) ? p.tags.join(", ") : "",
     });
     row.height = 18;

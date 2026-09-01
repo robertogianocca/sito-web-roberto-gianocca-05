@@ -358,7 +358,7 @@ export function ArchiveShell({ initialSettings, initialClients, locale, logoutAc
         </div>
       </header>
 
-      <main className="flex-1 overflow-y-auto md:pb-(--site-footer-height)">
+      <main className="flex-1 overflow-y-auto">
         {loading && (
           <div className="flex items-center justify-center py-24 text-sm text-zinc-400">
             Loading…

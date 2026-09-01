@@ -52,6 +52,7 @@ export async function POST(request) {
     cleaned: Boolean(body.cleaned),
     backupType: normalizeBackupType(body.backupType),
     contact: body.contact ?? "",
+    paid: body.paid !== false,
     notes: body.notes ?? "",
     tags: Array.isArray(body.tags) ? body.tags : [],
     createdAt: now,

@@ -40,6 +40,7 @@ export async function ensureInit() {
     backupCompleted INTEGER NOT NULL DEFAULT 0,
     backupType TEXT NOT NULL DEFAULT '',
     contact TEXT NOT NULL DEFAULT '',
+    paid INTEGER NOT NULL DEFAULT 1,
     notes TEXT NOT NULL DEFAULT '',
     tags TEXT NOT NULL DEFAULT '[]',
     createdAt TEXT NOT NULL DEFAULT '',
@@ -65,6 +66,10 @@ export async function ensureInit() {
 
   await db
     .execute("ALTER TABLE projects ADD COLUMN contact TEXT NOT NULL DEFAULT ''")
+    .catch(() => {});
+
+  await db
+    .execute("ALTER TABLE projects ADD COLUMN paid INTEGER NOT NULL DEFAULT 1")
     .catch(() => {});
 
   const { rows: migrationRows } = await db.execute(
