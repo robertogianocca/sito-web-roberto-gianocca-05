@@ -61,6 +61,32 @@ export const VIDEOS = [
     vimeoId: "1132948199",
     featured: true,
   },
+  {
+    slug: "hot-sky",
+    title: "Hot Sky",
+    subtitle: {
+      it: "Video musicale per *the Yuna Hawks*",
+      en: "Music video for *the Yuna Hawks*",
+    },
+    credits: [
+      {
+        role: {
+          it: "Regia, Ripresa, Montaggio, Post-produzione",
+          en: "Direction, Camera, Editing, Post-production",
+        },
+        names: "Roberto Gianocca",
+      },
+      {
+        role: { it: "Collaborazione e assistenza", en: "Collaboration and Assistance" },
+        names: "Caroline Cavalcante, Matteo Marazzi",
+      },
+      {
+        role: { it: "Assistenza tecnica robot", en: "Robot Technical Assistance" },
+        names: "Carrara Modellismo",
+      },
+    ],
+    vimeoId: "1133440458",
+  },
 ];
 
 /**

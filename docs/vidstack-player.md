@@ -89,15 +89,12 @@ di `TimeSlider.Root`. VidStack li posiziona con `position: absolute` uno sopra l
 Nidificare `TrackFill` o `Progress` dentro `Track` rompe lo stacking.
 
 ```jsx
-// Corretto
+// Corretto (senza Preview — vedi workaround React 19 sotto)
 <TimeSlider.Root>
   <TimeSlider.Track className="vds-slider-track" />
   <TimeSlider.TrackFill className="vds-slider-track-fill vds-slider-track" />
   <TimeSlider.Progress className="vds-slider-progress vds-slider-track" />
   <TimeSlider.Thumb className="vds-slider-thumb" />
-  <TimeSlider.Preview className="vds-slider-preview">
-    <TimeSlider.Value className="vds-slider-value" type="pointer" format="time" />
-  </TimeSlider.Preview>
 </TimeSlider.Root>
 
 // SBAGLIATO — non fare così
@@ -126,6 +123,16 @@ Usare `pointerup` per entrambi causa un double-fire sullo stesso elemento.
 
 - `i.vimeocdn.com` — thumbnail/poster dei video
 - `vimeo.com` — API oEmbed per metadati (titolo, durata, ecc.)
+
+## Workaround React 19: niente `TimeSlider.Preview`
+
+Con `@vidstack/react` 1.14+ e React 19, `TimeSlider.Preview` può lasciare un `requestAnimationFrame` attivo dopo l’unmount del player. Al teardown compare `disabled is not a function`, seguito da `provider destroyed` (effetto collaterale).
+
+Bug upstream: [vidstack/player#1851](https://github.com/vidstack/player/issues/1851).
+
+**Scelta nel progetto:** non usare `TimeSlider.Preview` / `TimeSlider.Value` sulla timeline. Seeking, thumb e orario corrente/durata restano disponibili; manca solo il tooltip al passaggio del mouse sulla barra.
+
+Alternative se servisse il preview in futuro: downgrade a `@vidstack/react@1.13.1` (ultima versione senza la regressione) oppure attendere fix upstream.
 
 ## Errori di console attesi (non critici)
 
