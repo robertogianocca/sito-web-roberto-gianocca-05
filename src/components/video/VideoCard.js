@@ -27,7 +27,7 @@ export function VideoCard({
           : ""
       }`}
     >
-      <div className="relative aspect-4/3 w-full bg-zinc-100 dark:bg-zinc-900">
+      <div className="relative aspect-video w-full bg-zinc-100 dark:bg-zinc-900">
         {thumbnailUrl ? (
           // Hostname must be listed in next.config.mjs remotePatterns.
           // Currently allows i.vimeocdn.com — add other providers there as needed.
@@ -35,7 +35,7 @@ export function VideoCard({
             src={thumbnailUrl}
             alt={thumbnailAlt}
             fill
-            className="object-cover"
+            className="object-contain"
             sizes="(max-width: 640px) 100vw, (max-width: 1200px) 50vw, 33vw"
           />
         ) : (

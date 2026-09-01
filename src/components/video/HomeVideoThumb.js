@@ -24,7 +24,7 @@ export function HomeVideoThumb({ title, thumbnailUrl, thumbnailAlt, href }) {
             <img
               src={thumbnailUrl}
               alt={thumbnailAlt}
-              className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+              className="absolute inset-0 h-full w-full object-contain transition-transform duration-300 group-hover:scale-[1.03]"
               loading="lazy"
               decoding="async"
             />

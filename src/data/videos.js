@@ -59,6 +59,8 @@ export const VIDEOS = [
       },
     ],
     vimeoId: "1132948199",
+    thumbnailUrl:
+      "https://res.cloudinary.com/dqwtukgp2/image/upload/v1767704679/sugar-mama-thumbnail_mduage.jpg",
     featured: true,
   },
   {
@@ -86,6 +88,24 @@ export const VIDEOS = [
       },
     ],
     vimeoId: "1133440458",
+    thumbnailUrl:
+      "https://res.cloudinary.com/dqwtukgp2/image/upload/v1767534097/hot-sky-thumbnail_aktcgh.jpg",
+  },
+  {
+    slug: "carie",
+    title: "Carie",
+    subtitle: "Carie",
+    vimeoId: "676793805",
+    thumbnailUrl:
+      "https://res.cloudinary.com/dqwtukgp2/image/upload/v1767538035/carie-thumbnail_j2yoq7.jpg",
+  },
+  {
+    slug: "met-parachute-mcr",
+    title: "MET Parachute MCR",
+    subtitle: "MET Parachute MCR",
+    vimeoId: "676799834",
+    thumbnailUrl:
+      "https://res.cloudinary.com/dqwtukgp2/image/upload/v1771599457/met-parachute-thumbnail_djjbmb.jpg",
   },
 ];
 

@@ -78,7 +78,7 @@ export function HorizontalSection({
                 </div>
               ) : null}
               {shortDescription ? (
-                <p className="max-w-prose text-sm text-zinc-600 dark:text-zinc-400 lg:pt-1">
+                <p className="max-w-prose text-lg font-bold text-zinc-600 dark:text-zinc-400 lg:pt-1">
                   {shortDescription}
                 </p>
               ) : null}
