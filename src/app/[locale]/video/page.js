@@ -3,8 +3,8 @@ import { buildAlternates } from "@/lib/metadata";
 import { routing } from "@/i18n/routing";
 import { VIDEOS } from "@/data/videos";
 import { VideoCard } from "@/components/video/VideoCard";
+import { VideoCardRow } from "@/components/video/VideoCardRow.client";
 import { BackLink } from "@/components/shared/BackLink";
-import { PageShell } from "@/components/shared/PageShell";
 import { TagFilter } from "@/components/shared/TagFilter";
 import { resolveLocalized } from "@/lib/i18n-content";
 import { plainTextFromMarkdown } from "@/lib/plain-text-from-markdown";
@@ -56,8 +56,8 @@ export default async function VideoPage({ params, searchParams }) {
   }
 
   return (
-    <PageShell
-      header={
+    <div className="relative flex min-h-0 flex-1 flex-col bg-zinc-50 dark:bg-zinc-950">
+      <header className="shrink-0 border-b border-zinc-200/80 bg-background/80 px-6 py-6 backdrop-blur dark:border-zinc-800/80 md:px-10">
         <div className="space-y-2">
           <BackLink href="/" label={t("backLabel")} />
           <h1 className="text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
@@ -68,10 +68,10 @@ export default async function VideoPage({ params, searchParams }) {
           </p>
           <TagFilter basePath="/video" tags={allTags} activeTag={activeTag} allLabel={t("allLabel")} />
         </div>
-      }
-    >
+      </header>
+
       {filtered.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-zinc-300/80 bg-background p-8 text-zinc-600 dark:border-zinc-700/80 dark:text-zinc-400">
+        <div className="mx-6 my-8 rounded-xl border border-dashed border-zinc-300/80 bg-background p-8 text-zinc-600 md:mx-10 dark:border-zinc-700/80 dark:text-zinc-400">
           <p className="font-medium text-foreground">
             {activeTag ? t("noVideoWithTag", { tag: activeTag }) : t("noVideos")}
           </p>
@@ -93,9 +93,13 @@ export default async function VideoPage({ params, searchParams }) {
           </p>
         </div>
       ) : (
-        <ul className="grid gap-8 sm:grid-cols-2">
+        <VideoCardRow>
           {filtered.map((video) => (
-            <li key={video.slug}>
+            <div
+              key={video.slug}
+              data-video-slug={video.slug}
+              className="w-[min(88vw,32rem)] shrink-0 md:w-[34rem] lg:w-[36rem]"
+            >
               <VideoCard
                 title={getTitle(video)}
                 shortDescription={getSubtitle(video)}
@@ -103,10 +107,10 @@ export default async function VideoPage({ params, searchParams }) {
                 thumbnailAlt={t("thumbnailAlt", { title: getTitle(video) })}
                 href={`/video/${video.slug}`}
               />
-            </li>
+            </div>
           ))}
-        </ul>
+        </VideoCardRow>
       )}
-    </PageShell>
+    </div>
   );
 }

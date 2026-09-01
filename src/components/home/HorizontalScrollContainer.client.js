@@ -5,7 +5,7 @@
  * Tuning (friction, speed, clamps, scroll hints): docs/horizontal-wheel-tuning.md
  */
 
-import { useEffect, useRef, useState } from "react";
+import { forwardRef, useEffect, useRef, useState } from "react";
 
 /** Higher = longer glide (ease-out tail). */
 const FRICTION = 0.935;
@@ -76,13 +76,26 @@ function ScrollHintsOverlay({ gradientOpacity, buttonOpacity }) {
  * Desktop: map mouse wheel (vertical) to horizontal scroll on this element.
  * Mouse path uses velocity + friction (ease-out coasting). Horizontal-dominant wheel stays native (trackpad).
  */
-export function HorizontalScrollContainer({
+export const HorizontalScrollContainer = forwardRef(function HorizontalScrollContainer(
+  {
   className = "",
   showScrollHints = false,
   children,
   ...props
-}) {
+},
+  forwardedRef,
+) {
   const ref = useRef(null);
+
+  const setRefs = (el) => {
+    ref.current = el;
+    if (typeof forwardedRef === "function") {
+      forwardedRef(el);
+    } else if (forwardedRef) {
+      forwardedRef.current = el;
+    }
+  };
+
   /** Called from wheel momentum RAF when scroll events may be sparse. */
   const updateHintsRef = useRef(() => {});
   const [hintOpacities, setHintOpacities] = useState({
@@ -268,9 +281,9 @@ export function HorizontalScrollContainer({
   return (
     <>
       {showScrollHints ? <ScrollHintsOverlay {...hintOpacities} /> : null}
-      <main ref={ref} className={className} {...props}>
+      <main ref={setRefs} className={className} {...props}>
         {children}
       </main>
     </>
   );
-}
+});

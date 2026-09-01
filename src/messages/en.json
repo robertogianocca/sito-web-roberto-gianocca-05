@@ -90,7 +90,9 @@
     "showAllVideos": "show all videos",
     "addVideos": "Add entries to src/data/videos.js (slug, title, subtitle, Vimeo id).",
     "errorInvalidIdTitle": "Invalid Vimeo ID",
-    "errorInvalidIdBody": "The vimeoId field in the manifest must contain digits only. Fix src/data/videos.js and redeploy."
+    "errorInvalidIdBody": "The vimeoId field in the manifest must contain digits only. Fix src/data/videos.js and redeploy.",
+    "filmstripLabel": "Video navigation",
+    "goToVideo": "Go to {title}"
   },
   "Blog": {
     "metaDescription": "Updates, reflections and projects.",

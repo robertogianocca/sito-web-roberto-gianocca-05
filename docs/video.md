@@ -2,7 +2,7 @@
 
 Elenco video in repo, player VidStack su Vimeo, pagina dettaglio con titolo, sottotitolo, crediti e layout a due colonne.
 
-Per il player, vedi [VidStack Player](./vidstack-player.md).
+Per il player, vedi [VidStack Player](./vidstack-player.md). Per lo scroll orizzontale della listing (rotella, inerzia), vedi [Scroll orizzontale homepage](./homepage-horizontal-scroll.md).
 
 ---
 
@@ -14,18 +14,15 @@ src/
     videos.js                         ← manifest video (slug, testi, vimeoId, crediti)
   app/[locale]/
     video/
-      page.js                         ← listing con card e filtro tag
+      page.js                         ← listing orizzontale con VideoCard
       [slug]/page.js                  ← dettaglio: colonna testi + player
   components/video/
-    VimeoPlayer.js                    ← player VidStack (dettaglio)
-    VideoCredits.js                   ← elenco crediti localizzati
+    VideoCardRow.client.js            ← riga orizzontale con HorizontalScrollContainer
     VideoCard.js                      ← card in listing
-    HomeFeaturedVideo.client.js       ← blocco featured in homepage
-    HomeVideoThumb.js                 ← thumbnail in homepage
-  lib/
-    vimeo.js                          ← thumbnail oEmbed per homepage
-    i18n-content.js                   ← resolveLocalized
-    plain-text-from-markdown.js       ← testo piano per SEO e card
+    VimeoPlayer.js                    ← player VidStack (dettaglio)
+    VideoCredits.js
+    HomeFeaturedVideo.client.js
+    HomeVideoThumb.js
 ```
 
 ---
@@ -48,39 +45,9 @@ Modifica [`src/data/videos.js`](../src/data/videos.js).
 | Campo | Descrizione |
 |-------|-------------|
 | `credits` | Array di `{ role, names }` — `role` localizzato, `names` testo piano |
-| `thumbnailUrl` | URL HTTPS per anteprima card; senza, la card mostra un segnaposto |
+| `thumbnailUrl` | URL HTTPS per anteprima card |
 | `tags` | Array di stringhe per filtrare nella listing (`?tag=…`) |
-| `featured` | `true` per il video in evidenza in homepage (solo il primo marcato viene usato) |
-
-### Esempio
-
-```js
-{
-  slug: "sugar-mama",
-  title: "Sugar Mama",
-  subtitle: {
-    it: "Video musicale per *Matt Pascale & The Stomps*",
-    en: "Music video for *Matt Pascale & The Stomps*",
-  },
-  credits: [
-    {
-      role: {
-        it: "Regia, Montaggio, Post-produzione",
-        en: "Direction, Editing, Post-production",
-      },
-      names: "Roberto Gianocca",
-    },
-    {
-      role: { it: "Interpreti", en: "Performers" },
-      names: "Matt Pascale, Sofia Buob, Shondel Bervini",
-    },
-  ],
-  vimeoId: "1132948199",
-  featured: true,
-}
-```
-
-Il corsivo nel sottotitolo si ottiene con `*parte in corsivo*` (stessa convenzione markdown di Photography). In dettaglio viene renderizzato da `PhotographyRichDescription`; in listing e homepage il markdown viene rimosso con `plainTextFromMarkdown`.
+| `featured` | `true` per il video in evidenza in homepage |
 
 ---
 
@@ -88,34 +55,20 @@ Il corsivo nel sottotitolo si ottiene con `*parte in corsivo*` (stessa convenzio
 
 ### Listing (`/video`)
 
-- Griglia di `VideoCard` con titolo e sottotitolo in testo piano.
+- Riga orizzontale di `VideoCard` con scroll fluido (stesso comportamento rotella della homepage su desktop).
 - Filtro per tag opzionale (`TagFilter`).
-- Dati da `VIDEOS` in `videos.js`.
+- Click su una card → `/video/[slug]`.
 
 ### Dettaglio (`/video/[slug]`)
 
-Layout desktop (`lg+`):
-
-| Colonna sinistra (larghezza fissa `28rem`) | Colonna destra (`flex-1`) |
-|--------------------------------------------|---------------------------|
-| Back link, titolo, sottotitolo (markdown), crediti | Player Vimeo a tutta larghezza |
-
-- Allineata al margine sinistro della pagina (`px-6` / `md:px-10`).
-- Il player occupa tutto lo spazio rimanente a destra.
-
-Mobile: stack verticale — testi sopra, player sotto.
-
-### Homepage
-
-Il blocco featured usa titolo e sottotitolo (testo piano) dal video con `featured: true`. I crediti compaiono solo nella pagina dettaglio.
+Layout desktop (`lg+`): testi a sinistra (`28rem`), player a destra (`flex-1`). Mobile: stack verticale.
 
 ---
 
 ## Localizzazione
 
 - `title`, `subtitle` e `role` nei crediti supportano `{ it, en }` o stringa singola.
-- `names` nei crediti resta una stringa (nomi propri non tradotti).
-- Label UI (errori, filtri, CTA) in `src/messages/it.json` e `en.json` sotto il namespace `Video`.
+- Label UI in `src/messages/it.json` e `en.json` sotto il namespace `Video`.
 
 ---
 

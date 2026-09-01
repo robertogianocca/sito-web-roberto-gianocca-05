@@ -21,7 +21,7 @@ export function VideoCard({
 }) {
   const article = (
     <article
-      className={`flex h-full flex-col overflow-hidden rounded-xl border border-zinc-200/90 bg-background shadow-sm transition-[box-shadow,transform] dark:border-zinc-800/90${
+      className={`flex flex-col overflow-hidden rounded-xl border border-zinc-200/90 bg-background shadow-sm transition-[box-shadow,transform] dark:border-zinc-800/90${
         href
           ? " group-hover:shadow-md group-hover:ring-1 group-hover:ring-zinc-300/80 dark:group-hover:ring-zinc-600/80"
           : ""
@@ -36,7 +36,7 @@ export function VideoCard({
             alt={thumbnailAlt}
             fill
             className="object-contain"
-            sizes="(max-width: 640px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            sizes="(max-width: 768px) 90vw, 36rem"
           />
         ) : (
           <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center text-sm text-zinc-500 dark:text-zinc-400">
@@ -48,9 +48,9 @@ export function VideoCard({
           </div>
         )}
       </div>
-      <div className="flex flex-1 flex-col gap-2 p-5">
-        <h2 className="text-lg font-semibold tracking-tight text-foreground">{title}</h2>
-        <p className="text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">{shortDescription}</p>
+      <div className="flex flex-col gap-2 p-6">
+        <h2 className="text-xl font-semibold tracking-tight text-foreground">{title}</h2>
+        <p className="text-base leading-relaxed text-zinc-600 dark:text-zinc-400">{shortDescription}</p>
         {footnote ? <p className="text-xs text-amber-700 dark:text-amber-400/90">{footnote}</p> : null}
       </div>
     </article>
@@ -60,7 +60,7 @@ export function VideoCard({
     return (
       <Link
         href={href}
-        className="group block h-full rounded-xl outline-offset-2 focus-visible:outline-2 focus-visible:outline-zinc-400 dark:focus-visible:outline-zinc-500"
+        className="group block rounded-xl outline-offset-2 focus-visible:outline-2 focus-visible:outline-zinc-400 dark:focus-visible:outline-zinc-500"
       >
         {article}
       </Link>
