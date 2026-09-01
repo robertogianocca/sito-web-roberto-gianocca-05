@@ -65,14 +65,16 @@ export default async function PhotographyPage({ params, searchParams }) {
             Photography
           </h1>
           <p className="max-w-prose text-sm text-zinc-600 dark:text-zinc-400">
-            {t("pageDescription")}{" "}
+            {t("pageDescription")}
+          </p>
+          {/* Maintenance action, kept out of the description so the copy reads on its own. */}
+          <p className="text-xs text-zinc-500 dark:text-zinc-500">
             <a
               href={`/${locale}/photography/revalidate-cache`}
-              className="font-medium text-foreground underline-offset-4 hover:underline"
+              className="underline-offset-4 hover:text-foreground hover:underline"
             >
               {t("regenerateCache")}
             </a>
-            .
           </p>
           <TagFilter basePath="/photography" tags={allTags} activeTag={activeTag} allLabel={t("allLabel")} />
         </div>
