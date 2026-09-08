@@ -25,6 +25,7 @@
   },
   "Nav": {
     "label": "Aree del portfolio",
+    "homeLabel": "Vai alla home",
     "languageSwitcherLabel": "Cambia lingua",
     "switchToEnglish": "Passa all'inglese",
     "switchToItalian": "Passa all'italiano"

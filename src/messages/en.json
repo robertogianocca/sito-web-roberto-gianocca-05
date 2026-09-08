@@ -25,6 +25,7 @@
   },
   "Nav": {
     "label": "Portfolio areas",
+    "homeLabel": "Go to homepage",
     "languageSwitcherLabel": "Change language",
     "switchToEnglish": "Switch to English",
     "switchToItalian": "Switch to Italian"
