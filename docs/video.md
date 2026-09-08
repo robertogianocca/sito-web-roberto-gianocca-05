@@ -23,6 +23,8 @@ src/
     VideoCredits.js
     HomeFeaturedVideo.client.js
     HomeVideoThumb.js
+  lib/
+    vimeo.js                          ← metadata oEmbed (thumbnail e durata)
 ```
 
 ---
@@ -55,7 +57,10 @@ Modifica [`src/data/videos.js`](../src/data/videos.js).
 
 ### Listing (`/video`)
 
-- Riga orizzontale di `VideoCard` con scroll fluido (stesso comportamento rotella della homepage su desktop).
+- Su mobile le card sono impilate verticalmente: immagine arrotondata separata dal sottotitolo; il titolo resta nascosto.
+- Da `md` le card mantengono il layout completo e la riga orizzontale con scroll fluido.
+- La durata appare a destra del sottotitolo. Viene letta automaticamente da Vimeo oEmbed, formattata come `m:ss` o `h:mm:ss` e omessa se il servizio non restituisce un valore valido.
+- La risposta oEmbed è memorizzata nella cache Next.js per 24 ore.
 - Filtro per tag opzionale (`TagFilter`).
 - Click su una card → `/video/[slug]`.
 

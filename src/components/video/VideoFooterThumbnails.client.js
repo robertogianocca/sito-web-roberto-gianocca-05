@@ -88,7 +88,7 @@ export function VideoFooterThumbnails({ videos, activeSlug: activeSlugProp = nul
   return (
     <div
       ref={stripRef}
-      className="scrollbar-none flex h-full items-center gap-2 overflow-x-auto overscroll-x-contain pb-1 [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+      className="scrollbar-none hidden h-full items-center gap-2 overflow-x-auto overscroll-x-contain pb-1 [-ms-overflow-style:none] md:flex [&::-webkit-scrollbar]:hidden"
       role="tablist"
       aria-label={t("filmstripLabel")}
     >

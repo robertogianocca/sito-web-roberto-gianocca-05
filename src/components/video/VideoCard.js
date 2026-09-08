@@ -10,6 +10,7 @@ import Link from "next/link";
  *   footnote?: string | null;
  *   href?: string;
  *   priority?: boolean;
+ *   duration?: string | null;
  * }} props
  */
 export function VideoCard({
@@ -20,16 +21,17 @@ export function VideoCard({
   footnote,
   href,
   priority = false,
+  duration = null,
 }) {
   const article = (
     <article
-      className={`flex flex-col overflow-hidden rounded-xl border border-zinc-200/90 bg-background shadow-sm transition-[box-shadow,transform] dark:border-zinc-800/90${
+      className={`flex flex-col md:overflow-hidden md:rounded-xl md:border md:border-zinc-200/90 md:bg-background md:shadow-sm md:transition-[box-shadow,transform] md:dark:border-zinc-800/90${
         href
-          ? " group-hover:shadow-md group-hover:ring-1 group-hover:ring-zinc-300/80 dark:group-hover:ring-zinc-600/80"
+          ? " md:group-hover:shadow-md md:group-hover:ring-1 md:group-hover:ring-zinc-300/80 md:dark:group-hover:ring-zinc-600/80"
           : ""
       }`}
     >
-      <div className="relative aspect-video w-full bg-zinc-100 dark:bg-zinc-900">
+      <div className="relative aspect-video w-full overflow-hidden rounded-xl border border-zinc-200/90 bg-zinc-100 shadow-sm md:rounded-none md:border-0 md:shadow-none dark:border-zinc-800/90 dark:bg-zinc-900">
         {thumbnailUrl ? (
           // Hostname must be listed in next.config.mjs remotePatterns.
           // Currently allows i.vimeocdn.com — add other providers there as needed.
@@ -51,9 +53,18 @@ export function VideoCard({
           </div>
         )}
       </div>
-      <div className="flex flex-col gap-2 p-6">
-        <h2 className="text-xl font-semibold tracking-tight text-foreground">{title}</h2>
-        <p className="text-base leading-relaxed text-zinc-600 dark:text-zinc-400">{shortDescription}</p>
+      <div className="flex flex-col gap-2 px-1 pt-3 md:p-6">
+        <h2 className="sr-only text-xl font-semibold tracking-tight text-foreground md:not-sr-only">{title}</h2>
+        <div className="flex items-start justify-between gap-4">
+          <p className="min-w-0 flex-1 text-sm leading-relaxed text-zinc-600 md:text-base dark:text-zinc-400">
+            {shortDescription}
+          </p>
+          {duration ? (
+            <span className="shrink-0 text-xs font-medium leading-relaxed tabular-nums text-zinc-500 dark:text-zinc-400">
+              {duration}
+            </span>
+          ) : null}
+        </div>
         {footnote ? <p className="text-xs text-amber-700 dark:text-amber-400/90">{footnote}</p> : null}
       </div>
     </article>

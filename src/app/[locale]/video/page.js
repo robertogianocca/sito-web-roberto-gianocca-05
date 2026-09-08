@@ -1,13 +1,14 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { buildAlternates } from "@/lib/metadata";
 import { routing } from "@/i18n/routing";
-import { VIDEOS } from "@/data/videos";
+import { normalizeVimeoId, VIDEOS } from "@/data/videos";
 import { VideoCard } from "@/components/video/VideoCard";
 import { VideoCardRow } from "@/components/video/VideoCardRow.client";
 import { BackLink } from "@/components/shared/BackLink";
 import { TagFilter } from "@/components/shared/TagFilter";
 import { resolveLocalized } from "@/lib/i18n-content";
 import { plainTextFromMarkdown } from "@/lib/plain-text-from-markdown";
+import { fetchVimeoMetadata, formatVideoDuration } from "@/lib/vimeo";
 
 export async function generateMetadata({ params }) {
   const { locale } = await params;
@@ -55,6 +56,18 @@ export default async function VideoPage({ params, searchParams }) {
     return plainTextFromMarkdown(resolveLocalized(video.subtitle, locale));
   }
 
+  const cards = await Promise.all(
+    filtered.map(async (video) => {
+      const vimeoId = normalizeVimeoId(video.vimeoId);
+      const metadata = vimeoId ? await fetchVimeoMetadata(vimeoId) : null;
+
+      return {
+        video,
+        duration: formatVideoDuration(metadata?.duration),
+      };
+    }),
+  );
+
   return (
     <div className="relative flex min-h-0 flex-1 flex-col bg-zinc-50 dark:bg-zinc-950">
       <header className="shrink-0 border-b border-zinc-200/80 bg-background/80 px-6 py-6 backdrop-blur dark:border-zinc-800/80 md:px-10">
@@ -97,14 +110,14 @@ export default async function VideoPage({ params, searchParams }) {
         </main>
       ) : (
         <VideoCardRow>
-          {filtered.map((video, index) => (
+          {cards.map(({ video, duration }, index) => (
             <div
               key={video.slug}
               data-video-slug={video.slug}
               // From md up the footer is fixed, so the card has to fit between the page
               // header and the footer. 34rem covers both plus the card's text block; the
               // 16/9 factor turns the leftover height back into a card width.
-              className="w-[min(88vw,32rem)] shrink-0 md:w-[34rem] md:max-w-[max(18rem,calc((100dvh-34rem)*16/9))] lg:w-[36rem]"
+              className="w-full shrink-0 md:w-[34rem] md:max-w-[max(18rem,calc((100dvh-34rem)*16/9))] lg:w-[36rem]"
             >
               <VideoCard
                 title={getTitle(video)}
@@ -113,6 +126,7 @@ export default async function VideoPage({ params, searchParams }) {
                 thumbnailAlt={t("thumbnailAlt", { title: getTitle(video) })}
                 href={`/video/${video.slug}`}
                 priority={index === 0}
+                duration={duration}
               />
             </div>
           ))}
