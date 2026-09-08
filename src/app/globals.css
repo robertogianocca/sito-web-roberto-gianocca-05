@@ -9,8 +9,14 @@
   --foreground: #2f2b28;
   /* Photographic grain on nav/footer chrome — tune opacity without touching components */
   --site-chrome-grain-opacity: 0.2;
-  --site-nav-height: 2.25rem; /* 36px, matches 04 nav bar height */
+  --site-nav-height: 3rem; /* 48px mobile touch target */
   --site-footer-height: 10rem; /* 160px — between compact bar and original 25vh */
+}
+
+@media (min-width: 48rem) {
+  :root {
+    --site-nav-height: 2.25rem; /* 36px desktop, matches 04 nav bar height */
+  }
 }
 
 /* ============================================================
@@ -105,4 +111,76 @@ body {
   mix-blend-mode: soft-light;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   background-size: 180px 180px;
+}
+
+/* iOS Safari stretches flex <a> items to the nav height and clips the pill.
+   The inner box is a non-flex containing block; the switch is not a flex item. */
+.site-nav {
+  display: block;
+}
+
+.site-nav-inner {
+  position: absolute;
+  top: 0;
+  right: 1.5rem;
+  bottom: 0;
+  left: 1.5rem;
+}
+
+.mobile-lang-switch {
+  position: absolute;
+  top: 6px;
+  right: 0;
+  bottom: auto;
+  left: auto;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  box-sizing: border-box;
+  width: 5.5rem;
+  height: 2.25rem;
+  max-height: 2.25rem;
+  min-height: 0;
+  margin: 0;
+  padding: 2px;
+  overflow: hidden;
+  border-radius: 9999px;
+  background-color: rgb(100 116 139 / 0.4);
+  color: #3d3731;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.025em;
+  line-height: 1;
+  text-decoration: none;
+  touch-action: manipulation;
+  -webkit-appearance: none;
+  appearance: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-lang-switch span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 0;
+  border-radius: 9999px;
+}
+
+.mobile-lang-switch span.is-active {
+  background-color: #231f1c;
+  color: #fff;
+}
+
+@media (min-width: 768px) {
+  .site-nav-inner {
+    right: 2.5rem;
+    left: 2.5rem;
+    display: flex;
+    align-items: center;
+  }
+
+  .mobile-lang-switch {
+    display: none;
+  }
 }

@@ -7,9 +7,9 @@ export function SiteNavBar() {
   return (
     <nav
       aria-label="Site"
-      className="site-chrome-grain fixed top-0 left-0 z-10 flex h-(--site-nav-height) w-full items-center justify-start overflow-hidden bg-slate-400 px-6 md:px-10"
+      className="site-nav site-chrome-grain pointer-events-auto fixed top-0 left-0 z-30 h-(--site-nav-height) w-full overflow-hidden bg-slate-400 md:z-10"
     >
-      <div className="relative z-1">
+      <div className="site-nav-inner">
         <LanguageSwitcher />
       </div>
     </nav>

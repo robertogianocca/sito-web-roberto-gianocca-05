@@ -25,7 +25,9 @@
   },
   "Nav": {
     "label": "Portfolio areas",
-    "languageSwitcherLabel": "Change language"
+    "languageSwitcherLabel": "Change language",
+    "switchToEnglish": "Switch to English",
+    "switchToItalian": "Switch to Italian"
   },
   "TagFilter": {
     "all": "All"
