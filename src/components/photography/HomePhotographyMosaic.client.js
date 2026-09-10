@@ -252,8 +252,8 @@ export function HomePhotographyMosaic({
         <p className="line-clamp-2 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
           {description}
         </p>
-        <HomeCtaLink href={detailHref} className="mt-0.5 self-start">
-          {seeGalleryLabel} →
+        <HomeCtaLink href={detailHref} showArrow className="mt-0.5 self-start">
+          {seeGalleryLabel}
         </HomeCtaLink>
       </div>
     </div>

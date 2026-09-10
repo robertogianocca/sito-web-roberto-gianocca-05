@@ -1,30 +1,22 @@
 import { Link } from "@/i18n/navigation";
-
-function LinkOutIcon({ className }) {
-  return (
-    <svg
-      className={className}
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden
-    >
-      <path
-        d="M7 17L17 7M17 7H9M17 7V15"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
+import { HomeCtaLink } from "@/components/home/HomeCtaLink";
 
 /**
  * Thematic panel: full viewport height on lg+, width = (span/12) * 100vw.
  * --span is read by .horizontal-section rules in globals.css (lg+ only).
+ *
+ * @param {{
+ *   id?: string;
+ *   title?: string;
+ *   eyebrow?: string;
+ *   span?: number;
+ *   titleHref?: string;
+ *   titleHrefAriaLabel?: string;
+ *   ctaHref?: string;
+ *   ctaLabel?: string;
+ *   shortDescription?: string;
+ *   children?: import('react').ReactNode;
+ * }} props
  */
 export function HorizontalSection({
   id,
@@ -33,25 +25,31 @@ export function HorizontalSection({
   span = 12,
   titleHref,
   titleHrefAriaLabel,
+  ctaHref,
+  ctaLabel,
   shortDescription,
   children,
 }) {
   const hasTitle = title != null && title !== "";
-  const hasHeader = hasTitle || Boolean(eyebrow) || Boolean(shortDescription);
+  const hasCta = Boolean(ctaHref && ctaLabel);
+  const hasHeader =
+    hasTitle || Boolean(eyebrow) || Boolean(shortDescription) || hasCta;
 
-  const titleContent =
+  const titleNode = hasTitle ? (
     titleHref != null && titleHref !== "" ? (
       <Link
         href={titleHref}
-        className="group inline-flex max-w-full items-center gap-2 text-foreground underline-offset-4 transition-colors hover:text-zinc-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400 dark:hover:text-zinc-200 dark:focus-visible:outline-zinc-500"
+        className="text-foreground underline-offset-4 transition-colors hover:text-zinc-700 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400 dark:hover:text-zinc-200 dark:focus-visible:outline-zinc-500"
       >
-        <span className="min-w-0 group-hover:underline">{title}</span>
-        <LinkOutIcon className="size-5 shrink-0 text-zinc-500 transition-colors group-hover:text-foreground dark:text-zinc-400" />
-        {titleHrefAriaLabel ? <span className="sr-only">{titleHrefAriaLabel}</span> : null}
+        {title}
+        {titleHrefAriaLabel ? (
+          <span className="sr-only">{titleHrefAriaLabel}</span>
+        ) : null}
       </Link>
     ) : (
       title
-    );
+    )
+  ) : null;
 
   return (
     <section
@@ -63,8 +61,8 @@ export function HorizontalSection({
         {hasHeader ? (
           <header className="shrink-0">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:gap-5">
-              {hasTitle || eyebrow ? (
-                <div className="shrink-0 space-y-2">
+              {hasTitle || eyebrow || hasCta ? (
+                <div className="shrink-0 space-y-3">
                   {eyebrow ? (
                     <p className="text-xs font-medium uppercase tracking-widest text-zinc-500 dark:text-zinc-400">
                       {eyebrow}
@@ -72,8 +70,13 @@ export function HorizontalSection({
                   ) : null}
                   {hasTitle ? (
                     <h2 className="text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
-                      {titleContent}
+                      {titleNode}
                     </h2>
+                  ) : null}
+                  {hasCta ? (
+                    <HomeCtaLink href={ctaHref} showArrow>
+                      {ctaLabel}
+                    </HomeCtaLink>
                   ) : null}
                 </div>
               ) : null}
@@ -85,9 +88,6 @@ export function HorizontalSection({
             </div>
           </header>
         ) : null}
-        {/* Panels are sized to the visible band between nav and footer, so on short
-            viewports the content can exceed it. Keep it scrollable rather than clipped;
-            the wheel handler yields to this scroller before scrolling horizontally. */}
         <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
       </div>
     </section>

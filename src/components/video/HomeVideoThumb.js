@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { Link } from "@/i18n/navigation";
+import { PhotographyRichDescription } from "@/components/photography/PhotographyRichDescription";
 
 /**
  * Card thumbnail compatta per la riga dei video in homepage.
@@ -20,13 +21,13 @@ export function HomeVideoThumb({ title, subtitle, thumbnailUrl, thumbnailAlt, hr
       className="group block rounded-lg outline-offset-2 focus-visible:outline-2 focus-visible:outline-zinc-400 dark:focus-visible:outline-zinc-500"
     >
       <div className="flex flex-col gap-1.5">
-        <div className="relative aspect-video w-full overflow-hidden rounded-lg border border-zinc-200/90 bg-zinc-100 dark:border-zinc-800/90 dark:bg-zinc-900">
+        <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-zinc-900">
           {thumbnailUrl ? (
             <Image
               src={thumbnailUrl}
               alt={thumbnailAlt}
               fill
-              className="object-contain transition-transform duration-300 group-hover:scale-[1.03]"
+              className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
               sizes="(max-width: 640px) 50vw, 15vw"
             />
           ) : (
@@ -40,9 +41,11 @@ export function HomeVideoThumb({ title, subtitle, thumbnailUrl, thumbnailAlt, hr
             {title}
           </p>
           {subtitle ? (
-            <p className="mt-0.5 line-clamp-1 text-[0.65rem] leading-snug text-zinc-500 dark:text-zinc-400">
-              {subtitle}
-            </p>
+            <PhotographyRichDescription
+              markdown={subtitle}
+              className="mt-0.5 text-xs leading-snug text-zinc-500 dark:text-zinc-400"
+              paragraphClassName="line-clamp-1 text-xs"
+            />
           ) : null}
         </div>
       </div>

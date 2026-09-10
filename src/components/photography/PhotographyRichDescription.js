@@ -44,15 +44,32 @@ function MarkdownLink({ node: _node, href, children, className, title }) {
 /**
  * Markdown in repo data: **bold**, *italic*, [label](url), root paths with `/...`.
  *
- * @param {{ markdown: string }} props
+ * @param {{
+ *   markdown: string;
+ *   className?: string;
+ *   paragraphClassName?: string;
+ * }} props
  */
-export function PhotographyRichDescription({ markdown }) {
+export function PhotographyRichDescription({
+  markdown,
+  className,
+  paragraphClassName,
+}) {
   return (
-    <div className={bodyClass}>
+    <div className={className ?? bodyClass}>
       <ReactMarkdown
         components={{
           p({ children }) {
-            return <p className="m-0 not-last:mb-2 text-sm">{children}</p>;
+            return (
+              <p
+                className={[
+                  "m-0 not-last:mb-2",
+                  paragraphClassName ?? "text-sm",
+                ].join(" ")}
+              >
+                {children}
+              </p>
+            );
           },
           strong({ children }) {
             return <strong className="font-semibold text-foreground">{children}</strong>;

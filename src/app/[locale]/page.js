@@ -18,7 +18,6 @@ import { getHomeSectionCopy } from "@/data/home-sections";
 import { getFeaturedVideo, getRecentVideos, normalizeVimeoId } from "@/data/videos";
 import { getHomePhotographyData } from "@/lib/home-photography-data";
 import { resolveLocalized } from "@/lib/i18n-content";
-import { plainTextFromMarkdown } from "@/lib/plain-text-from-markdown";
 
 export async function generateMetadata({ params }) {
   const { locale } = await params;
@@ -44,8 +43,8 @@ export default async function Home({ params }) {
     return resolveLocalized(video?.title, locale);
   }
 
-  function getVideoDescription(video) {
-    return plainTextFromMarkdown(resolveLocalized(video?.subtitle, locale));
+  function getVideoSubtitle(video) {
+    return resolveLocalized(video?.subtitle, locale);
   }
 
   const featuredVimeoId = featuredVideo ? normalizeVimeoId(featuredVideo.vimeoId) : null;
@@ -94,6 +93,8 @@ export default async function Home({ params }) {
           span={8}
           titleHref="/video"
           titleHrefAriaLabel={t("videoAriaLabel")}
+          ctaHref="/video"
+          ctaLabel={t("videoAllVideos")}
           shortDescription={getHomeSectionCopy("video", locale).shortDescription}
         >
           {featuredVideo && featuredVimeoId ? (
@@ -101,16 +102,18 @@ export default async function Home({ params }) {
               <HomeFeaturedVideo
                 vimeoId={featuredVimeoId}
                 title={getVideoTitle(featuredVideo)}
-                description={getVideoDescription(featuredVideo)}
+                description={getVideoSubtitle(featuredVideo)}
+                thumbnailUrl={featuredVideo.thumbnailUrl}
+                thumbnailAlt={getVideoTitle(featuredVideo)}
                 detailHref={`/video/${featuredVideo.slug}`}
                 seeProjectLabel={t("videoSeeProject")}
               />
-              <HomeThumbRow href="/video" label={t("videoAllVideos")}>
+              <HomeThumbRow>
                 {recentVideos.map((video, i) => (
                   <li key={`${video.slug}-${i}`}>
                     <HomeVideoThumb
                       title={getVideoTitle(video)}
-                      subtitle={getVideoDescription(video)}
+                      subtitle={getVideoSubtitle(video)}
                       thumbnailUrl={video.thumbnailUrl}
                       thumbnailAlt={getVideoTitle(video)}
                       href={`/video/${video.slug}`}
@@ -130,6 +133,8 @@ export default async function Home({ params }) {
           span={8}
           titleHref="/photography"
           titleHrefAriaLabel={t("photographyAriaLabel")}
+          ctaHref="/photography"
+          ctaLabel={t("photographyAllGalleries")}
           shortDescription={getHomeSectionCopy("photography", locale).shortDescription}
         >
           {photography ? (
@@ -145,7 +150,7 @@ export default async function Home({ params }) {
                 pauseLabel={t("photographyPauseCarousel")}
                 playLabel={t("photographyPlayCarousel")}
               />
-              <HomeThumbRow href="/photography" label={t("photographyAllGalleries")}>
+              <HomeThumbRow>
                 {photography.recentGalleries.map((gallery) => (
                   <li key={gallery.slug}>
                     <HomeGalleryThumb
@@ -178,6 +183,8 @@ export default async function Home({ params }) {
           span={6}
           titleHref="/blog"
           titleHrefAriaLabel={t("blogAriaLabel")}
+          ctaHref="/blog"
+          ctaLabel={t("blogAllPosts")}
           shortDescription={getHomeSectionCopy("blog", locale).shortDescription}
         >
           <div className="flex h-full flex-col gap-5">

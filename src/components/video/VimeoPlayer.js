@@ -7,6 +7,7 @@ import '@vidstack/react/player/styles/default/sliders.css';
 import '@vidstack/react/player/styles/default/controls.css';
 import '@vidstack/react/player/styles/default/buttons.css';
 import '@vidstack/react/player/styles/default/time.css';
+import '@vidstack/react/player/styles/default/poster.css';
 
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import {
@@ -17,9 +18,11 @@ import {
   MediaProvider,
   MuteButton,
   PlayButton,
+  Poster,
   Time,
   TimeSlider,
   VolumeSlider,
+  useMediaRemote,
   useMediaState,
 } from '@vidstack/react';
 import {
@@ -120,6 +123,48 @@ const DESKTOP_VOLUME_STYLE = {
   margin: 0,
   padding: 0,
 };
+
+/** Full-frame hit target + green play — used before first start (homepage). */
+function IdlePlaySurface({ isDesktop }) {
+  const remote = useMediaRemote();
+  const waiting = useMediaState('waiting');
+
+  function play() {
+    if (waiting) return;
+    remote.play();
+  }
+
+  return (
+    <button
+      type="button"
+      disabled={waiting}
+      onClick={play}
+      aria-label="Riproduci"
+      aria-busy={waiting || undefined}
+      className="absolute inset-0 z-20 cursor-pointer border-0 bg-transparent p-0 disabled:cursor-wait"
+    >
+      <span
+        className="pointer-events-none absolute inset-x-0 bottom-0"
+        style={isDesktop ? DESKTOP_CONTROLS_STYLE : undefined}
+      >
+        <span className="absolute inset-x-0 bottom-0 h-25 bg-linear-to-t from-black via-black/85 to-transparent" />
+        <span className="relative flex items-center px-3 pb-3">
+          <span
+            className="vds-button mr-[5px] flex size-[35px] shrink-0 items-center justify-center rounded-full"
+            style={{
+              backgroundColor: DESKTOP_COLOR.playBg,
+              color: DESKTOP_COLOR.playFg,
+              opacity: waiting ? 0.7 : 1,
+            }}
+          >
+            <PlayIcon className="vds-icon size-[25px]" />
+          </span>
+        </span>
+        <span className="block h-[7px] w-full" aria-hidden />
+      </span>
+    </button>
+  );
+}
 
 // ─── Mobile controls (previous white chrome) ──────────────────────────────────
 function MobileControls() {
@@ -273,51 +318,80 @@ function DesktopControls() {
 }
 
 // ─── PlayerUI ─────────────────────────────────────────────────────────────────
-function PlayerUI() {
+function PlayerUI({ idlePlayOnly = false, poster, posterAlt }) {
   const paused = useMediaState('paused');
+  const started = useMediaState('started');
+  const playing = useMediaState('playing');
   const isDesktop = useIsDesktop();
+  const playOnly = idlePlayOnly && !started;
+
+  // Keep the Cloudinary cover until real frames are playing (not merely "started").
+  const [coverGone, setCoverGone] = useState(false);
+  useEffect(() => {
+    if (playing) setCoverGone(true);
+  }, [playing]);
+  const showPosterCover = idlePlayOnly && Boolean(poster) && !coverGone;
 
   const [flash, setFlash] = useState(false);
   const prevPaused = useRef(paused);
   useEffect(() => {
+    if (playOnly) return;
     if (prevPaused.current === paused) return;
     prevPaused.current = paused;
     setFlash(true);
     const id = setTimeout(() => setFlash(false), 220);
     return () => clearTimeout(id);
-  }, [paused]);
+  }, [paused, playOnly]);
 
   return (
     <>
-      <Gesture
-        className="absolute inset-0"
-        event="click"
-        action="toggle:paused"
-      />
-      <Gesture
-        className="vds-gesture"
-        event="pointerup"
-        action="toggle:controls"
-      />
+      {showPosterCover ? (
+        // eslint-disable-next-line @next/next/no-img-element -- player overlay; Next/Image not needed here
+        <img
+          src={poster}
+          alt={posterAlt ?? ""}
+          className="pointer-events-none absolute inset-0 z-[1] h-full w-full object-cover"
+        />
+      ) : null}
+
+      {!playOnly ? (
+        <>
+          <Gesture
+            className="absolute inset-0 z-[2]"
+            event="click"
+            action="toggle:paused"
+          />
+          <Gesture
+            className="vds-gesture"
+            event="pointerup"
+            action="toggle:controls"
+          />
+        </>
+      ) : null}
 
       <div
         aria-hidden="true"
-        className={`pointer-events-none absolute inset-0 bg-black transition-opacity duration-200 ${
+        className={`pointer-events-none absolute inset-0 z-[2] bg-black transition-opacity duration-200 ${
           flash ? 'opacity-20' : 'opacity-0'
         }`}
       />
 
       {/*
-        Only one chrome at a time. Desktop group is absolute bottom-0 so the
-        seek bar sits flush on the video edge (project 04 alignment).
+        Idle play must live OUTSIDE `.vds-controls`. Video controls start hidden
+        (opacity 0) and only get `[data-visible]` after interaction — so a play
+        button inside Controls fades away on homepage load.
       */}
-      <Controls.Root className="vds-controls justify-end" hideDelay={3000}>
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-x-0 bottom-0 h-25 bg-linear-to-t from-black via-black/85 to-transparent"
-        />
-        {isDesktop ? <DesktopControls /> : <MobileControls />}
-      </Controls.Root>
+      {playOnly ? (
+        <IdlePlaySurface isDesktop={isDesktop} />
+      ) : (
+        <Controls.Root className="vds-controls z-[4] justify-end" hideDelay={3000}>
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-25 bg-linear-to-t from-black via-black/85 to-transparent"
+          />
+          {isDesktop ? <DesktopControls /> : <MobileControls />}
+        </Controls.Root>
+      )}
     </>
   );
 }
@@ -325,9 +399,27 @@ function PlayerUI() {
 // ─── VimeoPlayer ──────────────────────────────────────────────────────────────
 
 /**
- * @param {{ vimeoId: string; title: string; className?: string }} props
+ * @param {{
+ *   vimeoId: string;
+ *   title: string;
+ *   className?: string;
+ *   autoPlay?: boolean;
+ *   poster?: string;
+ *   posterAlt?: string;
+ *   load?: 'eager' | 'idle' | 'visible' | 'play';
+ *   idlePlayOnly?: boolean;
+ * }} props
  */
-export function VimeoPlayer({ vimeoId, title, className }) {
+export function VimeoPlayer({
+  vimeoId,
+  title,
+  className,
+  autoPlay = false,
+  poster,
+  posterAlt,
+  load = 'visible',
+  idlePlayOnly = false,
+}) {
   return (
     <div className={["relative w-full max-w-5xl", className].filter(Boolean).join(" ")}>
       <MediaPlayer
@@ -336,12 +428,26 @@ export function VimeoPlayer({ vimeoId, title, className }) {
         className="w-full overflow-hidden bg-black shadow-sm"
         title={title}
         src={`vimeo/${vimeoId}`}
-        load="visible"
+        poster={poster}
+        load={load}
         playsInline
+        autoPlay={autoPlay}
         style={PLAYER_STYLE}
       >
-        <MediaProvider />
-        <PlayerUI />
+        <MediaProvider>
+          {poster ? (
+            <Poster
+              className="vds-poster h-full w-full object-cover [&_img]:object-cover!"
+              src={poster}
+              alt={posterAlt ?? title}
+            />
+          ) : null}
+        </MediaProvider>
+        <PlayerUI
+          idlePlayOnly={idlePlayOnly}
+          poster={poster}
+          posterAlt={posterAlt ?? title}
+        />
       </MediaPlayer>
     </div>
   );
