@@ -75,6 +75,7 @@ const MOBILE_TIMELINE_STYLE = {
   '--media-slider-track-height':         '3px',
   '--media-slider-focused-track-height': '5px',
   '--media-slider-thumb-size':           '13px',
+  '--media-slider-track-border-radius':  '0',
 };
 
 /** Desktop palette from sito-web-roberto-gianocca-04. */
@@ -104,6 +105,7 @@ const DESKTOP_TIMELINE_STYLE = {
   '--media-slider-track-height':         '7px',
   '--media-slider-focused-track-height': '7px',
   '--media-slider-thumb-size':           '12px',
+  '--media-slider-track-border-radius':  '0',
   margin: 0,
   padding: 0,
   width: '100%',
@@ -177,9 +179,9 @@ function MobileControls() {
         style={MOBILE_TIMELINE_STYLE}
         pauseWhileDragging
       >
-        <TimeSlider.Track className="vds-slider-track rounded-none" />
-        <TimeSlider.TrackFill className="vds-slider-track-fill vds-slider-track rounded-none" />
-        <TimeSlider.Progress className="vds-slider-progress vds-slider-track rounded-none" />
+        <TimeSlider.Track className="vds-slider-track rounded-none!" />
+        <TimeSlider.TrackFill className="vds-slider-track-fill vds-slider-track rounded-none!" />
+        <TimeSlider.Progress className="vds-slider-progress vds-slider-track rounded-none!" />
         <TimeSlider.Thumb className="vds-slider-thumb" />
       </TimeSlider.Root>
     </Controls.Group>
@@ -241,8 +243,8 @@ function DesktopControls() {
             className="vds-slider"
             style={DESKTOP_VOLUME_STYLE}
           >
-            <VolumeSlider.Track className="vds-slider-track rounded-none" />
-            <VolumeSlider.TrackFill className="vds-slider-track-fill vds-slider-track rounded-none" />
+            <VolumeSlider.Track className="vds-slider-track rounded-none!" />
+            <VolumeSlider.TrackFill className="vds-slider-track-fill vds-slider-track rounded-none!" />
             <VolumeSlider.Thumb className="vds-slider-thumb opacity-100 border-0" />
           </VolumeSlider.Root>
         </div>
@@ -260,9 +262,9 @@ function DesktopControls() {
           style={DESKTOP_TIMELINE_STYLE}
           pauseWhileDragging
         >
-          <TimeSlider.Track className="vds-slider-track rounded-none" />
-          <TimeSlider.TrackFill className="vds-slider-track-fill vds-slider-track rounded-none" />
-          <TimeSlider.Progress className="vds-slider-progress vds-slider-track rounded-none" />
+          <TimeSlider.Track className="vds-slider-track rounded-none!" />
+          <TimeSlider.TrackFill className="vds-slider-track-fill vds-slider-track rounded-none!" />
+          <TimeSlider.Progress className="vds-slider-progress vds-slider-track rounded-none!" />
           <TimeSlider.Thumb className="vds-slider-thumb opacity-100 border-0" />
         </TimeSlider.Root>
       </div>
