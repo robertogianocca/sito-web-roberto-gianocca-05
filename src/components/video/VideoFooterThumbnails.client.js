@@ -9,7 +9,13 @@ const LISTING_SCROLL_ROOT_SELECTOR = "main[data-video-listing]";
 
 /**
  * @param {{
- *   videos: Array<{ slug: string; title: string; thumbnailUrl?: string; thumbnailAlt: string }>;
+ *   videos: Array<{
+ *     slug: string;
+ *     title: string;
+ *     subtitle?: string;
+ *     thumbnailUrl?: string;
+ *     thumbnailAlt: string;
+ *   }>;
  *   activeSlug?: string | null;
  *   mode: "listing" | "detail";
  * }} props
@@ -88,35 +94,46 @@ export function VideoFooterThumbnails({ videos, activeSlug: activeSlugProp = nul
   return (
     <div
       ref={stripRef}
-      className="scrollbar-none hidden h-full items-center gap-2 overflow-x-auto overscroll-x-contain pb-1 [-ms-overflow-style:none] md:flex [&::-webkit-scrollbar]:hidden"
+      className="scrollbar-none hidden h-full items-center gap-4 overflow-x-auto overscroll-x-contain pb-1 [-ms-overflow-style:none] md:flex [&::-webkit-scrollbar]:hidden"
       role="tablist"
       aria-label={t("filmstripLabel")}
     >
       {videos.map((video) => {
         const isActive = video.slug === activeSlug;
 
-        const thumb = (
-          <span
-            className={`relative block h-16 shrink-0 overflow-hidden rounded border transition ${
-              isActive
-                ? "border-white ring-2 ring-white/60"
-                : "border-white/35 opacity-80 hover:border-white/60 hover:opacity-100"
-            }`}
-            style={{ aspectRatio: "16 / 9" }}
-          >
-            {video.thumbnailUrl ? (
-              <Image
-                src={video.thumbnailUrl}
-                alt=""
-                fill
-                sizes="96px"
-                className="object-cover"
-              />
-            ) : (
-              <span className="flex h-full items-center justify-center bg-zinc-700/40 text-[0.65rem] font-medium text-white/80">
+        const item = (
+          <span className="flex w-35.5 flex-col gap-1.5">
+            <span
+              className={`relative block h-20 w-full shrink-0 overflow-hidden rounded border transition ${
+                isActive
+                  ? "border-white ring-2 ring-white/60"
+                  : "border-white/35 opacity-80 group-hover:border-white/60 group-hover:opacity-100"
+              }`}
+            >
+              {video.thumbnailUrl ? (
+                <Image
+                  src={video.thumbnailUrl}
+                  alt=""
+                  fill
+                  sizes="142px"
+                  className="object-cover"
+                />
+              ) : (
+                <span className="flex h-full items-center justify-center bg-zinc-700/40 text-[0.65rem] font-medium text-white/80">
+                  {video.title}
+                </span>
+              )}
+            </span>
+            <span className="min-w-0 text-left">
+              <span className="block truncate text-xs font-semibold leading-tight text-zinc-900">
                 {video.title}
               </span>
-            )}
+              {video.subtitle ? (
+                <span className="mt-0.5 block truncate text-[0.65rem] leading-tight text-zinc-700/90">
+                  {video.subtitle}
+                </span>
+              ) : null}
+            </span>
           </span>
         );
 
@@ -132,9 +149,9 @@ export function VideoFooterThumbnails({ videos, activeSlug: activeSlugProp = nul
               role="tab"
               aria-selected={isActive}
               aria-label={t("goToVideo", { title: video.title })}
-              className="shrink-0 rounded outline-offset-2 focus-visible:outline-2 focus-visible:outline-white"
+              className="group shrink-0 rounded outline-offset-2 focus-visible:outline-2 focus-visible:outline-white"
             >
-              {thumb}
+              {item}
             </Link>
           );
         }
@@ -151,9 +168,9 @@ export function VideoFooterThumbnails({ videos, activeSlug: activeSlugProp = nul
             aria-selected={isActive}
             aria-label={t("goToVideo", { title: video.title })}
             onClick={() => scrollToCard(video.slug)}
-            className="shrink-0 rounded outline-offset-2 focus-visible:outline-2 focus-visible:outline-white"
+            className="group shrink-0 rounded outline-offset-2 focus-visible:outline-2 focus-visible:outline-white"
           >
-            {thumb}
+            {item}
           </button>
         );
       })}

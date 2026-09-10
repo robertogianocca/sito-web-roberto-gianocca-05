@@ -1,5 +1,6 @@
 import { VIDEOS } from "@/data/videos";
 import { resolveLocalized } from "@/lib/i18n-content";
+import { plainTextFromMarkdown } from "@/lib/plain-text-from-markdown";
 
 /**
  * @param {string} locale
@@ -16,6 +17,7 @@ export function getVideoFooterItems(locale, activeTag = null) {
     return {
       slug: video.slug,
       title,
+      subtitle: plainTextFromMarkdown(resolveLocalized(video.subtitle, locale)),
       thumbnailUrl: video.thumbnailUrl,
       thumbnailAlt: title,
     };

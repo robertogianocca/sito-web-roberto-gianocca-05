@@ -12,7 +12,7 @@ export function VideoCredits({ credits, locale }) {
   }
 
   return (
-    <dl className="space-y-2 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
+    <dl className="text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
       {credits.map((credit, index) => {
         const role = resolveLocalized(credit.role, locale);
         return (
