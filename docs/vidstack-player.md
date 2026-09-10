@@ -15,32 +15,57 @@ next.config.mjs             ← CSP aggiornata per Vimeo (img-src, connect-src)
 ## Pacchetti installati
 
 ```
-@vidstack/react@next        versione 1.x (API "next" — non "latest" che è 0.6.x)
-media-icons@next            richiesto internamente da @vidstack/react/icons
+@vidstack/react@1.15.4
+media-icons                 richiesto internamente da @vidstack/react/icons
 ```
-
-Installati con `--legacy-peer-deps` perché `@vidstack/react` dichiara `react@^18`
-ma il progetto usa React 19.
 
 ## Architettura del componente
 
 ```
 VimeoPlayer({ vimeoId, title, className? })
-└── <MediaPlayer viewType="video" src="vimeo/{id}">
+└── <MediaPlayer viewType="video" src="vimeo/{id}">   ← no rounded corners
       ├── <MediaProvider />          ← iframe Vimeo gestito da VidStack
       └── <PlayerUI />               ← inner component (useMediaState vive qui)
             ├── <Gesture click>      ← click ovunque → play/pause
             ├── <Gesture pointerup>  ← movimento mouse → mostra controlli
             ├── flash overlay        ← React state, feedback visivo sul click
-            └── <Controls.Root>
+            └── <Controls.Root>          ← flex column, justify-end (barra in basso)
                   ├── gradient scrim
-                  └── <Controls.Group>
-                        ├── buttons row (Play · Mute · VolumeSlider | Time · Fullscreen)
-                        └── <TimeSlider.Root>
+                  └── un solo chrome:
+                        <MobileControls />   ← < md  (chrome bianco)
+                        <DesktopControls />  ← ≥ md  (layout/style progetto 04)
+
+Su desktop e mobile viene montato **un solo** `Controls.Group` (via `matchMedia`),
+perché le utility Tailwind `hidden`/`md:block` perdevano contro
+`display: inline-block` di `.vds-controls-group` e mostravano entrambi i set.
 ```
 
 `PlayerUI` deve essere un componente figlio di `MediaPlayer` perché
 `useMediaState` legge il contesto del player — non funziona fuori da `MediaPlayer`.
+
+### Chrome mobile (`< md`)
+
+Layout invariato rispetto alla versione precedente:
+
+```
+[Play] [Mute]                    [0:12 / 3:45] [FS]
+████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+```
+
+Colori bianchi via `PLAYER_STYLE` sul `MediaPlayer`.
+
+### Chrome desktop (`md+`) — da sito-web-roberto-gianocca-04
+
+```
+[Play●] [FS] [Mute][Vol────]              0:12 / 3:45
+████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+```
+
+- Play circolare verde (`#00C934`) con icona nera
+- Icone / time / slider verdi (`#00C934` / `#009226` / `#005B18`)
+- Seek bar più alta (~7px)
+- Token verdi **scoped** su `DesktopControls` (`DESKTOP_CONTROLS_STYLE`) così il mobile resta bianco
+- Nessun `TimeSlider.Preview` (bug React 19)
 
 ## CSS: approccio ibrido
 
@@ -54,8 +79,8 @@ VidStack fornisce CSS fondamentale che gestisce i comportamenti interni:
 | `default/buttons.css` | dimensioni e flex centering dei `vds-button` |
 | `default/time.css` | layout `vds-time-group` |
 
-I colori e le transizioni sono sovrascritti tramite **CSS custom properties** passate
-come `style` su `<MediaPlayer>` — si propagano in cascade a tutti i figli.
+I colori e le transizioni base sono sovrascritti tramite **CSS custom properties** su `<MediaPlayer>`.
+Il desktop applica un secondo set di variabili sul proprio `Controls.Group`.
 
 ### Proprietà principali
 
@@ -132,8 +157,6 @@ Bug upstream: [vidstack/player#1851](https://github.com/vidstack/player/issues/1
 
 **Scelta nel progetto:** non usare `TimeSlider.Preview` / `TimeSlider.Value` sulla timeline. Seeking, thumb e orario corrente/durata restano disponibili; manca solo il tooltip al passaggio del mouse sulla barra.
 
-Alternative se servisse il preview in futuro: downgrade a `@vidstack/react@1.13.1` (ultima versione senza la regressione) oppure attendere fix upstream.
-
 ## Errori di console attesi (non critici)
 
 | Messaggio | Causa | Impatto |
@@ -141,10 +164,10 @@ Alternative se servisse il preview in futuro: downgrade a `@vidstack/react@1.13.
 | `Setting the playback rate is not enabled for this video` | Vimeo basic plan non permette `setPlaybackRate()`. VidStack la chiama sempre. | Nessuno — la riproduzione funziona normalmente |
 | `TypeError: this.$state[prop] is not a function` | Bug del logger di Next.js 16 Turbopack in dev mode: tenta di serializzare il Proxy reattivo di VidStack quando VidStack logga l'errore di orientation lock (fullscreen su mobile). | Solo dev mode — il fullscreen funziona correttamente |
 
-## Come cambiare i colori del player
+## Come cambiare i colori
 
-Modificare le costanti in `PLAYER_STYLE` all'inizio di `VimeoPlayer.js`.
-Non serve CSS aggiuntivo — le custom properties si propagano automaticamente.
+- **Mobile / base:** costanti `PLAYER_STYLE` in `VimeoPlayer.js`
+- **Desktop:** `DESKTOP_COLOR` + `DESKTOP_CONTROLS_STYLE` (non toccare il mobile)
 
 ## Come cambiare la velocità di fade dei controlli
 
