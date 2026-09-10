@@ -19,7 +19,6 @@ import { getFeaturedVideo, getRecentVideos, normalizeVimeoId } from "@/data/vide
 import { getHomePhotographyData } from "@/lib/home-photography-data";
 import { resolveLocalized } from "@/lib/i18n-content";
 import { plainTextFromMarkdown } from "@/lib/plain-text-from-markdown";
-import { fetchVimeoThumbnail } from "@/lib/vimeo";
 
 export async function generateMetadata({ params }) {
   const { locale } = await params;
@@ -50,9 +49,6 @@ export default async function Home({ params }) {
   }
 
   const featuredVimeoId = featuredVideo ? normalizeVimeoId(featuredVideo.vimeoId) : null;
-  const featuredThumbnail =
-    featuredVideo?.thumbnailUrl ??
-    (featuredVimeoId ? await fetchVimeoThumbnail(featuredVimeoId) : null);
 
   const photography = await getHomePhotographyData(locale);
 
@@ -145,13 +141,8 @@ export default async function Home({ params }) {
                 vimeoId={featuredVimeoId}
                 title={getVideoTitle(featuredVideo)}
                 description={getVideoDescription(featuredVideo)}
-                thumbnailUrl={featuredThumbnail}
-                thumbnailAlt={getVideoTitle(featuredVideo)}
                 detailHref={`/video/${featuredVideo.slug}`}
                 seeProjectLabel={t("videoSeeProject")}
-                playLabel={t("videoPlayAriaLabel", {
-                  title: getVideoTitle(featuredVideo),
-                })}
               />
               <HomeThumbRow href="/video" label={t("videoAllVideos")}>
                 {recentVideos.map((video, i) => (
