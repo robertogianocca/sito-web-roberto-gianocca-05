@@ -3,16 +3,17 @@ import { Link } from "@/i18n/navigation";
 
 /**
  * Card thumbnail compatta per la riga dei video in homepage.
- * Solo immagine + titolo + link alla pagina dettaglio.
+ * Immagine + titolo + sottotitolo + link alla pagina dettaglio.
  *
  * @param {{
  *   title: string;
+ *   subtitle?: string;
  *   thumbnailUrl?: string;
  *   thumbnailAlt: string;
  *   href: string;
  * }} props
  */
-export function HomeVideoThumb({ title, thumbnailUrl, thumbnailAlt, href }) {
+export function HomeVideoThumb({ title, subtitle, thumbnailUrl, thumbnailAlt, href }) {
   return (
     <Link
       href={href}
@@ -34,9 +35,16 @@ export function HomeVideoThumb({ title, thumbnailUrl, thumbnailAlt, href }) {
             </div>
           )}
         </div>
-        <p className="line-clamp-2 text-xs font-medium leading-snug text-foreground group-hover:underline group-hover:underline-offset-2">
-          {title}
-        </p>
+        <div className="min-w-0">
+          <p className="line-clamp-2 text-xs font-medium leading-snug text-foreground group-hover:underline group-hover:underline-offset-2">
+            {title}
+          </p>
+          {subtitle ? (
+            <p className="mt-0.5 line-clamp-1 text-[0.65rem] leading-snug text-zinc-500 dark:text-zinc-400">
+              {subtitle}
+            </p>
+          ) : null}
+        </div>
       </div>
     </Link>
   );

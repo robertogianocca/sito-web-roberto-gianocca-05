@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Image from "next/image";
 import { Link } from "@/i18n/navigation";
+import { HomeCtaLink } from "@/components/home/HomeCtaLink";
 
 const INTERVAL_MS = 4000;
 const FADE_MS = 700;
@@ -251,12 +252,9 @@ export function HomePhotographyMosaic({
         <p className="line-clamp-2 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
           {description}
         </p>
-        <Link
-          href={detailHref}
-          className="mt-0.5 text-xs font-medium text-zinc-500 underline-offset-2 hover:text-foreground hover:underline dark:text-zinc-400 dark:hover:text-zinc-200"
-        >
+        <HomeCtaLink href={detailHref} className="mt-0.5 self-start">
           {seeGalleryLabel} →
-        </Link>
+        </HomeCtaLink>
       </div>
     </div>
   );

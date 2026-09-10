@@ -158,6 +158,7 @@ export default async function Home({ params }) {
                   <li key={`${video.slug}-${i}`}>
                     <HomeVideoThumb
                       title={getVideoTitle(video)}
+                      subtitle={getVideoDescription(video)}
                       thumbnailUrl={video.thumbnailUrl}
                       thumbnailAlt={getVideoTitle(video)}
                       href={`/video/${video.slug}`}

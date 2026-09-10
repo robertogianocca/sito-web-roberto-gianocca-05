@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { Link } from "@/i18n/navigation";
+import { HomeCtaLink } from "@/components/home/HomeCtaLink";
 
 function PlayIcon() {
   return (
@@ -51,7 +52,7 @@ export function HomeFeaturedVideo({
   const iframeSrc = `https://player.vimeo.com/video/${vimeoId}?autoplay=1&dnt=1`;
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[3fr_2fr]">
+    <div className="grid gap-4 lg:grid-cols-[3fr_2fr] lg:items-start">
       {/* Left: player */}
       <div className="relative overflow-hidden rounded-xl border border-zinc-200/90 bg-black shadow-sm dark:border-zinc-800/90">
         <div className="relative aspect-video w-full">
@@ -90,20 +91,29 @@ export function HomeFeaturedVideo({
         </div>
       </div>
 
-      {/* Right: text */}
-      <div className="flex flex-col justify-center gap-3 py-1">
-        <h3 className="text-base font-semibold leading-snug tracking-tight text-foreground">
-          {title}
+      {/* Right: text — top-aligned, larger title under section h2 */}
+      <div className="flex flex-col justify-start gap-3 self-start py-1">
+        <h3 className="text-xl font-semibold leading-snug tracking-tight text-foreground md:text-2xl">
+          <Link
+            href={detailHref}
+            className="underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400 dark:focus-visible:outline-zinc-500"
+          >
+            {title}
+          </Link>
         </h3>
-        <p className="text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
-          {description}
-        </p>
-        <Link
-          href={detailHref}
-          className="text-xs font-medium text-zinc-500 underline-offset-2 hover:text-foreground hover:underline dark:text-zinc-400 dark:hover:text-zinc-200"
-        >
+        {description ? (
+          <p className="text-xs leading-relaxed text-zinc-600 md:text-sm dark:text-zinc-400">
+            <Link
+              href={detailHref}
+              className="underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400 dark:focus-visible:outline-zinc-500"
+            >
+              {description}
+            </Link>
+          </p>
+        ) : null}
+        <HomeCtaLink href={detailHref} className="self-start">
           {seeProjectLabel} →
-        </Link>
+        </HomeCtaLink>
       </div>
     </div>
   );

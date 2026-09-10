@@ -1,4 +1,4 @@
-import { Link } from "@/i18n/navigation";
+import { HomeCtaLink } from "@/components/home/HomeCtaLink";
 
 /**
  * Row of section thumbnails followed by a "see all" link.
@@ -14,14 +14,11 @@ import { Link } from "@/i18n/navigation";
  */
 export function HomeThumbRow({ href, label, children }) {
   return (
-    <div className="flex flex-col gap-3 sm:flex-row">
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
       <ul className="grid flex-1 grid-cols-3 gap-3">{children}</ul>
-      <Link
-        href={href}
-        className="shrink-0 self-end text-xs font-medium text-zinc-500 underline-offset-2 hover:text-foreground hover:underline dark:text-zinc-400 dark:hover:text-zinc-200"
-      >
+      <HomeCtaLink href={href} className="self-end sm:self-auto">
         {label} →
-      </Link>
+      </HomeCtaLink>
     </div>
   );
 }
