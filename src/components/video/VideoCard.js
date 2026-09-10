@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { PhotographyRichDescription } from "@/components/photography/PhotographyRichDescription";
 
 /**
  * @param {{
@@ -56,9 +57,11 @@ export function VideoCard({
       <div className="flex flex-col gap-2 px-1 pt-3 md:p-6">
         <h2 className="sr-only text-xl font-semibold tracking-tight text-foreground md:not-sr-only">{title}</h2>
         <div className="flex items-start justify-between gap-4">
-          <p className="min-w-0 flex-1 text-sm leading-relaxed text-zinc-600 md:text-base dark:text-zinc-400">
-            {shortDescription}
-          </p>
+          <PhotographyRichDescription
+            markdown={shortDescription}
+            className="min-w-0 flex-1 text-sm leading-relaxed text-zinc-600 md:text-base dark:text-zinc-400"
+            paragraphClassName="text-sm md:text-base"
+          />
           {duration ? (
             <span className="shrink-0 text-xs font-medium leading-relaxed tabular-nums text-zinc-500 dark:text-zinc-400">
               {duration}

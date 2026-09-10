@@ -7,7 +7,6 @@ import { VideoCardRow } from "@/components/video/VideoCardRow.client";
 import { BackLink } from "@/components/shared/BackLink";
 import { TagFilter } from "@/components/shared/TagFilter";
 import { resolveLocalized } from "@/lib/i18n-content";
-import { plainTextFromMarkdown } from "@/lib/plain-text-from-markdown";
 import { fetchVimeoMetadata, formatVideoDuration } from "@/lib/vimeo";
 
 export async function generateMetadata({ params }) {
@@ -53,7 +52,7 @@ export default async function VideoPage({ params, searchParams }) {
   }
 
   function getSubtitle(video) {
-    return plainTextFromMarkdown(resolveLocalized(video.subtitle, locale));
+    return resolveLocalized(video.subtitle, locale);
   }
 
   const cards = await Promise.all(

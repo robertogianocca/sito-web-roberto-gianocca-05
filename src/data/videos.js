@@ -138,7 +138,10 @@ export const VIDEOS = [
   {
     slug: "met-parachute-mcr",
     title: "MET Parachute MCR",
-    subtitle: "MET Parachute MCR",
+    subtitle: {
+      it: "Commercial per *MET Helmets Parachute MCR*",
+      en: "Commercial for *MET Helmets Parachute MCR*",
+    },
     credits: [
       {
         role: { it: "Regia", en: "Direction" },

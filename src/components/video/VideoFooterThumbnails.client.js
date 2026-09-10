@@ -104,10 +104,10 @@ export function VideoFooterThumbnails({ videos, activeSlug: activeSlugProp = nul
         const item = (
           <span className="flex w-35.5 flex-col gap-1.5">
             <span
-              className={`relative block h-20 w-full shrink-0 overflow-hidden rounded border transition ${
+              className={`relative block h-20 w-full shrink-0 overflow-hidden rounded-lg transition ${
                 isActive
-                  ? "border-white ring-2 ring-white/60"
-                  : "border-white/35 opacity-80 group-hover:border-white/60 group-hover:opacity-100"
+                  ? "opacity-100"
+                  : "opacity-50 group-hover:opacity-85"
               }`}
             >
               {video.thumbnailUrl ? (
@@ -125,11 +125,21 @@ export function VideoFooterThumbnails({ videos, activeSlug: activeSlugProp = nul
               )}
             </span>
             <span className="min-w-0 text-left">
-              <span className="block truncate text-xs font-semibold leading-tight text-zinc-900">
+              <span
+                className={`block truncate text-xs leading-tight ${
+                  isActive
+                    ? "font-semibold text-zinc-900"
+                    : "font-medium text-zinc-800"
+                }`}
+              >
                 {video.title}
               </span>
               {video.subtitle ? (
-                <span className="mt-0.5 block truncate text-[0.65rem] leading-tight text-zinc-700/90">
+                <span
+                  className={`mt-0.5 block truncate text-[0.65rem] leading-tight ${
+                    isActive ? "text-zinc-700" : "text-zinc-700/75"
+                  }`}
+                >
                   {video.subtitle}
                 </span>
               ) : null}
@@ -149,7 +159,7 @@ export function VideoFooterThumbnails({ videos, activeSlug: activeSlugProp = nul
               role="tab"
               aria-selected={isActive}
               aria-label={t("goToVideo", { title: video.title })}
-              className="group shrink-0 rounded outline-offset-2 focus-visible:outline-2 focus-visible:outline-white"
+              className="group shrink-0 rounded-lg outline-offset-2 focus-visible:outline-2 focus-visible:outline-white"
             >
               {item}
             </Link>
@@ -168,7 +178,7 @@ export function VideoFooterThumbnails({ videos, activeSlug: activeSlugProp = nul
             aria-selected={isActive}
             aria-label={t("goToVideo", { title: video.title })}
             onClick={() => scrollToCard(video.slug)}
-            className="group shrink-0 rounded outline-offset-2 focus-visible:outline-2 focus-visible:outline-white"
+            className="group shrink-0 rounded-lg outline-offset-2 focus-visible:outline-2 focus-visible:outline-white"
           >
             {item}
           </button>
