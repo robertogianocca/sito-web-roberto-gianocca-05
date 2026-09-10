@@ -11,8 +11,8 @@ export function HomeIntroNav() {
   // Areas with their own route use the locale-aware Link. Graphic design and contact
   // only exist as panels on this page, so they stay plain hash anchors.
   const items = [
-    { id: "photography", label: tHome("photographyTitle"), href: "/photography" },
     { id: "video", label: tHome("videoTitle"), href: "/video" },
+    { id: "photography", label: tHome("photographyTitle"), href: "/photography" },
     { id: "graphic-design", label: tHome("graphicDesignTitle") },
     { id: "blog", label: tHome("blogTitle"), href: "/blog" },
     { id: "contact", label: tHome("contactTitle") },

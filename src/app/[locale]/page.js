@@ -89,6 +89,42 @@ export default async function Home({ params }) {
         </HorizontalSection>
 
         <HorizontalSection
+          id="video"
+          title={t("videoTitle")}
+          span={8}
+          titleHref="/video"
+          titleHrefAriaLabel={t("videoAriaLabel")}
+          shortDescription={getHomeSectionCopy("video", locale).shortDescription}
+        >
+          {featuredVideo && featuredVimeoId ? (
+            <div className="flex flex-col gap-4">
+              <HomeFeaturedVideo
+                vimeoId={featuredVimeoId}
+                title={getVideoTitle(featuredVideo)}
+                description={getVideoDescription(featuredVideo)}
+                detailHref={`/video/${featuredVideo.slug}`}
+                seeProjectLabel={t("videoSeeProject")}
+              />
+              <HomeThumbRow href="/video" label={t("videoAllVideos")}>
+                {recentVideos.map((video, i) => (
+                  <li key={`${video.slug}-${i}`}>
+                    <HomeVideoThumb
+                      title={getVideoTitle(video)}
+                      subtitle={getVideoDescription(video)}
+                      thumbnailUrl={video.thumbnailUrl}
+                      thumbnailAlt={getVideoTitle(video)}
+                      href={`/video/${video.slug}`}
+                    />
+                  </li>
+                ))}
+              </HomeThumbRow>
+            </div>
+          ) : (
+            <HomeSectionEmpty message={t("videoEmpty")} />
+          )}
+        </HorizontalSection>
+
+        <HorizontalSection
           id="photography"
           title={t("photographyTitle")}
           span={8}
@@ -124,42 +160,6 @@ export default async function Home({ params }) {
             </div>
           ) : (
             <HomeSectionEmpty message={t("photographyEmpty")} />
-          )}
-        </HorizontalSection>
-
-        <HorizontalSection
-          id="video"
-          title={t("videoTitle")}
-          span={8}
-          titleHref="/video"
-          titleHrefAriaLabel={t("videoAriaLabel")}
-          shortDescription={getHomeSectionCopy("video", locale).shortDescription}
-        >
-          {featuredVideo && featuredVimeoId ? (
-            <div className="flex flex-col gap-4">
-              <HomeFeaturedVideo
-                vimeoId={featuredVimeoId}
-                title={getVideoTitle(featuredVideo)}
-                description={getVideoDescription(featuredVideo)}
-                detailHref={`/video/${featuredVideo.slug}`}
-                seeProjectLabel={t("videoSeeProject")}
-              />
-              <HomeThumbRow href="/video" label={t("videoAllVideos")}>
-                {recentVideos.map((video, i) => (
-                  <li key={`${video.slug}-${i}`}>
-                    <HomeVideoThumb
-                      title={getVideoTitle(video)}
-                      subtitle={getVideoDescription(video)}
-                      thumbnailUrl={video.thumbnailUrl}
-                      thumbnailAlt={getVideoTitle(video)}
-                      href={`/video/${video.slug}`}
-                    />
-                  </li>
-                ))}
-              </HomeThumbRow>
-            </div>
-          ) : (
-            <HomeSectionEmpty message={t("videoEmpty")} />
           )}
         </HorizontalSection>
 

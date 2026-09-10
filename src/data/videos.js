@@ -73,7 +73,7 @@ export const VIDEOS = [
     credits: [
       {
         role: {
-          it: "Regia, Ripresa, Montaggio, Post-produzione",
+          it: "Regia, Camera, Montaggio, Post-produzione",
           en: "Direction, Camera, Editing, Post-production",
         },
         names: "Roberto Gianocca",
@@ -93,8 +93,44 @@ export const VIDEOS = [
   },
   {
     slug: "carie",
-    title: "Carie",
-    subtitle: "Carie",
+    title: "CARIE",
+    subtitle: {
+      it: "Documentario sportivo sulle *cave di Carrara*",
+      en: "Sports documentary film about *Carrara’s quarries*",
+    },
+    credits: [
+      {
+        role: { it: "Regia", en: "Direction" },
+        names: "Achille Mauri, Marzio Nardi, Federico Ravassard",
+      },
+      {
+        role: { it: "Montaggio", en: "Editing" },
+        names: "Achille Mauri",
+      },
+      {
+        role: {
+          it: "Assistente alla ripresa, Drone, Color grading, Animazione",
+          en: "Camera assistant, Drone, Grading, Animation",
+        },
+        names: "Roberto Gianocca",
+      },
+      {
+        role: { it: "Arrampicatori", en: "Climbers" },
+        names: "Francesca Medici, Lorenzo Carasio, Luca Andreozzi, Luca Bana",
+      },
+      {
+        role: { it: "Colonna sonora", en: "Soundtrack" },
+        names: "Andrea La Pietra",
+      },
+      {
+        role: { it: "Mix e sound design", en: "Mix and Sound Design" },
+        names: "Tommaso Simonetta",
+      },
+      {
+        role: { it: "Personaggi", en: "Characters" },
+        names: "Marzio Nardi, Roberto Bombarda, Chiara Taponecco, Eros Tetti",
+      },
+    ],
     vimeoId: "676793805",
     thumbnailUrl:
       "https://res.cloudinary.com/dqwtukgp2/image/upload/v1767538035/carie-thumbnail_j2yoq7.jpg",
@@ -103,6 +139,31 @@ export const VIDEOS = [
     slug: "met-parachute-mcr",
     title: "MET Parachute MCR",
     subtitle: "MET Parachute MCR",
+    credits: [
+      {
+        role: { it: "Regia", en: "Direction" },
+        names: "Achille Mauri",
+      },
+      {
+        role: { it: "Montaggio", en: "Editing" },
+        names: "Achille Mauri",
+      },
+      {
+        role: {
+          it: "Assistente alla ripresa, Drone, Color grading, Animazione",
+          en: "Camera assistant, Drone, Grading, Animation",
+        },
+        names: "Roberto Gianocca",
+      },
+      {
+        role: { it: "Colonna sonora", en: "Soundtrack" },
+        names: "Andrea La Pietra",
+      },
+      {
+        role: { it: "Mix e sound design", en: "Mix and Sound Design" },
+        names: "Andrea Colosio",
+      },
+    ],
     vimeoId: "676799834",
     thumbnailUrl:
       "https://res.cloudinary.com/dqwtukgp2/image/upload/v1771599457/met-parachute-thumbnail_djjbmb.jpg",
