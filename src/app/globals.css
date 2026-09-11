@@ -185,3 +185,102 @@ body {
     display: none;
   }
 }
+
+/* Desktop VidStack secondary controls — subtle circles, color fade only (no scale). */
+@media (hover: hover) and (pointer: fine) {
+  .vds-button.desktop-secondary-circle {
+    transition:
+      background-color 0.2s ease,
+      color 0.2s ease,
+      border-color 0.2s ease !important;
+  }
+
+  .vds-button.desktop-secondary-circle:hover,
+  .vds-button.desktop-secondary-circle:focus-visible {
+    border-color: transparent !important;
+    background-color: #00c934 !important;
+    color: #000 !important;
+    transform: none !important;
+  }
+}
+
+.vds-button.desktop-secondary-circle,
+.vds-button.desktop-secondary-circle:hover {
+  transform: none !important;
+}
+
+/*
+  Volume slider: collapsed beside mute; opens via `.is-open` (React hover/focus/drag).
+  Closes on a delay after the pointer leaves so adjusting volume feels stable.
+*/
+.desktop-volume-rail {
+  width: 0;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-4px);
+  will-change: width, opacity, transform;
+  transition:
+    width 220ms ease-in-out,
+    opacity 220ms ease-in-out,
+    transform 220ms ease-in-out;
+}
+
+.desktop-volume-group.is-open .desktop-volume-rail {
+  width: 66px; /* 60px track + pl-1.5 */
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(0);
+}
+
+@media (hover: none) {
+  /* Touch / coarse pointers: keep volume reachable without hover. */
+  .desktop-volume-rail {
+    width: 66px;
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+/*
+  Desktop seek thumb: VidStack centers the thumb on the track. With a 7px track
+  flush to the bottom of an overflow-hidden player, that clips ~2.5px. Anchor
+  the thumb to the bottom so it grows upward instead of straddling the edge.
+*/
+.desktop-seek-bar .vds-slider-thumb {
+  top: auto;
+  bottom: 0;
+  transform: translateX(-50%) translateZ(0);
+}
+
+/*
+  Custom seek timestamp (replaces TimeSlider.Preview — React 19 teardown race).
+  Positioned via inline `left` % from useSliderState; clamped in JS at the edges.
+*/
+.seek-time-preview {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  z-index: 2;
+  padding: 2px 6px;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateX(-50%);
+  transition: opacity 120ms ease-out;
+}
+
+.seek-time-preview.is-visible {
+  opacity: 1;
+}
+
+.seek-time-preview--desktop {
+  background-color: #00c934;
+  color: #000;
+}
+
+.seek-time-preview--mobile {
+  background-color: #fff;
+  color: #000;
+}

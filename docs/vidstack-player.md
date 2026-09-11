@@ -22,18 +22,19 @@ media-icons                 richiesto internamente da @vidstack/react/icons
 ## Architettura del componente
 
 ```
-VimeoPlayer({ vimeoId, title, className? })
+VimeoPlayer({ vimeoId, title, className?, poster?, idlePlayOnly? })
 └── <MediaPlayer viewType="video" src="vimeo/{id}">   ← no rounded corners
-      ├── <MediaProvider />          ← iframe Vimeo gestito da VidStack
+      ├── <MediaProvider />          ← iframe Vimeo gestito da VidStack (+ Poster opzionale)
       └── <PlayerUI />               ← inner component (useMediaState vive qui)
-            ├── <Gesture click>      ← click ovunque → play/pause
+            ├── idle: IdlePlaySurface (solo play verde, fuori da Controls)
+            ├── <Gesture click>      ← click ovunque → play/pause (dopo start)
             ├── <Gesture pointerup>  ← movimento mouse → mostra controlli
             ├── flash overlay        ← React state, feedback visivo sul click
             └── <Controls.Root>          ← flex column, justify-end (barra in basso)
                   ├── gradient scrim
                   └── un solo chrome:
                         <MobileControls />   ← < md  (chrome bianco)
-                        <DesktopControls />  ← ≥ md  (layout/style progetto 04)
+                        <DesktopControls />  ← ≥ md  (cerchi + volume hover)
 
 Su desktop e mobile viene montato **un solo** `Controls.Group` (via `matchMedia`),
 perché le utility Tailwind `hidden`/`md:block` perdevano contro
@@ -57,15 +58,21 @@ Colori bianchi via `PLAYER_STYLE` sul `MediaPlayer`.
 ### Chrome desktop (`md+`) — da sito-web-roberto-gianocca-04
 
 ```
-[Play●] [FS] [Mute][Vol────]              0:12 / 3:45
+[Play●] [FS○] [Mute○][~Vol────]              0:12 / 3:45
 ████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
 ```
 
-- Play circolare verde (`#00C934`) con icona nera
+- Play: cerchio pieno verde (`#00C934`) con icona nera — unico controllo primario
+- Fullscreen e Mute: cerchi secondari permanenti (bordo verde soft + fondo scuro translucido), stessi 35px; al hover/focus si riempiono di verde con icona nera
+- Volume: nascosto di default; si apre a destra del Mute su hover/focus; dopo aver regolato il volume si richiude ~1.1s dopo (anche se il cursore è ancora sopra); per riaprirlo bisogna uscire e rientrare. Su leave senza drag: stessa delay. Su touch resta sempre visibile
+- Hover secondari: solo fade colore (verde pieno + icona nera), **senza** scale/ingrandimento
+- Spaziatura uniforme `gap-1.5` (6px) tra Play / FS / gruppo volume
 - Icone / time / slider verdi (`#00C934` / `#009226` / `#005B18`)
-- Seek bar più alta (~7px)
+- Seek bar flush al bordo inferiore (**7px** track + thumb **12px** ancorato in basso via `.desktop-seek-bar .vds-slider-thumb`, così cresce verso l’alto e non viene tagliato da `overflow-hidden`)
 - Token verdi **scoped** su `DesktopControls` (`DESKTOP_CONTROLS_STYLE`) così il mobile resta bianco
-- Nessun `TimeSlider.Preview` (bug React 19)
+- Timestamp hover/drag: componente custom `SeekTimePreview` (non `TimeSlider.Preview` — bug React 19)
+
+Stili secondari / volume / preview in `globals.css`: `.desktop-secondary-circle`, `.desktop-volume-group`, `.desktop-volume-rail`, `.seek-time-preview`.
 
 ## CSS: approccio ibrido
 
@@ -114,12 +121,13 @@ di `TimeSlider.Root`. VidStack li posiziona con `position: absolute` uno sopra l
 Nidificare `TrackFill` o `Progress` dentro `Track` rompe lo stacking.
 
 ```jsx
-// Corretto (senza Preview — vedi workaround React 19 sotto)
+// Corretto (senza TimeSlider.Preview — vedi workaround React 19 sotto)
 <TimeSlider.Root>
   <TimeSlider.Track className="vds-slider-track" />
   <TimeSlider.TrackFill className="vds-slider-track-fill vds-slider-track" />
   <TimeSlider.Progress className="vds-slider-progress vds-slider-track" />
   <TimeSlider.Thumb className="vds-slider-thumb" />
+  <SeekTimePreview /> {/* custom; non è una parte VidStack */}
 </TimeSlider.Root>
 
 // SBAGLIATO — non fare così
@@ -155,7 +163,11 @@ Con `@vidstack/react` 1.14+ e React 19, `TimeSlider.Preview` può lasciare un `r
 
 Bug upstream: [vidstack/player#1851](https://github.com/vidstack/player/issues/1851).
 
-**Scelta nel progetto:** non usare `TimeSlider.Preview` / `TimeSlider.Value` sulla timeline. Seeking, thumb e orario corrente/durata restano disponibili; manca solo il tooltip al passaggio del mouse sulla barra.
+**Scelta nel progetto:** non usare `TimeSlider.Preview` / `TimeSlider.Value`. Al loro posto, `SeekTimePreview` dentro ogni `TimeSlider.Root` legge `useSliderState('pointerValue' | 'pointerPercent' | 'pointing' | 'dragging')`, formatta con `formatTime`, e clamp-a `left` ai bordi (6%–94%). Stili in `.seek-time-preview` (desktop verde/nero, mobile bianco/nero). Visibile su hover/drag desktop e touch/drag mobile.
+
+### Geometria thumb desktop
+
+Il player ha `overflow-hidden`. Con track flush da 7px e thumb 12px centrato, il thumb veniva tagliato in basso (~2.5px). Soluzione: tenere `--media-slider-height: 7px` (barra a filo col fondo) e in `.desktop-seek-bar` ancorare il thumb con `bottom: 0` + `translateX(-50%)` così cresce verso l’alto dentro il frame.
 
 ## Errori di console attesi (non critici)
 

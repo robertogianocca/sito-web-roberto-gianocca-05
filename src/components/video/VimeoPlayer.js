@@ -22,8 +22,10 @@ import {
   Time,
   TimeSlider,
   VolumeSlider,
+  formatTime,
   useMediaRemote,
   useMediaState,
+  useSliderState,
 } from '@vidstack/react';
 import {
   FullscreenExitIcon,
@@ -102,8 +104,8 @@ const DESKTOP_CONTROLS_STYLE = {
 };
 
 const DESKTOP_TIMELINE_STYLE = {
-  // Collapse the default 48px slider hit-box so the seek sits flush on the
-  // bottom edge of the video (same as project 04's `.time-slider { height: 7px }`).
+  // Track stays flush to the player bottom (7px). Thumb is bottom-anchored
+  // via CSS so the 12px circle grows upward and is not clipped by overflow.
   '--media-slider-height':               '7px',
   '--media-slider-track-height':         '7px',
   '--media-slider-focused-track-height': '7px',
@@ -123,6 +125,254 @@ const DESKTOP_VOLUME_STYLE = {
   margin: 0,
   padding: 0,
 };
+
+/** Desktop chrome: subtle circles + hover-reveal volume. */
+
+const DESKTOP_BTN =
+  'vds-button size-[35px] shrink-0 rounded-full transition-colors duration-150';
+
+const DESKTOP_PLAY_BTN = `${DESKTOP_BTN}`;
+
+/** Permanent low-contrast circle; fills green on hover/focus. */
+const DESKTOP_SECONDARY_CIRCLE = [
+  DESKTOP_BTN,
+  'desktop-secondary-circle',
+].join(' ');
+
+const DESKTOP_BTN_SIZE_STYLE = {
+  width: '35px',
+  height: '35px',
+  minWidth: '35px',
+  minHeight: '35px',
+};
+
+const DESKTOP_PLAY_STYLE = {
+  ...DESKTOP_BTN_SIZE_STYLE,
+  backgroundColor: DESKTOP_COLOR.playBg,
+  color: DESKTOP_COLOR.playFg,
+  // Override VidStack default hover wash / scale on the solid play disc.
+  '--media-button-hover-bg': DESKTOP_COLOR.playBg,
+  '--media-button-hover-transform': 'none',
+};
+
+const DESKTOP_SECONDARY_CIRCLE_STYLE = {
+  ...DESKTOP_BTN_SIZE_STYLE,
+  border: '1.5px solid rgb(0 201 52 / 0.55)',
+  backgroundColor: 'rgb(0 0 0 / 0.45)',
+  color: DESKTOP_COLOR.accent,
+  '--media-button-hover-bg': DESKTOP_COLOR.playBg,
+  '--media-button-hover-transform': 'none',
+};
+
+const DESKTOP_ICON = 'vds-icon size-[25px]';
+
+const DESKTOP_VOLUME_REVEAL_STYLE = {
+  ...DESKTOP_VOLUME_STYLE,
+  width: '100%',
+};
+
+function DesktopPlayButton({ paused }) {
+  return (
+    <PlayButton
+      className={DESKTOP_PLAY_BTN}
+      style={DESKTOP_PLAY_STYLE}
+      aria-label={paused ? 'Riproduci' : 'Pausa'}
+    >
+      {paused
+        ? <PlayIcon className={DESKTOP_ICON} />
+        : <PauseIcon className={DESKTOP_ICON} />
+      }
+    </PlayButton>
+  );
+}
+
+function DesktopFullscreenButton({ fullscreen, className, style }) {
+  return (
+    <FullscreenButton
+      className={className}
+      style={style}
+      aria-label={fullscreen ? 'Esci da schermo intero' : 'Schermo intero'}
+    >
+      {fullscreen
+        ? <FullscreenExitIcon className={DESKTOP_ICON} />
+        : <FullscreenIcon className={DESKTOP_ICON} />
+      }
+    </FullscreenButton>
+  );
+}
+
+function DesktopMuteButton({ muted, volume, className, style }) {
+  return (
+    <MuteButton
+      className={className}
+      style={style}
+      aria-label={muted ? 'Riattiva audio' : 'Silenzia'}
+    >
+      {(muted || volume === 0)
+        ? <MuteIcon className={DESKTOP_ICON} />
+        : volume < 0.5
+          ? <VolumeLowIcon className={DESKTOP_ICON} />
+          : <VolumeHighIcon className={DESKTOP_ICON} />
+      }
+    </MuteButton>
+  );
+}
+
+function DesktopVolumeSlider() {
+  return (
+    <VolumeSlider.Root className="vds-slider" style={DESKTOP_VOLUME_REVEAL_STYLE}>
+      <VolumeSlider.Track className="vds-slider-track rounded-none!" />
+      <VolumeSlider.TrackFill className="vds-slider-track-fill vds-slider-track rounded-none!" />
+      <VolumeSlider.Thumb className="vds-slider-thumb opacity-100 border-0" />
+    </VolumeSlider.Root>
+  );
+}
+
+const VOLUME_HIDE_DELAY_MS = 1100;
+
+/**
+ * Mute + volume: opens on hover/focus. After a finished volume drag it closes
+ * on a short delay even if the pointer is still over the control; hovering
+ * again after leaving reopens it.
+ */
+function DesktopVolumeControl({ muted, volume }) {
+  const [open, setOpen] = useState(false);
+  const hideTimerRef = useRef(null);
+  const previousVolumeRef = useRef(volume);
+  /** After a volume adjust we hide and ignore hover until the pointer leaves. */
+  const dismissedRef = useRef(false);
+
+  function clearHideTimer() {
+    if (hideTimerRef.current == null) return;
+    clearTimeout(hideTimerRef.current);
+    hideTimerRef.current = null;
+  }
+
+  function scheduleHide({ afterAdjust = false } = {}) {
+    clearHideTimer();
+    hideTimerRef.current = setTimeout(() => {
+      hideTimerRef.current = null;
+      setOpen(false);
+      if (afterAdjust) dismissedRef.current = true;
+    }, VOLUME_HIDE_DELAY_MS);
+  }
+
+  function showVolume() {
+    if (dismissedRef.current) return;
+    clearHideTimer();
+    setOpen(true);
+  }
+
+  useEffect(() => {
+    if (previousVolumeRef.current === volume) return;
+    previousVolumeRef.current = volume;
+    if (open) scheduleHide({ afterAdjust: true });
+  }, [open, volume]);
+
+  useEffect(() => () => clearHideTimer(), []);
+
+  return (
+    <div
+      className={[
+        'desktop-volume-group flex h-[35px] items-center',
+        open ? 'is-open' : '',
+      ].filter(Boolean).join(' ')}
+      onMouseEnter={() => {
+        showVolume();
+      }}
+      onMouseLeave={() => {
+        dismissedRef.current = false;
+        scheduleHide();
+      }}
+      onFocusCapture={() => {
+        if (!dismissedRef.current) showVolume();
+      }}
+      onBlurCapture={(event) => {
+        const next = event.relatedTarget;
+        if (next instanceof Node && event.currentTarget.contains(next)) return;
+        scheduleHide();
+      }}
+    >
+      <DesktopMuteButton
+        muted={muted}
+        volume={volume}
+        className={DESKTOP_SECONDARY_CIRCLE}
+        style={DESKTOP_SECONDARY_CIRCLE_STYLE}
+      />
+      <div
+        className="desktop-volume-rail ml-0 overflow-hidden"
+        onPointerDown={() => {
+          dismissedRef.current = false;
+          clearHideTimer();
+          setOpen(true);
+        }}
+      >
+        <div className="flex h-[35px] w-[60px] items-center pl-1.5">
+          <DesktopVolumeSlider />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DesktopTimeGroup() {
+  return (
+    <div className="vds-time-group text-xs">
+      <Time className="vds-time text-xs" type="current" />
+      <span className="vds-time-divider">/</span>
+      <Time className="vds-time text-xs" type="duration" />
+    </div>
+  );
+}
+
+/**
+ * Hover/drag timestamp above the seek bar (project 04 UX) without using
+ * TimeSlider.Preview — that component has a React 19 teardown race.
+ * Must render inside a TimeSlider.Root so useSliderState has context.
+ */
+function SeekTimePreview({ variant = 'desktop' }) {
+  const pointing = useSliderState('pointing');
+  const dragging = useSliderState('dragging');
+  const pointerValue = useSliderState('pointerValue');
+  const pointerPercent = useSliderState('pointerPercent');
+
+  const visible = pointing || dragging;
+  // Keep the label inside the player: ~half the chip width as percent margin.
+  const left = Math.min(Math.max(pointerPercent ?? 0, 6), 94);
+  const label = formatTime(Math.max(0, pointerValue ?? 0), { padMins: true });
+
+  return (
+    <div
+      className={[
+        'seek-time-preview',
+        variant === 'mobile' ? 'seek-time-preview--mobile' : 'seek-time-preview--desktop',
+        visible ? 'is-visible' : '',
+      ].filter(Boolean).join(' ')}
+      style={{ left: `${left}%` }}
+      aria-hidden={!visible}
+    >
+      {label}
+    </div>
+  );
+}
+
+function DesktopSeekBar() {
+  return (
+    <div className="desktop-seek-bar flex h-[7px] w-full flex-col">
+      <TimeSlider.Root
+        className="vds-time-slider vds-slider"
+        style={DESKTOP_TIMELINE_STYLE}
+        pauseWhileDragging
+      >
+        <TimeSlider.Track className="vds-slider-track rounded-none!" />
+        <TimeSlider.TrackFill className="vds-slider-track-fill vds-slider-track rounded-none!" />
+        <TimeSlider.Progress className="vds-slider-progress vds-slider-track rounded-none!" />
+        <TimeSlider.Thumb className="vds-slider-thumb opacity-100 border-0" />
+        <SeekTimePreview variant="desktop" />
+      </TimeSlider.Root>
+    </div>
+  );
+}
 
 /** Full-frame hit target + green play — used before first start (homepage). */
 function IdlePlaySurface({ isDesktop }) {
@@ -148,16 +398,16 @@ function IdlePlaySurface({ isDesktop }) {
         style={isDesktop ? DESKTOP_CONTROLS_STYLE : undefined}
       >
         <span className="absolute inset-x-0 bottom-0 h-25 bg-linear-to-t from-black via-black/85 to-transparent" />
-        <span className="relative flex items-center px-3 pb-3">
+        <span className="relative flex items-center gap-1.5 px-3 pb-3">
           <span
-            className="vds-button mr-[5px] flex size-[35px] shrink-0 items-center justify-center rounded-full"
+            className="flex size-[35px] shrink-0 items-center justify-center rounded-full"
             style={{
               backgroundColor: DESKTOP_COLOR.playBg,
               color: DESKTOP_COLOR.playFg,
               opacity: waiting ? 0.7 : 1,
             }}
           >
-            <PlayIcon className="vds-icon size-[25px]" />
+            <PlayIcon className="size-[25px]" />
           </span>
         </span>
         <span className="block h-[7px] w-full" aria-hidden />
@@ -228,12 +478,14 @@ function MobileControls() {
         <TimeSlider.TrackFill className="vds-slider-track-fill vds-slider-track rounded-none!" />
         <TimeSlider.Progress className="vds-slider-progress vds-slider-track rounded-none!" />
         <TimeSlider.Thumb className="vds-slider-thumb" />
+        <SeekTimePreview variant="mobile" />
       </TimeSlider.Root>
     </Controls.Group>
   );
 }
 
-// ─── Desktop controls (project 04 layout + green style) ───────────────────────
+// ─── Desktop controls (subtle circles + hover-reveal volume) ──────────────────
+
 function DesktopControls() {
   const paused     = useMediaState('paused');
   const muted      = useMediaState('muted');
@@ -245,80 +497,29 @@ function DesktopControls() {
       className="vds-controls-group absolute inset-x-0 bottom-0 !block w-full"
       style={DESKTOP_CONTROLS_STYLE}
     >
-      {/* Same stack as project 04: buttons row, then a 7px seek flush to the bottom. */}
       <div className="buttons-bar flex flex-row items-center justify-between px-3 pb-3">
-        <div className="flex flex-row items-center">
-          <PlayButton
-            className="vds-button mr-[5px] size-[35px] shrink-0 rounded-full"
-            style={{
-              backgroundColor: DESKTOP_COLOR.playBg,
-              color: DESKTOP_COLOR.playFg,
-            }}
-            aria-label={paused ? 'Riproduci' : 'Pausa'}
-          >
-            {paused
-              ? <PlayIcon className="vds-icon size-[25px]" />
-              : <PauseIcon className="vds-icon size-[25px]" />
-            }
-          </PlayButton>
-
-          <FullscreenButton
-            className="vds-button mr-[5px] size-[35px] shrink-0"
-            aria-label={fullscreen ? 'Esci da schermo intero' : 'Schermo intero'}
-          >
-            {fullscreen
-              ? <FullscreenExitIcon className="vds-icon size-[25px]" />
-              : <FullscreenIcon className="vds-icon size-[25px]" />
-            }
-          </FullscreenButton>
-
-          <MuteButton
-            className="vds-button mr-3 size-[35px] shrink-0"
-            aria-label={muted ? 'Riattiva audio' : 'Silenzia'}
-          >
-            {(muted || volume === 0)
-              ? <MuteIcon className="vds-icon size-[25px]" />
-              : volume < 0.5
-                ? <VolumeLowIcon className="vds-icon size-[25px]" />
-                : <VolumeHighIcon className="vds-icon size-[25px]" />
-            }
-          </MuteButton>
-
-          <VolumeSlider.Root
-            className="vds-slider"
-            style={DESKTOP_VOLUME_STYLE}
-          >
-            <VolumeSlider.Track className="vds-slider-track rounded-none!" />
-            <VolumeSlider.TrackFill className="vds-slider-track-fill vds-slider-track rounded-none!" />
-            <VolumeSlider.Thumb className="vds-slider-thumb opacity-100 border-0" />
-          </VolumeSlider.Root>
+        <div className="flex flex-row items-center gap-1.5">
+          <DesktopPlayButton paused={paused} />
+          <DesktopFullscreenButton
+            fullscreen={fullscreen}
+            className={DESKTOP_SECONDARY_CIRCLE}
+            style={DESKTOP_SECONDARY_CIRCLE_STYLE}
+          />
+          <DesktopVolumeControl muted={muted} volume={volume} />
         </div>
-
-        <div className="vds-time-group text-xs">
-          <Time className="vds-time text-xs" type="current" />
-          <span className="vds-time-divider">/</span>
-          <Time className="vds-time text-xs" type="duration" />
-        </div>
+        <DesktopTimeGroup />
       </div>
-
-      <div className="flex h-[7px] w-full flex-col">
-        <TimeSlider.Root
-          className="vds-time-slider vds-slider"
-          style={DESKTOP_TIMELINE_STYLE}
-          pauseWhileDragging
-        >
-          <TimeSlider.Track className="vds-slider-track rounded-none!" />
-          <TimeSlider.TrackFill className="vds-slider-track-fill vds-slider-track rounded-none!" />
-          <TimeSlider.Progress className="vds-slider-progress vds-slider-track rounded-none!" />
-          <TimeSlider.Thumb className="vds-slider-thumb opacity-100 border-0" />
-        </TimeSlider.Root>
-      </div>
+      <DesktopSeekBar />
     </Controls.Group>
   );
 }
 
 // ─── PlayerUI ─────────────────────────────────────────────────────────────────
-function PlayerUI({ idlePlayOnly = false, poster, posterAlt }) {
+function PlayerUI({
+  idlePlayOnly = false,
+  poster,
+  posterAlt,
+}) {
   const paused = useMediaState('paused');
   const started = useMediaState('started');
   const playing = useMediaState('playing');
