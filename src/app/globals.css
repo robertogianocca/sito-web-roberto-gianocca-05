@@ -10,7 +10,7 @@
   /* Photographic grain on nav/footer chrome — tune opacity without touching components */
   --site-chrome-grain-opacity: 0.2;
   --site-nav-height: 3rem; /* 48px mobile touch target */
-  --site-footer-height: 10rem; /* 160px — between compact bar and original 25vh */
+  --site-footer-height: 12rem; /* 192px — room for filmstrip thumbs + 2-line captions */
 }
 
 @media (min-width: 48rem) {

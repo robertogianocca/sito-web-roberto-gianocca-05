@@ -15,7 +15,8 @@ import { getAllPosts } from "@/lib/blog";
 import { buildAlternates } from "@/lib/metadata";
 import { routing } from "@/i18n/routing";
 import { getHomeSectionCopy } from "@/data/home-sections";
-import { getFeaturedVideo, getRecentVideos, normalizeVimeoId } from "@/data/videos";
+import { getFeaturedVideo, getRecentVideos, normalizeVimeoId, VIDEOS } from "@/data/videos";
+import { PHOTOGRAPHY_GALLERIES } from "@/data/photography-galleries";
 import { getHomePhotographyData } from "@/lib/home-photography-data";
 import { resolveLocalized } from "@/lib/i18n-content";
 
@@ -34,10 +35,14 @@ export default async function Home({ params }) {
   setRequestLocale(locale);
 
   const t = await getTranslations("Home");
-  const latestPosts = getAllPosts(locale).slice(0, 2);
+  const allPosts = getAllPosts(locale);
+  const latestPosts = allPosts.slice(0, 2);
 
   const featuredVideo = getFeaturedVideo();
   const recentVideos = getRecentVideos(3);
+  const videoCount = VIDEOS.length;
+  const galleryCount = PHOTOGRAPHY_GALLERIES.length;
+  const postCount = allPosts.length;
 
   function getVideoTitle(video) {
     return resolveLocalized(video?.title, locale);
@@ -94,7 +99,7 @@ export default async function Home({ params }) {
           titleHref="/video"
           titleHrefAriaLabel={t("videoAriaLabel")}
           ctaHref="/video"
-          ctaLabel={t("videoAllVideos")}
+          ctaLabel={t("videoAllVideos", { count: videoCount })}
           shortDescription={getHomeSectionCopy("video", locale).shortDescription}
         >
           {featuredVideo && featuredVimeoId ? (
@@ -134,7 +139,7 @@ export default async function Home({ params }) {
           titleHref="/photography"
           titleHrefAriaLabel={t("photographyAriaLabel")}
           ctaHref="/photography"
-          ctaLabel={t("photographyAllGalleries")}
+          ctaLabel={t("photographyAllGalleries", { count: galleryCount })}
           shortDescription={getHomeSectionCopy("photography", locale).shortDescription}
         >
           {photography ? (
@@ -184,7 +189,7 @@ export default async function Home({ params }) {
           titleHref="/blog"
           titleHrefAriaLabel={t("blogAriaLabel")}
           ctaHref="/blog"
-          ctaLabel={t("blogAllPosts")}
+          ctaLabel={t("blogAllPosts", { count: postCount })}
           shortDescription={getHomeSectionCopy("blog", locale).shortDescription}
         >
           <div className="flex h-full flex-col gap-5">

@@ -94,7 +94,7 @@ export function VideoFooterThumbnails({ videos, activeSlug: activeSlugProp = nul
   return (
     <div
       ref={stripRef}
-      className="scrollbar-none hidden h-full items-center gap-4 overflow-x-auto overscroll-x-contain pb-1 [-ms-overflow-style:none] md:flex [&::-webkit-scrollbar]:hidden"
+      className="scrollbar-none hidden h-full items-start gap-4 overflow-x-auto overscroll-x-contain pt-3 pb-1 [-ms-overflow-style:none] md:flex [&::-webkit-scrollbar]:hidden"
       role="tablist"
       aria-label={t("filmstripLabel")}
     >
@@ -136,9 +136,9 @@ export function VideoFooterThumbnails({ videos, activeSlug: activeSlugProp = nul
               </span>
               {video.subtitle ? (
                 <span
-                  className={`mt-0.5 block truncate text-[0.65rem] leading-tight ${
+                  className={`mt-0.5 block text-[0.65rem] leading-tight ${
                     isActive ? "text-zinc-700" : "text-zinc-700/75"
-                  }`}
+                  } line-clamp-2 whitespace-normal`}
                 >
                   {video.subtitle}
                 </span>
