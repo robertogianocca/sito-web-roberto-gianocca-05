@@ -1,6 +1,7 @@
 /**
  * Elenco video: testi e id Vimeo in repo; player da `https://player.vimeo.com/video/{id}`.
  * Anteprima card (opzionale): `thumbnailUrl` HTTPS; senza, la card mostra un segnaposto.
+ * Copertina (opzionale): `coverUrl` HTTPS per poster player / homepage featured; fallback a `thumbnailUrl`.
  *
  * `title` e `subtitle` possono essere stringhe (una sola lingua) o oggetti `{ it, en }`.
  * `subtitle` supporta markdown inline per parti in corsivo, es. `Music video for *Matt Pascale & The Stomps*`.
@@ -16,6 +17,7 @@
  *   vimeoId: string | number,
  *   credits?: Array<{ role: string | { it: string, en: string }, names: string }>,
  *   thumbnailUrl?: string,
+ *   coverUrl?: string,
  *   tags?: string[],
  *   featured?: boolean
  * }>}
@@ -171,6 +173,42 @@ export const VIDEOS = [
     thumbnailUrl:
       "https://res.cloudinary.com/dqwtukgp2/image/upload/v1771599457/met-parachute-thumbnail_djjbmb.jpg",
   },
+  {
+    slug: "memorie-future",
+    title: "Memorie Future",
+    subtitle: {
+      it: "Spettacolo teatrale lungo il fiume *Laveggio*",
+      en: "Theatrical performance along the river *Laveggio*",
+    },
+    credits: [
+      {
+        role: {
+          it: "Camera, Montaggio, Post-produzione",
+          en: "Camera, Editing, Post-production",
+        },
+        names: "Roberto Gianocca",
+      },
+      {
+        role: {
+          it: "Seconda camera",
+          en: "Second Camera Operator",
+        },
+        names: "Jona Arrighi",
+      },
+      {
+        role: {
+          it: "Sound design e mix musicale",
+          en: "Sound Design & Music Mixing",
+        },
+        names: "Alessandro Tomarchio",
+      },
+    ],
+    vimeoId: "917201659",
+    thumbnailUrl:
+      "https://res.cloudinary.com/dqwtukgp2/image/upload/v1789373314/memorie-future-thumbnail_f6chce.jpg",
+    coverUrl:
+      "https://res.cloudinary.com/dqwtukgp2/image/upload/v1789373319/memorie-future-cover_uxbt4a.jpg",
+  },
 ];
 
 /**
@@ -224,4 +262,13 @@ export function getRecentVideos(n) {
     while (result.length < n) result.push(featured);
   }
   return result;
+}
+
+/**
+ * Poster player: preferisce `coverUrl`, altrimenti `thumbnailUrl`.
+ * @param {{ coverUrl?: string, thumbnailUrl?: string } | null | undefined} video
+ * @returns {string | undefined}
+ */
+export function getVideoPosterUrl(video) {
+  return video?.coverUrl || video?.thumbnailUrl || undefined;
 }

@@ -15,7 +15,7 @@ import { getAllPosts } from "@/lib/blog";
 import { buildAlternates } from "@/lib/metadata";
 import { routing } from "@/i18n/routing";
 import { getHomeSectionCopy } from "@/data/home-sections";
-import { getFeaturedVideo, getRecentVideos, normalizeVimeoId, VIDEOS } from "@/data/videos";
+import { getFeaturedVideo, getRecentVideos, getVideoPosterUrl, normalizeVimeoId, VIDEOS } from "@/data/videos";
 import { PHOTOGRAPHY_GALLERIES } from "@/data/photography-galleries";
 import { getHomePhotographyData } from "@/lib/home-photography-data";
 import { resolveLocalized } from "@/lib/i18n-content";
@@ -108,7 +108,7 @@ export default async function Home({ params }) {
                 vimeoId={featuredVimeoId}
                 title={getVideoTitle(featuredVideo)}
                 description={getVideoSubtitle(featuredVideo)}
-                thumbnailUrl={featuredVideo.thumbnailUrl}
+                thumbnailUrl={getVideoPosterUrl(featuredVideo)}
                 thumbnailAlt={getVideoTitle(featuredVideo)}
                 detailHref={`/video/${featuredVideo.slug}`}
                 seeProjectLabel={t("videoSeeProject")}

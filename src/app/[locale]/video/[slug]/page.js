@@ -9,7 +9,12 @@ import { BackLink } from "@/components/shared/BackLink";
 import { ErrorPanel } from "@/components/shared/ErrorPanel";
 import { resolveLocalized } from "@/lib/i18n-content";
 import { plainTextFromMarkdown } from "@/lib/plain-text-from-markdown";
-import { getVideoBySlug, getVideoStaticParams, normalizeVimeoId } from "@/data/videos";
+import {
+  getVideoBySlug,
+  getVideoPosterUrl,
+  getVideoStaticParams,
+  normalizeVimeoId,
+} from "@/data/videos";
 
 export const dynamicParams = false;
 
@@ -25,10 +30,12 @@ export async function generateMetadata({ params }) {
   }
   const title = resolveLocalized(video.title, locale);
   const description = plainTextFromMarkdown(resolveLocalized(video.subtitle, locale));
+  const poster = getVideoPosterUrl(video);
   return {
     title: `${title} | Video | Roberto Gianocca`,
     description,
     alternates: buildAlternates(`/video/${slug}`, routing),
+    ...(poster ? { openGraph: { images: [{ url: poster }] } } : {}),
   };
 }
 
@@ -76,7 +83,13 @@ export default async function VideoDetailPage({ params }) {
         </div>
 
         <div className="min-w-0 flex-1 px-6 md:px-10 lg:px-0 lg:pr-10">
-          <VimeoPlayer vimeoId={vimeoId} title={title} className="max-w-none" />
+          <VimeoPlayer
+            vimeoId={vimeoId}
+            title={title}
+            poster={getVideoPosterUrl(video)}
+            posterAlt={title}
+            className="max-w-none"
+          />
         </div>
       </div>
     </div>

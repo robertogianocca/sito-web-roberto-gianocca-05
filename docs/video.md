@@ -47,7 +47,8 @@ Modifica [`src/data/videos.js`](../src/data/videos.js).
 | Campo | Descrizione |
 |-------|-------------|
 | `credits` | Array di `{ role, names }` — `role` localizzato, `names` testo piano |
-| `thumbnailUrl` | URL HTTPS per anteprima card |
+| `thumbnailUrl` | URL HTTPS per anteprima card / filmstrip |
+| `coverUrl` | URL HTTPS per poster player (dettaglio e featured); se assente si usa `thumbnailUrl` |
 | `tags` | Array di stringhe per filtrare nella listing (`?tag=…`) |
 | `featured` | `true` per il video in evidenza in homepage |
 
@@ -79,4 +80,4 @@ Layout desktop (`lg+`): testi a sinistra (`28rem`), player a destra (`flex-1`). 
 
 ## SEO
 
-`generateMetadata` sulla pagina dettaglio usa `plainTextFromMarkdown(subtitle)` come meta description.
+`generateMetadata` sulla pagina dettaglio usa `plainTextFromMarkdown(subtitle)` come meta description e `coverUrl` (o `thumbnailUrl`) come immagine Open Graph.
