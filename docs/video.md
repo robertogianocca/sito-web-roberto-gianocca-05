@@ -69,6 +69,8 @@ Modifica [`src/data/videos.js`](../src/data/videos.js).
 
 Layout desktop (`lg+`): testi a sinistra (`28rem`), player a destra (`flex-1`). Mobile: stack verticale.
 
+Filmstrip nel footer via parallel route `@footer/video/[slug]`. `SiteFooter` monta lo slot **solo** su `/video/[slug]`: la soft navigation di Next può tenere lo stato del parallel route dopo un click Home (o verso altre pagine), quindi senza questo gate i thumbnail resterebbero visibili.
+
 ---
 
 ## Localizzazione
