@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { formatDuration } from "@/lib/timeFormat";
 import { liveElapsedSeconds } from "./timerLive";
 import { TimerBar } from "./TimerBar";
 import { TodayView } from "./TodayView";
@@ -10,6 +9,7 @@ import { ReportView } from "./ReportView";
 import { ProjectsView } from "./ProjectsView";
 import { EntryDrawer } from "./EntryDrawer";
 import { ActivitySettings } from "./ActivitySettings";
+import { useStudioData } from "@/components/studio/StudioDataProvider";
 
 const VIEWS = [
   { id: "today", label: "Today" },
@@ -67,16 +67,17 @@ function notifyPomodoro() {
 
 export function TimeShell({
   locale,
-  initialProjects,
-  initialActivityTypes,
+  active = true,
   initialTimer,
   initialTodayTotalSeconds,
 }) {
+  const {
+    projects,
+    activityTypes,
+    setActivityTypes,
+  } = useStudioData();
+
   const [view, setView] = useState("today");
-  const [projects] = useState(initialProjects ?? []);
-  const [activityTypes, setActivityTypes] = useState(
-    initialActivityTypes ?? []
-  );
   const [timer, setTimer] = useState(initialTimer ?? null);
   const [todayTotalSeconds, setTodayTotalSeconds] = useState(
     initialTodayTotalSeconds ?? 0
@@ -145,12 +146,14 @@ export function TimeShell({
   }, [refreshToday]);
 
   useEffect(() => {
+    if (!active) return undefined;
     if (!timer || timer.status !== "running") return undefined;
     const id = setInterval(() => setTick((t) => t + 1), 1000);
     return () => clearInterval(id);
-  }, [timer?.status, timer?.startedAt]);
+  }, [active, timer?.status, timer?.startedAt]);
 
   useEffect(() => {
+    // Still poll while hidden so Pomodoro can complete in background
     if (!timer) return undefined;
     const id = setInterval(() => {
       refreshTimer();
@@ -159,6 +162,7 @@ export function TimeShell({
   }, [timer, refreshTimer]);
 
   useEffect(() => {
+    if (!active) return;
     if (!timer || !timer.pomodoroEnabled || timer.status !== "running") return;
     const elapsed = liveElapsedSeconds(timer);
     if (elapsed >= timer.pomodoroMinutes * 60) {
@@ -181,7 +185,7 @@ export function TimeShell({
         }
       })();
     }
-  }, [timer, tick, refreshToday, bumpLists]);
+  }, [active, timer, tick, refreshToday, bumpLists]);
 
   async function timerAction(action, payload = {}) {
     setError(null);

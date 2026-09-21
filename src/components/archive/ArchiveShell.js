@@ -10,6 +10,7 @@ import { ProjectDrawer } from "./ProjectDrawer";
 import { SettingsDrawer } from "./SettingsDrawer";
 import { getStatus, formatProjectId } from "./archiveStatus";
 import { parseSize, formatBytes } from "@/lib/archiveSize";
+import { useStudioData } from "@/components/studio/StudioDataProvider";
 
 function projectArchiveDrives(project) {
   if (Array.isArray(project.archiveDrive)) return project.archiveDrive;
@@ -17,14 +18,20 @@ function projectArchiveDrives(project) {
   return [];
 }
 
-export function ArchiveShell({ initialSettings, initialClients }) {
-  const [settings, setSettings] = useState(
-    initialSettings ?? { projectTypes: [], archiveDrives: [], driveCapacities: {} }
-  );
-  const [projects, setProjects] = useState([]);
-  const [clients, setClients] = useState(initialClients ?? []);
-  const [loading, setLoading] = useState(true);
+export function ArchiveShell() {
+  const {
+    projects,
+    setProjects,
+    clients,
+    setClients,
+    settings,
+    setSettings,
+    projectsLoading,
+    refreshProjects,
+  } = useStudioData();
+
   const [error, setError] = useState(null);
+  const loading = projectsLoading;
 
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState("all");
@@ -38,24 +45,14 @@ export function ArchiveShell({ initialSettings, initialClients }) {
   const [editingProject, setEditingProject] = useState(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
-  async function fetchProjects() {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch("/api/archive");
-      if (!res.ok) throw new Error("Failed to load projects.");
-      const data = await res.json();
-      setProjects(data);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }
-
   useEffect(() => {
-    fetchProjects();
-  }, []);
+    // Background refresh if we arrived with empty cache
+    if (projects.length === 0) {
+      refreshProjects().catch((err) => setError(err.message));
+    } else {
+      refreshProjects({ silent: true }).catch(() => {});
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps — once on mount
 
   const availableYears = useMemo(() => {
     const years = new Set(
@@ -234,24 +231,23 @@ export function ArchiveShell({ initialSettings, initialClients }) {
       const created = await res.json();
       setProjects((prev) => [...prev, created]);
     }
-  }, [clients, settings]);
+  }, [clients, settings, setClients, setSettings, setProjects]);
 
   const handleDelete = useCallback(async (id) => {
     const res = await fetch(`/api/archive/${id}`, { method: "DELETE" });
     if (!res.ok) throw new Error("Failed to delete project.");
     setProjects((prev) => prev.filter((p) => p.id !== id));
-  }, []);
+  }, [setProjects]);
 
   const handleSettingsSaved = useCallback(async (newSettings, newClients) => {
     setSettings(newSettings);
     setClients(newClients);
     try {
-      const res = await fetch("/api/archive");
-      if (res.ok) setProjects(await res.json());
+      await refreshProjects({ silent: true });
     } catch {
       // ignore refetch errors
     }
-  }, []);
+  }, [setSettings, setClients, refreshProjects]);
 
   return (
     <div className="flex h-full flex-col overflow-hidden">

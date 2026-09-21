@@ -42,6 +42,8 @@ Documentazione dettagliata: [archive.md](./archive.md).
 
 L’UI vive sotto `/studio/archive` e riusa componenti e API `/api/archive/*`.
 
+Le tab Archive | Time usano **keep-alive**: dopo il primo caricamento di ciascuna sezione, lo switch è istantaneo (le shell restano montate, nascoste). I progetti/settings sono in un provider condiviso nel layout Studio.
+
 ---
 
 ## Time tracking
