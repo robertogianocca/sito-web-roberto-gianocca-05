@@ -16,7 +16,9 @@ export function SiteFooter({ children }) {
     pathname === "/photography" ||
     pathname.startsWith("/photography/") ||
     pathname === "/archive" ||
-    pathname.startsWith("/archive/");
+    pathname.startsWith("/archive/") ||
+    pathname === "/studio" ||
+    pathname.startsWith("/studio/");
 
   if (hide) {
     return null;

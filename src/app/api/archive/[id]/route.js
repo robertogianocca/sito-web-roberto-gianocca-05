@@ -6,15 +6,11 @@ import {
   normalizeBackupType,
 } from "@/lib/archive";
 import { ensureInit } from "@/lib/turso";
+import { isStudioAuthenticated } from "@/lib/studio-auth";
 
-function checkAuth(request) {
-  const session = request.cookies.get("archive_session");
-  const secret = process.env.ARCHIVE_SESSION_SECRET;
-  return Boolean(secret && session?.value === secret);
-}
 
 export async function PUT(request, { params }) {
-  if (!checkAuth(request)) {
+  if (!isStudioAuthenticated(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -60,7 +56,7 @@ export async function PUT(request, { params }) {
 }
 
 export async function DELETE(request, { params }) {
-  if (!checkAuth(request)) {
+  if (!isStudioAuthenticated(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

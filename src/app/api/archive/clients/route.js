@@ -1,15 +1,11 @@
 import { NextResponse } from "next/server";
 import { readClients, addClient, deleteClient, cascadeFieldRename } from "@/lib/archive";
 import { ensureInit } from "@/lib/turso";
+import { isStudioAuthenticated } from "@/lib/studio-auth";
 
-function checkAuth(request) {
-  const session = request.cookies.get("archive_session");
-  const secret = process.env.ARCHIVE_SESSION_SECRET;
-  return Boolean(secret && session?.value === secret);
-}
 
 export async function GET(request) {
-  if (!checkAuth(request)) {
+  if (!isStudioAuthenticated(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   await ensureInit();
@@ -18,7 +14,7 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
-  if (!checkAuth(request)) {
+  if (!isStudioAuthenticated(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -40,7 +36,7 @@ export async function POST(request) {
 }
 
 export async function PUT(request) {
-  if (!checkAuth(request)) {
+  if (!isStudioAuthenticated(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -70,7 +66,7 @@ export async function PUT(request) {
 }
 
 export async function DELETE(request) {
-  if (!checkAuth(request)) {
+  if (!isStudioAuthenticated(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

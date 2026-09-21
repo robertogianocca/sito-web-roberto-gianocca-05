@@ -2,6 +2,7 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { STUDIO_SESSION_COOKIE } from "@/lib/studio-auth";
 
 export async function loginAction(prevState, formData) {
   const password = String(formData.get("password") ?? "");
@@ -13,7 +14,7 @@ export async function loginAction(prevState, formData) {
   if (!expectedPassword || !sessionSecret) {
     return {
       error:
-        "Archive not configured. Add ARCHIVE_PASSWORD and ARCHIVE_SESSION_SECRET to .env.local.",
+        "Studio not configured. Add ARCHIVE_PASSWORD and ARCHIVE_SESSION_SECRET to .env.local.",
     };
   }
 
@@ -22,7 +23,7 @@ export async function loginAction(prevState, formData) {
   }
 
   const cookieStore = await cookies();
-  cookieStore.set("archive_session", sessionSecret, {
+  cookieStore.set(STUDIO_SESSION_COOKIE, sessionSecret, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "strict",
@@ -30,5 +31,5 @@ export async function loginAction(prevState, formData) {
     path: "/",
   });
 
-  redirect(`/${locale}/archive`);
+  redirect(`/${locale}/studio/archive`);
 }

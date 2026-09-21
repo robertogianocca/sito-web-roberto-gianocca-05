@@ -1,13 +1,9 @@
 import { NextResponse } from "next/server";
 import { readProjects, backupTypeLabel } from "@/lib/archive";
 import { ensureInit } from "@/lib/turso";
+import { isStudioAuthenticated } from "@/lib/studio-auth";
 import ExcelJS from "exceljs";
 
-function checkAuth(request) {
-  const session = request.cookies.get("archive_session");
-  const secret = process.env.ARCHIVE_SESSION_SECRET;
-  return Boolean(secret && session?.value === secret);
-}
 
 const COLUMNS = [
   { header: "Project ID", key: "projectId", width: 14 },
@@ -40,7 +36,7 @@ function escapeCsvCell(val) {
 }
 
 export async function GET(request) {
-  if (!checkAuth(request)) {
+  if (!isStudioAuthenticated(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

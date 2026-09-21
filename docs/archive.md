@@ -2,10 +2,13 @@
 
 Sistema privato per tenere traccia di tutti i progetti completati: dove sono archiviati, su quali dischi, stato pulizia/backup, clienti, tipologie, ecc.
 
+Fa parte dell’area **Studio** (Archivio + Time tracking). Vedi anche [studio.md](./studio.md).
+
 L’interfaccia è raggiungibile solo con URL diretto e password. Non è indicizzata dai motori di ricerca.
 
-**URL:** `/en/archive` o `/it/archive`  
-**Login:** `/en/archive/login` (o `/it/archive/login`)
+**URL (preferito):** `/en/studio/archive` o `/it/studio/archive`  
+**Login:** `/en/studio/login`  
+**Legacy:** `/en/archive` e `/it/archive` reindirizzano a Studio.
 
 ---
 
@@ -50,9 +53,10 @@ Al primo accesso, `ensureInit()` in `src/lib/turso.js` crea le tabelle e popola 
 
 ## Autenticazione e SEO
 
-- **Proxy** (`src/proxy.js`): le route `/archive` (tranne login) richiedono il cookie `archive_session` uguale a `ARCHIVE_SESSION_SECRET`; altrimenti redirect al login.
-- **Login** (`src/app/[locale]/archive/login/`): Server Action imposta cookie HttpOnly, `secure` in produzione, durata 30 giorni.
-- **noindex**: header `X-Robots-Tag: noindex, nofollow` in `next.config.mjs` per le route archive.
+- **Proxy** (`src/proxy.js`): le route `/studio` (tranne login) richiedono il cookie `archive_session` uguale a `ARCHIVE_SESSION_SECRET`; altrimenti redirect al login. I path legacy `/archive` reindirizzano a `/studio/...`.
+- **Login** (`src/app/[locale]/studio/login/`): Server Action imposta cookie HttpOnly, `secure` in produzione, durata 30 giorni.
+- **API**: `isStudioAuthenticated()` in `src/lib/studio-auth.js`.
+- **noindex**: header `X-Robots-Tag: noindex, nofollow` in `next.config.mjs` per le route studio e archive.
 
 Se sembra che l’archivio non sia protetto, prova in finestra anonima: potresti avere già un cookie di sessione valido.
 
@@ -182,11 +186,15 @@ Poi puoi ignorare i file JSON legacy.
 |----------|--------|
 | `src/lib/turso.js` | Client Turso, `ensureInit()`, creazione tabelle |
 | `src/lib/archive.js` | CRUD progetti, clienti, settings, `cascadeFieldRename()` |
-| `src/proxy.js` | Auth middleware per route archive |
-| `src/app/[locale]/archive/` | Pagina, login, logout |
+| `src/lib/studio-auth.js` | Auth cookie condivisa (Studio) |
+| `src/proxy.js` | Auth middleware per route studio + redirect legacy archive |
+| `src/app/[locale]/studio/(app)/archive/` | Pagina archivio |
+| `src/app/[locale]/studio/login/` | Login Studio |
 | `src/components/archive/` | UI (tabella, drawer, settings, filtri, export) |
+| `src/components/studio/StudioShell.js` | Tab Archive \| Time + logout |
 | `src/data/archive/config.js` | Default iniziali (solo seed) |
-| `next.config.mjs` | Header noindex archive |
+| `next.config.mjs` | Header noindex studio/archive |
+| `docs/studio.md` | Area Studio completa (time tracking incluso) |
 
 ---
 

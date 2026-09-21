@@ -45,7 +45,7 @@ export function LoginForm({ locale }) {
         disabled={isPending}
         className="w-full rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-zinc-50 transition hover:bg-zinc-700 disabled:opacity-60"
       >
-        {isPending ? "Verifying…" : "Enter Archive"}
+        {isPending ? "Verifying…" : "Enter Studio"}
       </button>
     </form>
   );

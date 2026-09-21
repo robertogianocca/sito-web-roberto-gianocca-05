@@ -56,6 +56,31 @@ export async function ensureInit() {
     value TEXT NOT NULL
   )`);
 
+  await db.execute(`CREATE TABLE IF NOT EXISTS time_entries (
+    id TEXT PRIMARY KEY,
+    projectId TEXT NOT NULL DEFAULT '',
+    description TEXT NOT NULL DEFAULT '',
+    activityType TEXT NOT NULL DEFAULT '',
+    startedAt TEXT NOT NULL DEFAULT '',
+    endedAt TEXT NOT NULL DEFAULT '',
+    durationSeconds INTEGER NOT NULL DEFAULT 0,
+    source TEXT NOT NULL DEFAULT 'manual',
+    createdAt TEXT NOT NULL DEFAULT '',
+    updatedAt TEXT NOT NULL DEFAULT ''
+  )`);
+
+  await db.execute(`CREATE TABLE IF NOT EXISTS time_timer (
+    id TEXT PRIMARY KEY,
+    projectId TEXT NOT NULL DEFAULT '',
+    description TEXT NOT NULL DEFAULT '',
+    activityType TEXT NOT NULL DEFAULT '',
+    startedAt TEXT NOT NULL DEFAULT '',
+    pausedAt TEXT,
+    pauseSeconds INTEGER NOT NULL DEFAULT 0,
+    pomodoroEnabled INTEGER NOT NULL DEFAULT 0,
+    pomodoroMinutes INTEGER NOT NULL DEFAULT 25
+  )`);
+
   await db
     .execute("ALTER TABLE projects ADD COLUMN size TEXT NOT NULL DEFAULT ''")
     .catch(() => {});
@@ -103,6 +128,21 @@ export async function ensureInit() {
       "write"
     );
   }
+
+  await db.execute({
+    sql: "INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)",
+    args: [
+      "activityTypes",
+      JSON.stringify([
+        "Shooting",
+        "Editing",
+        "Motion",
+        "Meeting",
+        "Admin",
+        "Travel",
+      ]),
+    ],
+  });
 
   initialized = true;
 }

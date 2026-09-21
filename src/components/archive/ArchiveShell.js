@@ -17,7 +17,7 @@ function projectArchiveDrives(project) {
   return [];
 }
 
-export function ArchiveShell({ initialSettings, initialClients, locale, logoutAction }) {
+export function ArchiveShell({ initialSettings, initialClients }) {
   const [settings, setSettings] = useState(
     initialSettings ?? { projectTypes: [], archiveDrives: [], driveCapacities: {} }
   );
@@ -304,27 +304,6 @@ export function ArchiveShell({ initialSettings, initialClients, locale, logoutAc
               </svg>
               New
             </button>
-            <form action={logoutAction}>
-              <input type="hidden" name="locale" value={locale} />
-              <button
-                type="submit"
-                className="flex h-8 items-center gap-1.5 rounded-lg border border-zinc-200 px-3 text-sm text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-600"
-                title="Log out"
-              >
-                <svg
-                  className="h-3.5 w-3.5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                  aria-hidden
-                >
-                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                  <polyline points="16 17 21 12 16 7" />
-                  <line x1="21" y1="12" x2="9" y2="12" />
-                </svg>
-              </button>
-            </form>
           </div>
         </div>
 
