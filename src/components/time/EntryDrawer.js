@@ -1,17 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import {
   localDateTimeToIso,
   toLocalDateInput,
   toLocalTimeInput,
 } from "@/lib/timeFormat";
-
-function projectLabel(p) {
-  if (!p) return "No project";
-  const id = p.projectId ? `${p.projectId} — ` : "";
-  return `${id}${p.title || "Untitled"}`;
-}
+import { ProjectCombobox } from "./ProjectCombobox";
 
 export function EntryDrawer({ entry, projects, activityTypes, onClose, onSave }) {
   const isEdit = Boolean(entry);
@@ -26,22 +21,12 @@ export function EntryDrawer({ entry, projects, activityTypes, onClose, onSave })
   const [date, setDate] = useState(toLocalDateInput(initialStart));
   const [startTime, setStartTime] = useState(toLocalTimeInput(initialStart));
   const [endTime, setEndTime] = useState(toLocalTimeInput(initialEnd));
-  const [mode, setMode] = useState("range"); // range | duration
+  const [mode, setMode] = useState("range");
   const [durationHours, setDurationHours] = useState(
     entry ? (entry.durationSeconds / 3600).toFixed(2) : "1"
   );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
-
-  const sortedProjects = useMemo(
-    () =>
-      [...projects].sort((a, b) =>
-        projectLabel(a).localeCompare(projectLabel(b), undefined, {
-          sensitivity: "base",
-        })
-      ),
-    [projects]
-  );
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -115,21 +100,17 @@ export function EntryDrawer({ entry, projects, activityTypes, onClose, onSave })
 
         <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
           <div className="space-y-4 overflow-auto px-5 py-4">
-            <label className="block space-y-1">
-              <span className="text-sm font-medium">Project</span>
-              <select
+            <div className="block space-y-1">
+              <label htmlFor="entry-project" className="text-sm font-medium">
+                Project
+              </label>
+              <ProjectCombobox
+                id="entry-project"
+                projects={projects}
                 value={projectId}
-                onChange={(e) => setProjectId(e.target.value)}
-                className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-zinc-400"
-              >
-                <option value="">No project</option>
-                {sortedProjects.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {projectLabel(p)}
-                  </option>
-                ))}
-              </select>
-            </label>
+                onChange={setProjectId}
+              />
+            </div>
 
             <label className="block space-y-1">
               <span className="text-sm font-medium">Description</span>

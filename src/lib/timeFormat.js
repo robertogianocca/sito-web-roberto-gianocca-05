@@ -9,6 +9,15 @@ export function formatDuration(totalSeconds) {
   return `${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
 }
 
+/** Always H:MM:SS — stable width for hero timer display */
+export function formatDurationHMS(totalSeconds) {
+  const s = Math.max(0, Math.floor(Number(totalSeconds) || 0));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  return `${h}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
+}
+
 export function formatDurationHours(totalSeconds) {
   const s = Math.max(0, Number(totalSeconds) || 0);
   return (s / 3600).toFixed(2);

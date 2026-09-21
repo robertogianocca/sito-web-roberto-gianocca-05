@@ -1,12 +1,7 @@
 "use client";
 
 import { formatDuration } from "@/lib/timeFormat";
-
-function projectLabel(project) {
-  if (!project) return "No project";
-  const id = project.projectId ? `${project.projectId} — ` : "";
-  return `${id}${project.title || "Untitled"}`;
-}
+import { projectLabel } from "./ProjectCombobox";
 
 function formatTimeRange(startedAt, endedAt) {
   const opts = { hour: "2-digit", minute: "2-digit" };
@@ -24,8 +19,10 @@ export function TodayView({
   loading,
   projectMap,
   todayTotalSeconds,
+  timerActive,
   onEdit,
   onDelete,
+  onRestart,
 }) {
   if (loading) {
     return <p className="text-sm text-zinc-500">Loading…</p>;
@@ -53,6 +50,27 @@ export function TodayView({
                 key={entry.id}
                 className="flex flex-wrap items-center gap-3 px-4 py-3 hover:bg-zinc-50"
               >
+                <button
+                  type="button"
+                  disabled={timerActive}
+                  onClick={() => onRestart(entry)}
+                  title={
+                    timerActive
+                      ? "Stop the current timer first"
+                      : "Start timer with this project"
+                  }
+                  aria-label="Start timer for this entry"
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-zinc-200 text-emerald-700 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <svg
+                    className="h-3.5 w-3.5"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    aria-hidden
+                  >
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                </button>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium text-foreground">
                     {projectLabel(project)}

@@ -10,6 +10,7 @@ export { formatDuration, formatDurationHours } from "./timeFormat";
 const TIMER_ROW_ID = "current";
 const DEFAULT_POMODORO_MINUTES = 25;
 const DEFAULT_ACTIVITY_TYPES = [
+  "Working",
   "Shooting",
   "Editing",
   "Motion",

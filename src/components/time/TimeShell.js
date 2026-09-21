@@ -7,12 +7,14 @@ import { TimerBar } from "./TimerBar";
 import { TodayView } from "./TodayView";
 import { WeekView } from "./WeekView";
 import { ReportView } from "./ReportView";
+import { ProjectsView } from "./ProjectsView";
 import { EntryDrawer } from "./EntryDrawer";
 import { ActivitySettings } from "./ActivitySettings";
 
 const VIEWS = [
   { id: "today", label: "Today" },
   { id: "week", label: "Week" },
+  { id: "projects", label: "Projects" },
   { id: "report", label: "Report" },
 ];
 
@@ -21,17 +23,27 @@ function playPomodoroBeep() {
     const Ctx = window.AudioContext || window.webkitAudioContext;
     if (!Ctx) return;
     const ctx = new Ctx();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.frequency.value = 880;
-    gain.gain.value = 0.08;
-    osc.start();
+    const pulses = [
+      { at: 0, freq: 880, dur: 0.18 },
+      { at: 0.28, freq: 880, dur: 0.18 },
+      { at: 0.56, freq: 1175, dur: 0.35 },
+    ];
+    for (const p of pulses) {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = p.freq;
+      const t0 = ctx.currentTime + p.at;
+      gain.gain.setValueAtTime(0.0001, t0);
+      gain.gain.exponentialRampToValueAtTime(0.18, t0 + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t0 + p.dur);
+      osc.start(t0);
+      osc.stop(t0 + p.dur + 0.02);
+    }
     setTimeout(() => {
-      osc.stop();
-      ctx.close();
-    }, 400);
+      ctx.close().catch(() => {});
+    }, 1200);
   } catch {
     // ignore
   }
@@ -39,7 +51,10 @@ function playPomodoroBeep() {
 
 function notifyPomodoro() {
   playPomodoroBeep();
-  if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+  if (
+    typeof Notification !== "undefined" &&
+    Notification.permission === "granted"
+  ) {
     try {
       new Notification("Pomodoro complete", {
         body: "25 minutes done. Timer stopped.",
@@ -73,13 +88,19 @@ export function TimeShell({
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
   const [tick, setTick] = useState(0);
+  const [listVersion, setListVersion] = useState(0);
   const pomodoroNotifiedRef = useRef(false);
+  const draftRef = useRef(null);
 
   const projectMap = useMemo(() => {
     const map = new Map();
     for (const p of projects) map.set(p.id, p);
     return map;
   }, [projects]);
+
+  const bumpLists = useCallback(() => {
+    setListVersion((v) => v + 1);
+  }, []);
 
   const refreshToday = useCallback(async () => {
     setLoadingToday(true);
@@ -109,6 +130,7 @@ export function TimeShell({
           notifyPomodoro();
         }
         await refreshToday();
+        bumpLists();
         return;
       }
       setTimer(data.timer);
@@ -116,20 +138,18 @@ export function TimeShell({
     } catch {
       // ignore
     }
-  }, [refreshToday]);
+  }, [refreshToday, bumpLists]);
 
   useEffect(() => {
     refreshToday();
   }, [refreshToday]);
 
-  // Live tick while timer is running
   useEffect(() => {
     if (!timer || timer.status !== "running") return undefined;
     const id = setInterval(() => setTick((t) => t + 1), 1000);
     return () => clearInterval(id);
   }, [timer?.status, timer?.startedAt]);
 
-  // Poll server every 30s for pomodoro / multi-device sync
   useEffect(() => {
     if (!timer) return undefined;
     const id = setInterval(() => {
@@ -138,7 +158,6 @@ export function TimeShell({
     return () => clearInterval(id);
   }, [timer, refreshTimer]);
 
-  // Client-side pomodoro check
   useEffect(() => {
     if (!timer || !timer.pomodoroEnabled || timer.status !== "running") return;
     const elapsed = liveElapsedSeconds(timer);
@@ -158,10 +177,11 @@ export function TimeShell({
             notifyPomodoro();
           }
           await refreshToday();
+          bumpLists();
         }
       })();
     }
-  }, [timer, tick, refreshToday]);
+  }, [timer, tick, refreshToday, bumpLists]);
 
   async function timerAction(action, payload = {}) {
     setError(null);
@@ -181,11 +201,35 @@ export function TimeShell({
       return;
     }
     if (action === "stop" || data.pomodoroCompleted) {
+      if (data.pomodoroCompleted && !pomodoroNotifiedRef.current) {
+        pomodoroNotifiedRef.current = true;
+        notifyPomodoro();
+      }
       setTimer(null);
       await refreshToday();
+      bumpLists();
       return;
     }
     setTimer(data.timer);
+  }
+
+  async function handleRestart(entry) {
+    if (timer) {
+      setError("Stop the current timer before starting a new one.");
+      return;
+    }
+    const pomodoro = Boolean(draftRef.current?.pomodoro);
+    draftRef.current?.applyDraft?.({
+      projectId: entry.projectId ?? "",
+      description: entry.description ?? "",
+      activityType: entry.activityType ?? "",
+    });
+    await timerAction("start", {
+      projectId: entry.projectId ?? "",
+      description: entry.description ?? "",
+      activityType: entry.activityType ?? "",
+      pomodoroEnabled: pomodoro,
+    });
   }
 
   function openNewEntry() {
@@ -223,6 +267,7 @@ export function TimeShell({
     setDrawerOpen(false);
     setEditingEntry(null);
     await refreshToday();
+    bumpLists();
   }
 
   async function handleDeleteEntry(id) {
@@ -232,6 +277,7 @@ export function TimeShell({
       return;
     }
     await refreshToday();
+    bumpLists();
   }
 
   async function saveActivityTypes(next) {
@@ -246,17 +292,13 @@ export function TimeShell({
   }
 
   const displayTodayTotal = useMemo(() => {
-    let total = todayTotalSeconds;
-    // todayTotalSeconds from API already includes running timer when refreshed;
-    // for live display, recompute: entries sum + live timer
     const entriesSum = todayEntries.reduce(
       (s, e) => s + (e.durationSeconds || 0),
       0
     );
     const running = timer ? liveElapsedSeconds(timer) : 0;
-    total = entriesSum + running;
-    return total;
-  }, [todayEntries, timer, tick, todayTotalSeconds]);
+    return entriesSum + running;
+  }, [todayEntries, timer, tick]);
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
@@ -268,6 +310,7 @@ export function TimeShell({
         todayTotalSeconds={displayTodayTotal}
         onAction={timerAction}
         onOpenSettings={() => setSettingsOpen(true)}
+        draftRef={draftRef}
       />
 
       <div className="flex shrink-0 items-center justify-between gap-3 border-b border-zinc-200 px-6 py-2">
@@ -319,12 +362,22 @@ export function TimeShell({
             loading={loadingToday}
             projectMap={projectMap}
             todayTotalSeconds={displayTodayTotal}
+            timerActive={Boolean(timer)}
             onEdit={openEditEntry}
             onDelete={handleDeleteEntry}
+            onRestart={handleRestart}
           />
         )}
         {view === "week" && (
           <WeekView projectMap={projectMap} locale={locale} />
+        )}
+        {view === "projects" && (
+          <ProjectsView
+            key={listVersion}
+            projectMap={projectMap}
+            onEdit={openEditEntry}
+            onDelete={handleDeleteEntry}
+          />
         )}
         {view === "report" && <ReportView />}
       </div>

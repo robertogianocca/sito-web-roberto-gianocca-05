@@ -1,4 +1,4 @@
-import { formatDuration } from "@/lib/timeFormat";
+import { formatDuration, formatDurationHMS } from "@/lib/timeFormat";
 
 export function liveElapsedSeconds(timer) {
   if (!timer?.startedAt) return 0;
@@ -15,4 +15,8 @@ export function liveElapsedSeconds(timer) {
 
 export function formatLiveDuration(timer) {
   return formatDuration(liveElapsedSeconds(timer));
+}
+
+export function formatLiveDurationHMS(timer) {
+  return formatDurationHMS(timer ? liveElapsedSeconds(timer) : 0);
 }

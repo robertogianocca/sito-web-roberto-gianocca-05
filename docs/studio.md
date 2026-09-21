@@ -46,20 +46,21 @@ L’UI vive sotto `/studio/archive` e riusa componenti e API `/api/archive/*`.
 
 ## Time tracking
 
-Timer persistente sul server (Turso), inserimento manuale, Pomodoro 25 min, Today / Week / Report, export Excel/CSV.
+Timer persistente sul server (Turso), inserimento manuale, Pomodoro 25 min, Today / Week / Projects / Report, export Excel/CSV.
 
 ### Funzionalità
 
 | Feature | Dettaglio |
 |---------|-----------|
-| Timer | Start / Pause / Resume / Stop; un solo timer alla volta |
+| Timer | Start / Pause / Resume / Stop; un solo timer alla volta; dopo lo stop restano progetto/descrizione/attività |
 | Persistenza | Stato in tabella `time_timer`; elapsed da timestamp UTC |
-| Pomodoro | Opzionale; stop automatico dopo 25 min di tempo effettivo (le pause non contano); notifica browser + beep |
+| Pomodoro | Opzionale; stop automatico dopo 25 min di tempo effettivo (le pause non contano); notifica browser + beep multi-tono |
 | Manuale | Drawer: data + start/end oppure durata in ore |
-| Progetti | Collegati ai progetti Archivio (`projectId`) |
-| Activity types | Lista in Impostazioni Tempo (seed: Shooting, Editing, Motion, Meeting, Admin, Travel) |
-| Today | Totale giorno + elenco voci |
+| Progetti | Collegati ai progetti Archivio (`projectId`); selettore con ricerca |
+| Activity types | Lista in Impostazioni Tempo (seed: Working, Shooting, Editing, Motion, Meeting, Admin, Travel) |
+| Today | Totale giorno + elenco voci; play per ripartire sullo stesso progetto |
 | Week | Timesheet lun–dom con navigazione settimane |
+| Projects | Per progetto: totale ore + sotto-lista task (range date) |
 | Report | Totali per progetto e per cliente in un range date |
 | Export | `/api/time/export?format=xlsx\|csv` (+ `from` / `to` opzionali) |
 
