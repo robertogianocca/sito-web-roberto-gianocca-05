@@ -311,6 +311,7 @@ export function ArchiveShell() {
               filterYear={filterYear}
               filterStatus={filterStatus}
               filterArchiveDrive={filterArchiveDrive}
+              search={search}
               projectTypes={settings.projectTypes}
               archiveDrives={settings.archiveDrives}
               availableYears={availableYears}
@@ -318,6 +319,13 @@ export function ArchiveShell() {
               onFilterYear={setFilterYear}
               onFilterStatus={setFilterStatus}
               onFilterArchiveDrive={setFilterArchiveDrive}
+              onClear={() => {
+                setSearch("");
+                setFilterType("all");
+                setFilterYear("all");
+                setFilterStatus("all");
+                setFilterArchiveDrive("all");
+              }}
             />
           </div>
         </div>
