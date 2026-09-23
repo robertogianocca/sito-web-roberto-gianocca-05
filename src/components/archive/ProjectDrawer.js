@@ -206,13 +206,31 @@ function CreatableMultiPills({ options, selected, onChange, placeholder, addLabe
   const [open, setOpen] = useState(false);
   const [addingNew, setAddingNew] = useState(false);
   const [newName, setNewName] = useState("");
+  const [query, setQuery] = useState("");
   const [localExtra, setLocalExtra] = useState([]);
   const ref = useRef(null);
+  const searchRef = useRef(null);
 
   const allOptions = sortAlpha([
     ...(options ?? []),
     ...localExtra.filter((n) => !(options ?? []).includes(n)),
   ]);
+
+  const trimmedQuery = query.trim();
+  const filteredOptions = trimmedQuery
+    ? allOptions.filter((n) => n.toLowerCase().includes(trimmedQuery.toLowerCase()))
+    : allOptions;
+  const exactMatch = allOptions.some(
+    (n) => n.toLowerCase() === trimmedQuery.toLowerCase()
+  );
+  const canAddFromQuery = Boolean(trimmedQuery) && !exactMatch;
+
+  function closeMenu() {
+    setOpen(false);
+    setAddingNew(false);
+    setNewName("");
+    setQuery("");
+  }
 
   useEffect(() => {
     if (!open) return;
@@ -221,11 +239,18 @@ function CreatableMultiPills({ options, selected, onChange, placeholder, addLabe
         setOpen(false);
         setAddingNew(false);
         setNewName("");
+        setQuery("");
       }
     }
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, [open]);
+
+  useEffect(() => {
+    if (open && !addingNew) {
+      searchRef.current?.focus();
+    }
+  }, [open, addingNew]);
 
   function toggle(name) {
     if (selected.includes(name)) {
@@ -239,16 +264,24 @@ function CreatableMultiPills({ options, selected, onChange, placeholder, addLabe
     onChange(selected.filter((s) => s !== name));
   }
 
-  function confirmNew() {
-    const name = newName.trim();
-    if (name) {
-      setLocalExtra((prev) => (prev.includes(name) ? prev : [...prev, name]));
-      if (!selected.includes(name)) {
-        onChange([...selected, name]);
-      }
+  function addName(raw) {
+    const name = raw.trim();
+    if (!name) return;
+    setLocalExtra((prev) => (prev.includes(name) ? prev : [...prev, name]));
+    if (!selected.includes(name)) {
+      onChange([...selected, name]);
     }
     setAddingNew(false);
     setNewName("");
+    setQuery("");
+  }
+
+  function confirmNew() {
+    addName(newName);
+  }
+
+  function addFromQuery() {
+    addName(trimmedQuery);
   }
 
   return (
@@ -258,7 +291,12 @@ function CreatableMultiPills({ options, selected, onChange, placeholder, addLabe
         onClick={() => setOpen((v) => !v)}
         role="button"
         tabIndex={0}
-        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setOpen((v) => !v); }}}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            setOpen((v) => !v);
+          }
+        }}
       >
         <div className="flex flex-wrap gap-1">
           {selected.length === 0 && (
@@ -284,63 +322,114 @@ function CreatableMultiPills({ options, selected, onChange, placeholder, addLabe
       </div>
 
       {open && (
-        <div className="absolute z-50 mt-1 w-full rounded-lg border border-zinc-200 bg-white py-1 shadow-lg">
-          {allOptions.map((name) => {
-            const active = selected.includes(name);
-            return (
-              <button
-                key={name}
-                type="button"
-                onClick={() => toggle(name)}
-                className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm transition ${
-                  active ? "bg-zinc-100 font-medium text-zinc-900" : "text-zinc-700 hover:bg-zinc-50"
-                }`}
-              >
-                <span
-                  className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
-                    active ? "border-zinc-700 bg-zinc-700" : "border-zinc-300"
-                  }`}
-                >
-                  {active && (
-                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3} className="h-2.5 w-2.5 text-white" aria-hidden>
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                  )}
-                </span>
-                {name}
-              </button>
-            );
-          })}
+        <div className="absolute z-50 mt-1 w-full overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-lg">
+          <div className="border-b border-zinc-100 p-1.5">
+            <input
+              ref={searchRef}
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search…"
+              className="w-full rounded border border-zinc-200 bg-zinc-50 px-2 py-1.5 text-sm text-foreground outline-none placeholder:text-zinc-400 focus:border-zinc-400 focus:bg-white"
+              onClick={(e) => e.stopPropagation()}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") {
+                  e.preventDefault();
+                  if (query) setQuery("");
+                  else closeMenu();
+                }
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  if (canAddFromQuery) addFromQuery();
+                  else if (filteredOptions.length === 1) toggle(filteredOptions[0]);
+                }
+              }}
+            />
+          </div>
 
-          {addingNew ? (
-            <div className="flex gap-1.5 px-3 py-1.5">
-              <input
-                autoFocus
-                className="flex-1 rounded border border-zinc-300 px-2 py-1 text-xs text-foreground outline-none focus:border-zinc-400"
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-                placeholder={addPlaceholder ?? "New name"}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") { e.preventDefault(); confirmNew(); }
-                  if (e.key === "Escape") { setAddingNew(false); setNewName(""); }
-                }}
-              />
-              <button type="button" onClick={confirmNew} className="rounded bg-zinc-900 px-2 text-xs font-medium text-white transition hover:bg-zinc-700">
-                Add
+          <div className="border-b border-zinc-100">
+            {addingNew ? (
+              <div className="flex gap-1.5 px-2 py-1.5">
+                <input
+                  autoFocus
+                  className="flex-1 rounded border border-zinc-300 px-2 py-1 text-xs text-foreground outline-none focus:border-zinc-400"
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  placeholder={addPlaceholder ?? "New name"}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") { e.preventDefault(); confirmNew(); }
+                    if (e.key === "Escape") { setAddingNew(false); setNewName(""); }
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={confirmNew}
+                  className="rounded bg-zinc-900 px-2 text-xs font-medium text-white transition hover:bg-zinc-700"
+                >
+                  Add
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setAddingNew(false); setNewName(""); }}
+                  className="rounded border border-zinc-200 px-2 text-xs text-zinc-500 transition hover:bg-zinc-100"
+                >
+                  ×
+                </button>
+              </div>
+            ) : canAddFromQuery ? (
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); addFromQuery(); }}
+                className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm font-medium text-zinc-800 transition hover:bg-zinc-50"
+              >
+                <span className="text-base leading-none">＋</span>
+                Add “{trimmedQuery}”
               </button>
-              <button type="button" onClick={() => { setAddingNew(false); setNewName(""); }} className="rounded border border-zinc-200 px-2 text-xs text-zinc-500 transition hover:bg-zinc-100">
-                ×
+            ) : (
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); setAddingNew(true); }}
+                className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-zinc-500 transition hover:bg-zinc-50"
+              >
+                <span className="text-base leading-none">＋</span> {addLabel ?? "New…"}
               </button>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); setAddingNew(true); }}
-              className="flex w-full items-center gap-2 border-t border-zinc-100 px-3 py-1.5 text-left text-sm text-zinc-500 transition hover:bg-zinc-50"
-            >
-              <span className="text-base leading-none">＋</span> {addLabel ?? "New…"}
-            </button>
-          )}
+            )}
+          </div>
+
+          <div className="max-h-48 overflow-y-auto py-1">
+            {filteredOptions.length === 0 ? (
+              <p className="px-3 py-2 text-xs text-zinc-400">
+                {trimmedQuery ? "No matches" : "No items yet"}
+              </p>
+            ) : (
+              filteredOptions.map((name) => {
+                const active = selected.includes(name);
+                return (
+                  <button
+                    key={name}
+                    type="button"
+                    onClick={() => toggle(name)}
+                    className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm transition ${
+                      active ? "bg-zinc-100 font-medium text-zinc-900" : "text-zinc-700 hover:bg-zinc-50"
+                    }`}
+                  >
+                    <span
+                      className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
+                        active ? "border-zinc-700 bg-zinc-700" : "border-zinc-300"
+                      }`}
+                    >
+                      {active && (
+                        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3} className="h-2.5 w-2.5 text-white" aria-hidden>
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      )}
+                    </span>
+                    {name}
+                  </button>
+                );
+              })
+            )}
+          </div>
         </div>
       )}
     </div>
