@@ -59,7 +59,6 @@ export async function POST(request) {
   const entry = await createTimeEntry({
     projectId: body.projectId ?? "",
     description: body.description ?? "",
-    activityType: body.activityType ?? "",
     startedAt: body.startedAt,
     endedAt: body.endedAt,
     durationSeconds: body.durationSeconds,

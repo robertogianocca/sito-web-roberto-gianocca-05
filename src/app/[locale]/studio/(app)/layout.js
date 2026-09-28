@@ -5,23 +5,18 @@ import { StudioWorkspace } from "@/components/studio/StudioWorkspace";
 import { logoutAction } from "../actions";
 import { ensureInit } from "@/lib/turso";
 import { readClients, readProjects, readSettings } from "@/lib/archive";
-import {
-  getActivityTypes,
-  getTimer,
-  getTodayTotalSeconds,
-} from "@/lib/time";
+import { getTimer, getTodayTotalSeconds } from "@/lib/time";
 
 export default async function StudioAppLayout({ children, params }) {
   const { locale } = await params;
   setRequestLocale(locale);
 
   await ensureInit();
-  const [projects, clients, settings, activityTypes, timer, todayTotalSeconds] =
+  const [projects, clients, settings, timer, todayTotalSeconds] =
     await Promise.all([
       readProjects(),
       readClients(),
       readSettings(),
-      getActivityTypes(),
       getTimer(),
       getTodayTotalSeconds(),
     ]);
@@ -33,7 +28,6 @@ export default async function StudioAppLayout({ children, params }) {
           initialProjects={projects}
           initialClients={clients}
           initialSettings={settings}
-          initialActivityTypes={activityTypes}
         >
           <StudioWorkspace
             locale={locale}

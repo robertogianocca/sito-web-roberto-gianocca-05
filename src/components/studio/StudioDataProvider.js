@@ -19,12 +19,10 @@ export function StudioDataProvider({
     archiveDrives: [],
     driveCapacities: {},
   },
-  initialActivityTypes = [],
 }) {
   const [projects, setProjects] = useState(initialProjects);
   const [clients, setClients] = useState(initialClients);
   const [settings, setSettings] = useState(initialSettings);
-  const [activityTypes, setActivityTypes] = useState(initialActivityTypes);
   const [projectsLoading, setProjectsLoading] = useState(
     initialProjects.length === 0
   );
@@ -50,8 +48,6 @@ export function StudioDataProvider({
       setClients,
       settings,
       setSettings,
-      activityTypes,
-      setActivityTypes,
       projectsLoading,
       refreshProjects,
     }),
@@ -59,7 +55,6 @@ export function StudioDataProvider({
       projects,
       clients,
       settings,
-      activityTypes,
       projectsLoading,
       refreshProjects,
     ]

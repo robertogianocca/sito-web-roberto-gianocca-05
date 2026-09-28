@@ -33,7 +33,6 @@ export async function GET(request) {
       client: Array.isArray(project?.client)
         ? project.client.join(", ")
         : "",
-      activityType: e.activityType,
       description: e.description,
       source: e.source,
     };
@@ -51,7 +50,6 @@ export async function GET(request) {
       "Project ID",
       "Project Title",
       "Client",
-      "Activity",
       "Description",
       "Source",
     ];
@@ -67,7 +65,6 @@ export async function GET(request) {
           r.projectId,
           r.projectTitle,
           r.client,
-          r.activityType,
           r.description,
           r.source,
         ]
@@ -94,7 +91,6 @@ export async function GET(request) {
     { header: "Project ID", key: "projectId", width: 14 },
     { header: "Project Title", key: "projectTitle", width: 32 },
     { header: "Client", key: "client", width: 22 },
-    { header: "Activity", key: "activityType", width: 14 },
     { header: "Description", key: "description", width: 40 },
     { header: "Source", key: "source", width: 10 },
   ];

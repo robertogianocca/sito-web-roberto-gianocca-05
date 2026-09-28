@@ -8,7 +8,6 @@ import { WeekView } from "./WeekView";
 import { ReportView } from "./ReportView";
 import { ProjectsView } from "./ProjectsView";
 import { EntryDrawer } from "./EntryDrawer";
-import { ActivitySettings } from "./ActivitySettings";
 import { useStudioData } from "@/components/studio/StudioDataProvider";
 
 const VIEWS = [
@@ -71,11 +70,7 @@ export function TimeShell({
   initialTimer,
   initialTodayTotalSeconds,
 }) {
-  const {
-    projects,
-    activityTypes,
-    setActivityTypes,
-  } = useStudioData();
+  const { projects } = useStudioData();
 
   const [view, setView] = useState("today");
   const [timer, setTimer] = useState(initialTimer ?? null);
@@ -85,7 +80,6 @@ export function TimeShell({
   const [todayEntries, setTodayEntries] = useState([]);
   const [loadingToday, setLoadingToday] = useState(true);
   const [error, setError] = useState(null);
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
   const [tick, setTick] = useState(0);
@@ -226,12 +220,10 @@ export function TimeShell({
     draftRef.current?.applyDraft?.({
       projectId: entry.projectId ?? "",
       description: entry.description ?? "",
-      activityType: entry.activityType ?? "",
     });
     await timerAction("start", {
       projectId: entry.projectId ?? "",
       description: entry.description ?? "",
-      activityType: entry.activityType ?? "",
       pomodoroEnabled: pomodoro,
     });
   }
@@ -284,17 +276,6 @@ export function TimeShell({
     bumpLists();
   }
 
-  async function saveActivityTypes(next) {
-    const res = await fetch("/api/time/settings", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ activityTypes: next }),
-    });
-    if (!res.ok) throw new Error("Failed to save activity types.");
-    const data = await res.json();
-    setActivityTypes(data.activityTypes);
-  }
-
   const displayTodayTotal = useMemo(() => {
     const entriesSum = todayEntries.reduce(
       (s, e) => s + (e.durationSeconds || 0),
@@ -310,10 +291,8 @@ export function TimeShell({
         timer={timer}
         tick={tick}
         projects={projects}
-        activityTypes={activityTypes}
         todayTotalSeconds={displayTodayTotal}
         onAction={timerAction}
-        onOpenSettings={() => setSettingsOpen(true)}
         draftRef={draftRef}
       />
 
@@ -390,20 +369,11 @@ export function TimeShell({
         <EntryDrawer
           entry={editingEntry}
           projects={projects}
-          activityTypes={activityTypes}
           onClose={() => {
             setDrawerOpen(false);
             setEditingEntry(null);
           }}
           onSave={handleSaveEntry}
-        />
-      )}
-
-      {settingsOpen && (
-        <ActivitySettings
-          activityTypes={activityTypes}
-          onClose={() => setSettingsOpen(false)}
-          onSave={saveActivityTypes}
         />
       )}
     </div>

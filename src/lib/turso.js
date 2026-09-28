@@ -129,44 +129,20 @@ export async function ensureInit() {
     );
   }
 
-  const defaultActivityTypes = [
-    "Working",
-    "Shooting",
-    "Editing",
-    "Motion",
-    "Meeting",
-    "Admin",
-    "Travel",
-  ];
-
-  await db.execute({
-    sql: "INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)",
-    args: ["activityTypes", JSON.stringify(defaultActivityTypes)],
-  });
-
-  // Ensure "Working" exists on DBs seeded before it was added
-  const { rows: activityRows } = await db.execute(
-    "SELECT value FROM settings WHERE key = 'activityTypes'"
+  const { rows: activityMigrationRows } = await db.execute(
+    "SELECT value FROM settings WHERE key = 'activityToDescriptionMigrated'"
   );
-  if (activityRows.length > 0) {
-    try {
-      const parsed = JSON.parse(activityRows[0].value);
-      if (Array.isArray(parsed)) {
-        const list = parsed.map(String);
-        const hasWorking = list.some(
-          (t) => t.toLowerCase() === "working"
-        );
-        if (!hasWorking) {
-          const next = ["Working", ...list];
-          await db.execute({
-            sql: "INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)",
-            args: ["activityTypes", JSON.stringify(next)],
-          });
-        }
-      }
-    } catch {
-      // ignore malformed
-    }
+  if (activityMigrationRows.length === 0) {
+    await db.execute(
+      "UPDATE time_entries SET description = activityType WHERE TRIM(description) = '' AND TRIM(activityType) != ''"
+    );
+    await db.execute(
+      "UPDATE time_timer SET description = activityType WHERE TRIM(description) = '' AND TRIM(activityType) != ''"
+    );
+    await db.execute({
+      sql: "INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)",
+      args: ["activityToDescriptionMigrated", "1"],
+    });
   }
 
   initialized = true;

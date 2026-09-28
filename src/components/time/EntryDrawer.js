@@ -8,7 +8,7 @@ import {
 } from "@/lib/timeFormat";
 import { ProjectCombobox } from "./ProjectCombobox";
 
-export function EntryDrawer({ entry, projects, activityTypes, onClose, onSave }) {
+export function EntryDrawer({ entry, projects, onClose, onSave }) {
   const isEdit = Boolean(entry);
   const initialStart = entry?.startedAt ? new Date(entry.startedAt) : new Date();
   const initialEnd = entry?.endedAt
@@ -17,7 +17,6 @@ export function EntryDrawer({ entry, projects, activityTypes, onClose, onSave })
 
   const [projectId, setProjectId] = useState(entry?.projectId ?? "");
   const [description, setDescription] = useState(entry?.description ?? "");
-  const [activityType, setActivityType] = useState(entry?.activityType ?? "");
   const [date, setDate] = useState(toLocalDateInput(initialStart));
   const [startTime, setStartTime] = useState(toLocalTimeInput(initialStart));
   const [endTime, setEndTime] = useState(toLocalTimeInput(initialEnd));
@@ -64,7 +63,6 @@ export function EntryDrawer({ entry, projects, activityTypes, onClose, onSave })
       await onSave({
         projectId,
         description,
-        activityType,
         startedAt,
         endedAt,
         durationSeconds,
@@ -120,22 +118,6 @@ export function EntryDrawer({ entry, projects, activityTypes, onClose, onSave })
                 onChange={(e) => setDescription(e.target.value)}
                 className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-zinc-400"
               />
-            </label>
-
-            <label className="block space-y-1">
-              <span className="text-sm font-medium">Activity</span>
-              <select
-                value={activityType}
-                onChange={(e) => setActivityType(e.target.value)}
-                className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-zinc-400"
-              >
-                <option value="">—</option>
-                {activityTypes.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </select>
             </label>
 
             <label className="block space-y-1">

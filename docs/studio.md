@@ -54,27 +54,26 @@ Timer persistente sul server (Turso), inserimento manuale, Pomodoro 25 min, Toda
 
 | Feature | Dettaglio |
 |---------|-----------|
-| Timer | Start / Pause / Resume / Stop; un solo timer alla volta; dopo lo stop restano progetto/descrizione/attività |
+| Timer | Start / Pause / Resume / Stop; un solo timer alla volta; dopo lo stop restano progetto/descrizione |
 | Persistenza | Stato in tabella `time_timer`; elapsed da timestamp UTC |
 | Pomodoro | Opzionale; stop automatico dopo 25 min di tempo effettivo (le pause non contano); notifica browser + beep multi-tono |
 | Manuale | Drawer: data + start/end oppure durata in ore |
 | Progetti | Collegati ai progetti Archivio (`projectId`); selettore con ricerca |
-| Activity types | Lista in Impostazioni Tempo (seed: Working, Shooting, Editing, Motion, Meeting, Admin, Travel) |
 | Today | Totale giorno + elenco voci; play per ripartire sullo stesso progetto |
 | Week | Timesheet lun–dom con navigazione settimane |
-| Projects | Per progetto: totale ore + sotto-lista task (range date) |
+| Projects | Per progetto: totale ore + subtotale per descrizione (voci con la stessa descrizione sommate, espandibili; range date) |
 | Report | Totali per progetto e per cliente in un range date |
 | Export | `/api/time/export?format=xlsx\|csv` (+ `from` / `to` opzionali) |
 
 ### Modello dati (Turso)
 
 **`time_entries`** — voci chiuse  
-`id`, `projectId`, `description`, `activityType`, `startedAt`, `endedAt`, `durationSeconds`, `source` (`timer` \| `manual` \| `pomodoro`), `createdAt`, `updatedAt`
+`id`, `projectId`, `description`, `startedAt`, `endedAt`, `durationSeconds`, `source` (`timer` \| `manual` \| `pomodoro`), `createdAt`, `updatedAt`
 
 **`time_timer`** — riga unica `id = current`  
-`projectId`, `description`, `activityType`, `startedAt`, `pausedAt`, `pauseSeconds`, `pomodoroEnabled`, `pomodoroMinutes`
+`projectId`, `description`, `startedAt`, `pausedAt`, `pauseSeconds`, `pomodoroEnabled`, `pomodoroMinutes`
 
-**`settings.activityTypes`** — JSON array
+La colonna legacy `activityType` resta nelle tabelle ma non è più usata: una migrazione una tantum (`settings.activityToDescriptionMigrated`) ha copiato l’attività nella descrizione dove quest’ultima era vuota.
 
 ### API (protette da cookie)
 
@@ -85,8 +84,6 @@ Timer persistente sul server (Turso), inserimento manuale, Pomodoro 25 min, Toda
 | `/api/time/entries/[id]` | PUT, DELETE | Aggiorna / elimina |
 | `/api/time/report` | GET | Report aggregato (`from`, `to`) |
 | `/api/time/export` | GET | Export file |
-| `/api/time/settings` | GET, PUT | Tipi attività |
-
 Risposta timer arricchita con `status`, `elapsedSeconds`, `pomodoroEndsAt` (utile per app native).
 
 ### File principali

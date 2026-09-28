@@ -77,7 +77,6 @@ export function TodayView({
                   </p>
                   <p className="truncate text-xs text-zinc-500">
                     {formatTimeRange(entry.startedAt, entry.endedAt)}
-                    {entry.activityType ? ` · ${entry.activityType}` : ""}
                     {entry.description ? ` · ${entry.description}` : ""}
                     {entry.source === "pomodoro" ? " · Pomodoro" : ""}
                   </p>

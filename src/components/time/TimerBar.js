@@ -42,15 +42,12 @@ export function TimerBar({
   timer,
   tick,
   projects,
-  activityTypes,
   todayTotalSeconds,
   onAction,
-  onOpenSettings,
   draftRef,
 }) {
   const [projectId, setProjectId] = useState(timer?.projectId ?? "");
   const [description, setDescription] = useState(timer?.description ?? "");
-  const [activityType, setActivityType] = useState(timer?.activityType ?? "");
   const [pomodoro, setPomodoro] = useState(Boolean(timer?.pomodoroEnabled));
   const [busy, setBusy] = useState(false);
 
@@ -58,21 +55,18 @@ export function TimerBar({
     if (timer) {
       setProjectId(timer.projectId ?? "");
       setDescription(timer.description ?? "");
-      setActivityType(timer.activityType ?? "");
       setPomodoro(Boolean(timer.pomodoroEnabled));
     }
   }, [
     timer?.startedAt,
     timer?.projectId,
     timer?.description,
-    timer?.activityType,
     timer?.pomodoroEnabled,
   ]);
 
   function applyDraft(next) {
     if (next.projectId !== undefined) setProjectId(next.projectId ?? "");
     if (next.description !== undefined) setDescription(next.description ?? "");
-    if (next.activityType !== undefined) setActivityType(next.activityType ?? "");
     if (next.pomodoro !== undefined) setPomodoro(Boolean(next.pomodoro));
   }
 
@@ -81,11 +75,10 @@ export function TimerBar({
     draftRef.current = {
       projectId,
       description,
-      activityType,
       pomodoro,
       applyDraft,
     };
-  }, [draftRef, projectId, description, activityType, pomodoro]);
+  }, [draftRef, projectId, description, pomodoro]);
 
   const isRunning = Boolean(timer) && timer.status === "running";
   const isPaused = Boolean(timer) && timer.status === "paused";
@@ -126,25 +119,6 @@ export function TimerBar({
     <header className="shrink-0 border-b border-zinc-200 bg-background px-6 py-4">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-lg font-semibold text-foreground">Time</h1>
-        <button
-          type="button"
-          onClick={onOpenSettings}
-          className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700"
-          title="Activity types"
-          aria-label="Activity types settings"
-        >
-          <svg
-            className="h-4 w-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={1.75}
-            aria-hidden
-          >
-            <circle cx="12" cy="12" r="3" />
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-          </svg>
-        </button>
       </div>
 
       {/* Hero: clock + controls */}
@@ -181,7 +155,6 @@ export function TimerBar({
                 run("start", {
                   projectId,
                   description,
-                  activityType,
                   pomodoroEnabled: pomodoro,
                 })
               }
@@ -258,25 +231,6 @@ export function TimerBar({
           />
         </label>
 
-        <label className="min-w-[8rem] space-y-1">
-          <span className="text-2xs font-mono uppercase tracking-wider text-zinc-400">
-            Activity
-          </span>
-          <select
-            value={activityType}
-            onChange={(e) => setActivityType(e.target.value)}
-            disabled={busy}
-            className="w-full rounded-lg border border-zinc-300 bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-zinc-400 disabled:opacity-60"
-          >
-            <option value="">—</option>
-            {activityTypes.map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
-            ))}
-          </select>
-        </label>
-
         <div className="flex items-center gap-2 pb-2">
           <label className="flex cursor-pointer items-center gap-2 text-sm text-zinc-600">
             <input
@@ -291,20 +245,18 @@ export function TimerBar({
         </div>
       </div>
 
-      {timer &&
-        (description !== timer.description ||
-          activityType !== timer.activityType) && (
-          <div className="mt-2">
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => run("update", { description, activityType })}
-              className="text-xs text-zinc-500 underline hover:text-zinc-800"
-            >
-              Save description / activity to running timer
-            </button>
-          </div>
-        )}
+      {timer && description !== timer.description && (
+        <div className="mt-2">
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => run("update", { description })}
+            className="text-xs text-zinc-500 underline hover:text-zinc-800"
+          >
+            Save description to running timer
+          </button>
+        </div>
+      )}
     </header>
   );
 }

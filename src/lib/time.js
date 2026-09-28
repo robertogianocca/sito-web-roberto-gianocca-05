@@ -9,15 +9,6 @@ export { formatDuration, formatDurationHours } from "./timeFormat";
 
 const TIMER_ROW_ID = "current";
 const DEFAULT_POMODORO_MINUTES = 25;
-const DEFAULT_ACTIVITY_TYPES = [
-  "Working",
-  "Shooting",
-  "Editing",
-  "Motion",
-  "Meeting",
-  "Admin",
-  "Travel",
-];
 
 export function generateTimeId() {
   return `time_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
@@ -28,7 +19,6 @@ function rowToEntry(row) {
     id: row.id,
     projectId: row.projectId ?? "",
     description: row.description ?? "",
-    activityType: row.activityType ?? "",
     startedAt: row.startedAt ?? "",
     endedAt: row.endedAt ?? "",
     durationSeconds: Number(row.durationSeconds ?? 0),
@@ -44,7 +34,6 @@ function rowToTimer(row) {
     id: row.id,
     projectId: row.projectId ?? "",
     description: row.description ?? "",
-    activityType: row.activityType ?? "",
     startedAt: row.startedAt ?? "",
     pausedAt: row.pausedAt || null,
     pauseSeconds: Number(row.pauseSeconds ?? 0),
@@ -89,32 +78,6 @@ export function enrichTimer(timer, now = new Date()) {
   };
 }
 
-export async function getActivityTypes() {
-  const db = getTursoClient();
-  const { rows } = await db.execute(
-    "SELECT value FROM settings WHERE key = 'activityTypes'"
-  );
-  if (rows.length === 0) return [...DEFAULT_ACTIVITY_TYPES];
-  try {
-    const parsed = JSON.parse(rows[0].value);
-    return Array.isArray(parsed) ? parsed.map(String) : [...DEFAULT_ACTIVITY_TYPES];
-  } catch {
-    return [...DEFAULT_ACTIVITY_TYPES];
-  }
-}
-
-export async function setActivityTypes(types) {
-  const db = getTursoClient();
-  const list = (Array.isArray(types) ? types : [])
-    .map((t) => String(t).trim())
-    .filter(Boolean);
-  await db.execute({
-    sql: "INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)",
-    args: ["activityTypes", JSON.stringify(list)],
-  });
-  return list;
-}
-
 export async function getTimer() {
   const db = getTursoClient();
   const { rows } = await db.execute({
@@ -128,13 +91,12 @@ async function writeTimer(timer) {
   const db = getTursoClient();
   await db.execute({
     sql: `INSERT OR REPLACE INTO time_timer
-      (id, projectId, description, activityType, startedAt, pausedAt, pauseSeconds, pomodoroEnabled, pomodoroMinutes)
-      VALUES (?,?,?,?,?,?,?,?,?)`,
+      (id, projectId, description, startedAt, pausedAt, pauseSeconds, pomodoroEnabled, pomodoroMinutes)
+      VALUES (?,?,?,?,?,?,?,?)`,
     args: [
       TIMER_ROW_ID,
       timer.projectId ?? "",
       timer.description ?? "",
-      timer.activityType ?? "",
       timer.startedAt,
       timer.pausedAt ?? null,
       Number(timer.pauseSeconds ?? 0),
@@ -156,7 +118,6 @@ async function clearTimer() {
 export async function startTimer({
   projectId = "",
   description = "",
-  activityType = "",
   pomodoroEnabled = false,
   pomodoroMinutes = DEFAULT_POMODORO_MINUTES,
 } = {}) {
@@ -168,7 +129,6 @@ export async function startTimer({
   return writeTimer({
     projectId,
     description,
-    activityType,
     startedAt: now,
     pausedAt: null,
     pauseSeconds: 0,
@@ -227,7 +187,6 @@ export async function stopTimer({ source } = {}) {
   const entry = await createTimeEntry({
     projectId: timer.projectId,
     description: timer.description,
-    activityType: timer.activityType,
     startedAt: timer.startedAt,
     endedAt,
     durationSeconds,
@@ -261,10 +220,6 @@ export async function updateRunningTimer(patch = {}) {
       patch.projectId !== undefined ? patch.projectId : timer.projectId,
     description:
       patch.description !== undefined ? patch.description : timer.description,
-    activityType:
-      patch.activityType !== undefined
-        ? patch.activityType
-        : timer.activityType,
     pomodoroEnabled:
       patch.pomodoroEnabled !== undefined
         ? Boolean(patch.pomodoroEnabled)
@@ -295,7 +250,6 @@ export async function createTimeEntry(data) {
     id: data.id || generateTimeId(),
     projectId: data.projectId ?? "",
     description: data.description ?? "",
-    activityType: data.activityType ?? "",
     startedAt,
     endedAt,
     durationSeconds,
@@ -306,13 +260,12 @@ export async function createTimeEntry(data) {
 
   await db.execute({
     sql: `INSERT INTO time_entries
-      (id, projectId, description, activityType, startedAt, endedAt, durationSeconds, source, createdAt, updatedAt)
-      VALUES (?,?,?,?,?,?,?,?,?,?)`,
+      (id, projectId, description, startedAt, endedAt, durationSeconds, source, createdAt, updatedAt)
+      VALUES (?,?,?,?,?,?,?,?,?)`,
     args: [
       entry.id,
       entry.projectId,
       entry.description,
-      entry.activityType,
       entry.startedAt,
       entry.endedAt,
       entry.durationSeconds,
@@ -357,10 +310,6 @@ export async function updateTimeEntry(id, data) {
     projectId: data.projectId !== undefined ? data.projectId : current.projectId,
     description:
       data.description !== undefined ? data.description : current.description,
-    activityType:
-      data.activityType !== undefined
-        ? data.activityType
-        : current.activityType,
     startedAt,
     endedAt,
     durationSeconds,
@@ -369,13 +318,12 @@ export async function updateTimeEntry(id, data) {
 
   await db.execute({
     sql: `UPDATE time_entries SET
-      projectId = ?, description = ?, activityType = ?, startedAt = ?, endedAt = ?,
+      projectId = ?, description = ?, startedAt = ?, endedAt = ?,
       durationSeconds = ?, updatedAt = ?
       WHERE id = ?`,
     args: [
       updated.projectId,
       updated.description,
-      updated.activityType,
       updated.startedAt,
       updated.endedAt,
       updated.durationSeconds,

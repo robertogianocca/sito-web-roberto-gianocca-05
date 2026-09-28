@@ -30,10 +30,114 @@ function formatEntryMeta(entry) {
         end ? ` – ${end.toLocaleTimeString(undefined, opts)}` : ""
       }`
     : "";
-  const bits = [datePart, timePart];
-  if (entry.activityType) bits.push(entry.activityType);
-  if (entry.description) bits.push(entry.description);
-  return bits.filter(Boolean).join(" · ");
+  return [datePart, timePart].filter(Boolean).join(" · ");
+}
+
+function groupByDescription(entries) {
+  const map = new Map();
+  for (const entry of entries) {
+    const text = (entry.description ?? "").trim();
+    const key = text.toLowerCase();
+    const prev = map.get(key) ?? {
+      key,
+      label: text || "No description",
+      totalSeconds: 0,
+      entries: [],
+    };
+    prev.totalSeconds += entry.durationSeconds || 0;
+    prev.entries.push(entry);
+    map.set(key, prev);
+  }
+  return [...map.values()].sort((a, b) => b.totalSeconds - a.totalSeconds);
+}
+
+function ExpandToggle({ isOpen, onClick, className, children }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex w-full items-center gap-3 text-left ${className}`}
+    >
+      <span className="text-zinc-400" aria-hidden>
+        {isOpen ? "▾" : "▸"}
+      </span>
+      {children}
+    </button>
+  );
+}
+
+function EntryRow({ entry, onEdit, onDelete }) {
+  return (
+    <li className="flex flex-wrap items-center gap-3 px-4 py-2.5 pl-16">
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-xs text-zinc-500">
+          {formatEntryMeta(entry)}
+        </p>
+      </div>
+      <p className="font-mono text-sm tabular-nums text-zinc-800">
+        {formatDuration(entry.durationSeconds)}
+      </p>
+      <div className="flex items-center gap-1">
+        <button
+          type="button"
+          onClick={() => onEdit(entry)}
+          className="rounded-lg px-2 py-1 text-xs text-zinc-500 hover:bg-zinc-100 hover:text-zinc-800"
+        >
+          Edit
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            if (confirm("Delete this time entry?")) {
+              onDelete(entry.id);
+            }
+          }}
+          className="rounded-lg px-2 py-1 text-xs text-red-500 hover:bg-red-50"
+        >
+          Delete
+        </button>
+      </div>
+    </li>
+  );
+}
+
+function DescriptionGroup({ group, isOpen, onToggle, onEdit, onDelete }) {
+  const isEmpty = group.key === "";
+  return (
+    <li>
+      <ExpandToggle
+        isOpen={isOpen}
+        onClick={onToggle}
+        className="px-4 py-2.5 pl-10 hover:bg-zinc-100/60"
+      >
+        <span
+          className={`min-w-0 flex-1 truncate text-sm ${
+            isEmpty ? "italic text-zinc-400" : "text-zinc-700"
+          }`}
+        >
+          {group.label}
+        </span>
+        <span className="text-xs text-zinc-400">
+          {group.entries.length} entr{group.entries.length === 1 ? "y" : "ies"}
+        </span>
+        <span className="font-mono text-sm font-medium tabular-nums text-zinc-800">
+          {formatDuration(group.totalSeconds)}
+        </span>
+      </ExpandToggle>
+      {isOpen && (
+        <ul className="divide-y divide-zinc-100 border-t border-zinc-100 bg-background">
+          {group.entries.map((entry) => (
+            <EntryRow
+              key={entry.id}
+              entry={entry}
+              onEdit={onEdit}
+              onDelete={onDelete}
+            />
+          ))}
+        </ul>
+      )}
+    </li>
+  );
 }
 
 export function ProjectsView({ projectMap, onEdit, onDelete }) {
@@ -90,6 +194,7 @@ export function ProjectsView({ projectMap, onEdit, onDelete }) {
         label: g.projectId
           ? projectLabel(projectMap.get(g.projectId))
           : "No project",
+        descriptions: groupByDescription(g.entries),
       }))
       .sort((a, b) => b.totalSeconds - a.totalSeconds);
   }, [entries, projectMap]);
@@ -170,65 +275,37 @@ export function ProjectsView({ projectMap, onEdit, onDelete }) {
                     key={key}
                     className="overflow-hidden rounded-xl border border-zinc-200"
                   >
-                    <button
-                      type="button"
+                    <ExpandToggle
+                      isOpen={isOpen}
                       onClick={() => toggle(key)}
-                      className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-zinc-50"
+                      className="px-4 py-3 hover:bg-zinc-50"
                     >
-                      <span
-                        className="text-zinc-400"
-                        aria-hidden
-                      >
-                        {isOpen ? "▾" : "▸"}
-                      </span>
                       <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
                         {g.label}
                       </span>
                       <span className="text-xs text-zinc-400">
-                        {g.entries.length} task
-                        {g.entries.length === 1 ? "" : "s"}
+                        {g.descriptions.length} task
+                        {g.descriptions.length === 1 ? "" : "s"}
                       </span>
                       <span className="font-mono text-sm font-semibold tabular-nums text-zinc-800">
                         {formatDuration(g.totalSeconds)}
                       </span>
-                    </button>
+                    </ExpandToggle>
                     {isOpen && (
                       <ul className="divide-y divide-zinc-100 border-t border-zinc-100 bg-zinc-50/50">
-                        {g.entries.map((entry) => (
-                          <li
-                            key={entry.id}
-                            className="flex flex-wrap items-center gap-3 px-4 py-2.5 pl-10"
-                          >
-                            <div className="min-w-0 flex-1">
-                              <p className="truncate text-xs text-zinc-500">
-                                {formatEntryMeta(entry)}
-                              </p>
-                            </div>
-                            <p className="font-mono text-sm tabular-nums text-zinc-800">
-                              {formatDuration(entry.durationSeconds)}
-                            </p>
-                            <div className="flex items-center gap-1">
-                              <button
-                                type="button"
-                                onClick={() => onEdit(entry)}
-                                className="rounded-lg px-2 py-1 text-xs text-zinc-500 hover:bg-zinc-100 hover:text-zinc-800"
-                              >
-                                Edit
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  if (confirm("Delete this time entry?")) {
-                                    onDelete(entry.id);
-                                  }
-                                }}
-                                className="rounded-lg px-2 py-1 text-xs text-red-500 hover:bg-red-50"
-                              >
-                                Delete
-                              </button>
-                            </div>
-                          </li>
-                        ))}
+                        {g.descriptions.map((d) => {
+                          const descKey = `${key}::${d.key}`;
+                          return (
+                            <DescriptionGroup
+                              key={descKey}
+                              group={d}
+                              isOpen={expanded.has(descKey)}
+                              onToggle={() => toggle(descKey)}
+                              onEdit={onEdit}
+                              onDelete={onDelete}
+                            />
+                          );
+                        })}
                       </ul>
                     )}
                   </li>

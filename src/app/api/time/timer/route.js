@@ -45,7 +45,6 @@ export async function POST(request) {
       const timer = await startTimer({
         projectId: body.projectId ?? "",
         description: body.description ?? "",
-        activityType: body.activityType ?? "",
         pomodoroEnabled: Boolean(body.pomodoroEnabled),
         pomodoroMinutes: body.pomodoroMinutes,
       });
