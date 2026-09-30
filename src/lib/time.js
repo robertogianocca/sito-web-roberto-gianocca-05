@@ -335,6 +335,48 @@ export async function updateTimeEntry(id, data) {
   return updated;
 }
 
+function descriptionKey(text) {
+  return String(text ?? "").trim().toLowerCase();
+}
+
+/** Rename every entry of a project whose description matches `from` (trimmed, case-insensitive). */
+export async function renameDescription({ projectId = "", from = "", to = "" } = {}) {
+  const next = String(to ?? "").trim();
+  if (!next) throw new Error("The new description cannot be empty.");
+
+  const db = getTursoClient();
+  const fromKey = descriptionKey(from);
+  const { rows } = await db.execute({
+    sql: "SELECT id, description FROM time_entries WHERE projectId = ?",
+    args: [projectId],
+  });
+  const ids = rows
+    .filter((row) => descriptionKey(row.description) === fromKey)
+    .map((row) => row.id);
+
+  if (ids.length > 0) {
+    const now = new Date().toISOString();
+    await db.batch(
+      ids.map((id) => ({
+        sql: "UPDATE time_entries SET description = ?, updatedAt = ? WHERE id = ?",
+        args: [next, now, id],
+      })),
+      "write"
+    );
+  }
+
+  const timer = await getTimer();
+  if (
+    timer &&
+    timer.projectId === projectId &&
+    descriptionKey(timer.description) === fromKey
+  ) {
+    await writeTimer({ ...timer, description: next });
+  }
+
+  return { updated: ids.length };
+}
+
 export async function deleteTimeEntry(id) {
   const db = getTursoClient();
   await db.execute({

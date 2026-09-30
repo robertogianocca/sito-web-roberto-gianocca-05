@@ -61,7 +61,7 @@ Timer persistente sul server (Turso), inserimento manuale, Pomodoro 25 min, Toda
 | Progetti | Collegati ai progetti Archivio (`projectId`); selettore con ricerca |
 | Today | Totale giorno + elenco voci; play per ripartire sullo stesso progetto |
 | Week | Timesheet lun–dom con navigazione settimane |
-| Projects | Per progetto: totale ore + subtotale per descrizione (voci con la stessa descrizione sommate, espandibili; range date) |
+| Projects | Per progetto: totale ore + subtotale per descrizione (voci con la stessa descrizione sommate, espandibili; range date). La matita su una descrizione la rinomina per tutte le voci del progetto, su tutte le date (e sul timer in corso se corrisponde) |
 | Report | Totali per progetto e per cliente in un range date |
 | Export | `/api/time/export?format=xlsx\|csv` (+ `from` / `to` opzionali) |
 
@@ -80,7 +80,7 @@ La colonna legacy `activityType` resta nelle tabelle ma non è più usata: una m
 | Route | Metodi | Descrizione |
 |-------|--------|-------------|
 | `/api/time/timer` | GET, POST | Stato timer; POST `action`: `start` \| `pause` \| `resume` \| `stop` \| `update` \| `checkPomodoro` |
-| `/api/time/entries` | GET, POST | Lista (`view=today` \| `week`, oppure `from`/`to`); crea voce manuale |
+| `/api/time/entries` | GET, POST, PATCH | Lista (`view=today` \| `week`, oppure `from`/`to`); crea voce manuale; PATCH `{ projectId, from, to }` rinomina una descrizione su tutte le voci del progetto |
 | `/api/time/entries/[id]` | PUT, DELETE | Aggiorna / elimina |
 | `/api/time/report` | GET | Report aggregato (`from`, `to`) |
 | `/api/time/export` | GET | Export file |

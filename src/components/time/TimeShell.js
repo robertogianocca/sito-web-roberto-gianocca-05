@@ -360,6 +360,10 @@ export function TimeShell({
             projectMap={projectMap}
             onEdit={openEditEntry}
             onDelete={handleDeleteEntry}
+            onChanged={() => {
+              refreshToday();
+              refreshTimer();
+            }}
           />
         )}
         {view === "report" && <ReportView />}

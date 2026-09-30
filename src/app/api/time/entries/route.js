@@ -6,6 +6,7 @@ import {
   createTimeEntry,
   getTodayTotalSeconds,
   getWeekSummary,
+  renameDescription,
 } from "@/lib/time";
 
 export async function GET(request) {
@@ -66,4 +67,30 @@ export async function POST(request) {
   });
 
   return NextResponse.json(entry, { status: 201 });
+}
+
+export async function PATCH(request) {
+  if (!isStudioAuthenticated(request)) return unauthorizedJson();
+  await ensureInit();
+
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+
+  if (!String(body.to ?? "").trim()) {
+    return NextResponse.json(
+      { error: "The new description cannot be empty." },
+      { status: 400 }
+    );
+  }
+
+  const result = await renameDescription({
+    projectId: body.projectId ?? "",
+    from: body.from ?? "",
+    to: body.to,
+  });
+  return NextResponse.json(result);
 }
