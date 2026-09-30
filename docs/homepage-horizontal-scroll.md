@@ -102,7 +102,8 @@ Client component che avvolge i figli in un `<main>` con classi Tailwind da `page
 Solo su desktop, con il puntatore in qualsiasi punto della pagina (nav, header, footer o track):
 
 - La rotella **verticale** incrementa `scrollLeft` con **inerzia** (velocità + attrito, `requestAnimationFrame`).
-- Gesti **orizzontali dominanti** (trackpad) non vengono intercettati: resta lo scroll nativo orizzontale.
+- Gesti **orizzontali dominanti** (trackpad): nativi sopra il track; fuori (nav, header, footer) mappati 1:1 sul track, e `overscroll-behavior-x: none` su `html` (solo mentre il track è montato) evita la navigazione indietro/avanti.
+- Swipe **verticale da trackpad**: convertito 1:1 in orizzontale, senza inerzia aggiuntiva (la scia la dà macOS).
 - **Shift + rotella**: comportamento browser nativo (non intercettato).
 - **Nav, header e footer**: la rotella sopra di essi muove comunque il track (stesso comportamento sulla listing Video).
 - **Contenuto verticale scrollabile**: se il pannello sotto il puntatore ha ancora corsa verticale nella direzione della rotella, l'evento resta nativo finché non arriva a fondo.

@@ -13,6 +13,21 @@ const EPSILON = 0.28;
 const MAX_VELOCITY = 2800;
 /** Minimum impulse so small mouse notches still move (macOS often uses pixel deltas < 18). */
 const MIN_IMPULSE = 6;
+/** Once a trackpad event is seen, events within this window stay on the trackpad path. */
+const TRACKPAD_GESTURE_MS = 150;
+
+/**
+ * Heuristic: Chrome/Safari expose `wheelDeltaY === -3 * deltaY` for trackpads (a mouse
+ * notch reports 120 regardless of deltaY, which can itself be fractional on macOS), so
+ * trust that signal when present. Otherwise fall back to fractional pixel deltas or
+ * sideways drift, both typical of fingers.
+ */
+function isTrackpadWheel(e) {
+  if (e.deltaMode !== 0) return false;
+  if (e.wheelDeltaY) return e.wheelDeltaY === -3 * e.deltaY;
+  if (!Number.isInteger(e.deltaY)) return true;
+  return e.deltaX !== 0;
+}
 
 /**
  * Right-edge hints (gradient + «Scroll» pill): fade by scroll progress, not px-from-end.
@@ -141,6 +156,7 @@ export const HorizontalScrollContainer = forwardRef(function HorizontalScrollCon
     let velocity = 0;
     let rafId = 0;
     let lastTs = 0;
+    let trackpadUntil = 0;
 
     const stopMomentum = () => {
       if (rafId) cancelAnimationFrame(rafId);
@@ -151,30 +167,43 @@ export const HorizontalScrollContainer = forwardRef(function HorizontalScrollCon
 
     const isScrollableOverflow = (value) => value === "auto" || value === "scroll";
 
+    /** True when an element other than the track under the pointer scrolls horizontally. */
+    const hasOtherHorizontalScroller = (target) => {
+      let node = target;
+
+      while (node && node !== document.body && node !== document.documentElement) {
+        if (
+          node !== el &&
+          isScrollableOverflow(getComputedStyle(node).overflowX) &&
+          node.scrollWidth > node.clientWidth + 1
+        ) {
+          return true;
+        }
+        node = node.parentElement;
+      }
+
+      return false;
+    };
+
     /**
      * True when an element under the pointer (other than the track) can consume the wheel
      * natively: a vertical scroller with room left in the wheel direction (short-viewport
      * panels), or another horizontal scroller (e.g. a footer filmstrip).
      */
     const wantsNativeScroll = (clientX, clientY, deltaY) => {
-      let node = document.elementFromPoint(clientX, clientY);
+      const target = document.elementFromPoint(clientX, clientY);
+      if (hasOtherHorizontalScroller(target)) return true;
+
+      let node = target;
 
       while (node && node !== document.body && node !== document.documentElement) {
-        const { overflowX, overflowY } = getComputedStyle(node);
+        const { overflowY } = getComputedStyle(node);
 
         if (isScrollableOverflow(overflowY) && node.scrollHeight > node.clientHeight + 1) {
           const maxScrollTop = node.scrollHeight - node.clientHeight;
           const canScrollUp = deltaY < 0 && node.scrollTop > 0;
           const canScrollDown = deltaY > 0 && node.scrollTop < maxScrollTop - 1;
           if (canScrollUp || canScrollDown) return true;
-        }
-
-        if (
-          node !== el &&
-          isScrollableOverflow(overflowX) &&
-          node.scrollWidth > node.clientWidth + 1
-        ) {
-          return true;
         }
 
         node = node.parentElement;
@@ -248,10 +277,35 @@ export const HorizontalScrollContainer = forwardRef(function HorizontalScrollCon
 
       if (el.scrollWidth <= el.clientWidth) return;
 
+      // Horizontal swipe: native over the track (it scrolls itself); elsewhere nothing
+      // scrolls horizontally, so the browser would turn it into back/forward navigation.
+      if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+        const target = document.elementFromPoint(e.clientX, e.clientY);
+        if (!target || el.contains(target) || hasOtherHorizontalScroller(target)) return;
+        stopMomentum();
+        e.preventDefault();
+        el.scrollLeft += e.deltaX;
+        updateHintsRef.current();
+        return;
+      }
+
       // Anywhere on the page (nav, header, footer, track) drives the track, unless an
       // inner scroller under the pointer can still take the wheel natively.
       if (wantsNativeScroll(e.clientX, e.clientY, e.deltaY)) {
         stopMomentum();
+        return;
+      }
+
+      // Trackpad: map vertical finger travel 1:1 (macOS supplies its own glide);
+      // accumulating it into the mouse inertia made swipes far too fast.
+      const now = performance.now();
+      if (now < trackpadUntil || isTrackpadWheel(e)) {
+        trackpadUntil = now + TRACKPAD_GESTURE_MS;
+        if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+        stopMomentum();
+        e.preventDefault();
+        el.scrollLeft += e.deltaY;
+        updateHintsRef.current();
         return;
       }
 
@@ -273,10 +327,22 @@ export const HorizontalScrollContainer = forwardRef(function HorizontalScrollCon
       scheduleTick();
     };
 
+    // Disable swipe back/forward navigation while the track is on screen: momentum tail
+    // events of a horizontal swipe can be non-cancelable, so preventDefault is not enough.
+    const rootStyle = document.documentElement.style;
+    const previousOverscrollX = rootStyle.overscrollBehaviorX;
+    const syncOverscroll = () => {
+      rootStyle.overscrollBehaviorX = isDesktop() ? "none" : previousOverscrollX;
+    };
+
+    syncOverscroll();
+    desktopMql.addEventListener("change", syncOverscroll);
     window.addEventListener("wheel", onWheel, { passive: false, capture: true });
 
     return () => {
       window.removeEventListener("wheel", onWheel, { capture: true });
+      desktopMql.removeEventListener("change", syncOverscroll);
+      rootStyle.overscrollBehaviorX = previousOverscrollX;
       stopMomentum();
     };
   }, []);
