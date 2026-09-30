@@ -138,7 +138,6 @@ export const HorizontalScrollContainer = forwardRef(function HorizontalScrollCon
     const isDesktop = () => desktopMql.matches;
     const prefersReducedMotion = () => reducedMotionMql.matches;
 
-    let isHovering = false;
     let velocity = 0;
     let rafId = 0;
     let lastTs = 0;
@@ -150,38 +149,32 @@ export const HorizontalScrollContainer = forwardRef(function HorizontalScrollCon
       lastTs = 0;
     };
 
-    const setHovering = (next) => {
-      if (next === isHovering) return;
-      isHovering = next;
-      if (!next) stopMomentum();
-    };
-
-    // Hit-test the actual element under the pointer rather than the track's bounding
-    // rect: the fixed nav and footer overlay the track, and wheeling over them (the
-    // video page filmstrip scrolls horizontally itself) must stay native.
-    const pointInsideEl = (clientX, clientY) => {
-      const target = document.elementFromPoint(clientX, clientY);
-      return target ? el.contains(target) : false;
-    };
+    const isScrollableOverflow = (value) => value === "auto" || value === "scroll";
 
     /**
-     * True when an ancestor of the pointer target still has vertical scroll left in the
-     * wheel direction. Short viewports make panel content taller than the visible band,
-     * and that content must stay reachable before the wheel turns into horizontal travel.
+     * True when an element under the pointer (other than the track) can consume the wheel
+     * natively: a vertical scroller with room left in the wheel direction (short-viewport
+     * panels), or another horizontal scroller (e.g. a footer filmstrip).
      */
-    const wantsNativeVerticalScroll = (clientX, clientY, deltaY) => {
+    const wantsNativeScroll = (clientX, clientY, deltaY) => {
       let node = document.elementFromPoint(clientX, clientY);
 
-      while (node && node !== el) {
-        const { overflowY } = getComputedStyle(node);
-        const scrollable = overflowY === "auto" || overflowY === "scroll";
-        const hasOverflow = node.scrollHeight > node.clientHeight + 1;
+      while (node && node !== document.body && node !== document.documentElement) {
+        const { overflowX, overflowY } = getComputedStyle(node);
 
-        if (scrollable && hasOverflow) {
+        if (isScrollableOverflow(overflowY) && node.scrollHeight > node.clientHeight + 1) {
           const maxScrollTop = node.scrollHeight - node.clientHeight;
           const canScrollUp = deltaY < 0 && node.scrollTop > 0;
           const canScrollDown = deltaY > 0 && node.scrollTop < maxScrollTop - 1;
           if (canScrollUp || canScrollDown) return true;
+        }
+
+        if (
+          node !== el &&
+          isScrollableOverflow(overflowX) &&
+          node.scrollWidth > node.clientWidth + 1
+        ) {
+          return true;
         }
 
         node = node.parentElement;
@@ -190,16 +183,8 @@ export const HorizontalScrollContainer = forwardRef(function HorizontalScrollCon
       return false;
     };
 
-    const onEnter = () => {
-      setHovering(true);
-    };
-
-    const onLeave = () => {
-      setHovering(false);
-    };
-
     const tick = (ts) => {
-      if (!isHovering || !el) {
+      if (!el) {
         stopMomentum();
         return;
       }
@@ -263,16 +248,9 @@ export const HorizontalScrollContainer = forwardRef(function HorizontalScrollCon
 
       if (el.scrollWidth <= el.clientWidth) return;
 
-      // Soft navigation (e.g. back from /photography): the pointer can sit over the
-      // track without a new pointerenter, so derive "inside" from the wheel event.
-      if (pointInsideEl(e.clientX, e.clientY)) {
-        setHovering(true);
-      } else {
-        setHovering(false);
-        return;
-      }
-
-      if (wantsNativeVerticalScroll(e.clientX, e.clientY, e.deltaY)) {
+      // Anywhere on the page (nav, header, footer, track) drives the track, unless an
+      // inner scroller under the pointer can still take the wheel natively.
+      if (wantsNativeScroll(e.clientX, e.clientY, e.deltaY)) {
         stopMomentum();
         return;
       }
@@ -295,13 +273,9 @@ export const HorizontalScrollContainer = forwardRef(function HorizontalScrollCon
       scheduleTick();
     };
 
-    el.addEventListener("pointerenter", onEnter);
-    el.addEventListener("pointerleave", onLeave);
     window.addEventListener("wheel", onWheel, { passive: false, capture: true });
 
     return () => {
-      el.removeEventListener("pointerenter", onEnter);
-      el.removeEventListener("pointerleave", onLeave);
       window.removeEventListener("wheel", onWheel, { capture: true });
       stopMomentum();
     };

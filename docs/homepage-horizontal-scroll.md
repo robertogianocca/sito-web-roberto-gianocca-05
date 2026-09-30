@@ -99,13 +99,14 @@ Client component che avvolge i figli in un `<main>` con classi Tailwind da `page
 
 ### Rotella del mouse → scroll orizzontale
 
-Solo su desktop, quando `document.elementFromPoint` conferma che il puntatore è davvero sopra il track:
+Solo su desktop, con il puntatore in qualsiasi punto della pagina (nav, header, footer o track):
 
 - La rotella **verticale** incrementa `scrollLeft` con **inerzia** (velocità + attrito, `requestAnimationFrame`).
 - Gesti **orizzontali dominanti** (trackpad) non vengono intercettati: resta lo scroll nativo orizzontale.
 - **Shift + rotella**: comportamento browser nativo (non intercettato).
-- **Nav e footer fissi**: si sovrappongono al track ma non contano come «sopra il track», quindi la rotella lì resta nativa (serve alla filmstrip del footer sulla pagina Video).
+- **Nav, header e footer**: la rotella sopra di essi muove comunque il track (stesso comportamento sulla listing Video).
 - **Contenuto verticale scrollabile**: se il pannello sotto il puntatore ha ancora corsa verticale nella direzione della rotella, l'evento resta nativo finché non arriva a fondo.
+- **Altri scroller orizzontali** (es. filmstrip nel footer): restano nativi, non vengono intercettati.
 - **`prefers-reduced-motion: reduce`**: niente inerzia; un `scrollBy` immediato per evento.
 
 L’handler è registrato su `window` in capture con `{ passive: false }` per poter chiamare `preventDefault` sulla rotella verticale quando mappata.
