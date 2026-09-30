@@ -84,10 +84,12 @@ export default async function VideoDetailPage({ params }) {
 
         <div className="min-w-0 flex-1 px-6 md:px-10 lg:px-0 lg:pr-10">
           <VimeoPlayer
+            key={vimeoId}
             vimeoId={vimeoId}
             title={title}
             poster={getVideoPosterUrl(video)}
             posterAlt={title}
+            preview={video.previewUrl}
             className="max-w-none"
           />
         </div>

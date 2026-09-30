@@ -20,6 +20,8 @@ const csp = [
   "img-src 'self' data: blob: https://i.vimeocdn.com https://res.cloudinary.com",
   // next/font/google self-hosts fonts at build time; no runtime request to Google servers.
   "font-src 'self'",
+  // res.cloudinary.com: muted MP4 preview intro on video detail pages.
+  "media-src 'self' https://res.cloudinary.com",
   "frame-src player.vimeo.com",
   // vimeo.com: VidStack calls the oEmbed API to fetch video metadata (title, poster, duration).
   "connect-src 'self' https://vimeo.com",

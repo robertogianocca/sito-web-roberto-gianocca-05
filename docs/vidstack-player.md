@@ -9,7 +9,7 @@ src/
   components/
     video/
       VimeoPlayer.js        ← componente player (unico file da modificare)
-next.config.mjs             ← CSP aggiornata per Vimeo (img-src, connect-src)
+next.config.mjs             ← CSP aggiornata per Vimeo (img-src, connect-src) e preview Cloudinary (media-src)
 ```
 
 ## Pacchetti installati
@@ -22,19 +22,21 @@ media-icons                 richiesto internamente da @vidstack/react/icons
 ## Architettura del componente
 
 ```
-VimeoPlayer({ vimeoId, title, className?, poster?, idlePlayOnly? })
+VimeoPlayer({ vimeoId, title, className?, poster?, preview?, idlePlayOnly? })
 └── <MediaPlayer viewType="video" src="vimeo/{id}">   ← no rounded corners
-      ├── <MediaProvider />          ← iframe Vimeo gestito da VidStack (+ Poster opzionale)
+      ├── <MediaProvider />          ← iframe Vimeo gestito da VidStack
       └── <PlayerUI />               ← inner component (useMediaState vive qui)
-            ├── idle: IdlePlaySurface (solo play verde, fuori da Controls)
-            ├── <Gesture click>      ← click ovunque → play/pause (dopo start)
-            ├── <Gesture pointerup>  ← movimento mouse → mostra controlli
+            ├── copertina next/image su fondo nero (z-1), fade-in su load, finché `playing`
+            ├── idlePlayOnly && !started: IdlePlaySurface (homepage)
+            ├── <Gesture click>      ← click ovunque → play/pause (dopo start / sul dettaglio)
+            ├── <Gesture pointerup>  ← mostra/nascondi controlli (solo dopo start)
             ├── flash overlay        ← React state, feedback visivo sul click
-            └── <Controls.Root>          ← flex column, justify-end (barra in basso)
+            └── <Controls.Root>      ← dettaglio: visibile da subito, senza fade finché !started
                   ├── gradient scrim
                   └── un solo chrome:
                         <MobileControls />   ← < md  (chrome bianco)
                         <DesktopControls />  ← ≥ md  (cerchi + volume hover)
+            └── <PreviewIntro />     ← z-5, stage nero SSR (CSS lg+), solo con `preview` (vedi sotto)
 
 Su desktop e mobile viene montato **un solo** `Controls.Group` (via `matchMedia`),
 perché le utility Tailwind `hidden`/`md:block` perdevano contro
@@ -43,6 +45,27 @@ perché le utility Tailwind `hidden`/`md:block` perdevano contro
 
 `PlayerUI` deve essere un componente figlio di `MediaPlayer` perché
 `useMediaState` legge il contesto del player — non funziona fuori da `MediaPlayer`.
+
+### Copertina e preview intro
+
+Ogni video parte sempre allo stesso modo:
+
+- desktop con `preview`: primo frame della preview (taglio netto, nessun fade) → preview → lo stage sfuma e rivela copertina + player insieme;
+- mobile / reduced motion / senza preview: copertina subito se in cache; fade-in solo se il caricamento supera ~100ms.
+
+Nel cambio video dai thumbnail non ci sono fade-out/fade-in: il nuovo player compare già con il primo frame (o la copertina).
+
+Dettagli:
+
+- **Copertina:** `next/image` (`fill`, `loading="eager"`, `fetchPriority="high"`) renderizzata da SSR dentro un wrapper `bg-black` (z-1), che copre anche il thumbnail dell'iframe Vimeo. Componente `PlayerCover`: se l'immagine è in cache compare subito (nessuna transizione); se dopo 100ms (`COVER_INSTANT_MS`) non è ancora caricata viene nascosta e fa fade-in (300ms) su `onLoad`, così non "salta" dentro dopo un attimo di nero. Resta finché lo stato `playing` non diventa vero.
+  - Non si usa il `<Poster>` di VidStack: parte da opacity 0, fa fade-in e si ricalcola a ogni cambio sorgente (era la causa del blink tra un video e l'altro).
+  - Anche se Vimeo ha già una copertina corretta, quella arriva tardi (dopo idratazione + oEmbed).
+- **Preview (`PreviewIntro`, da progetto 04):** uno stage nero opaco (z-5) sopra copertina, gesture e controlli.
+  - Lo stage è mostrato via CSS (`hidden motion-safe:lg:block`, stessa condizione di `PREVIEW_MQ`), quindi è renderizzato da SSR: anche su hard reload il primo frame è nero, mai la copertina prima dell'animazione. I controlli (che al mount VidStack mostra, nasconde e rimostra quando Vimeo è pronto) restano nascosti durante l'intro.
+  - Solo il `<video>` aspetta il check client (`useMediaQuery(PREVIEW_MQ)`), così su mobile l'MP4 non viene scaricato.
+  - Lo sfondo dello stage è il primo frame della preview, generato da Cloudinary sullo stesso asset (`/video/upload/so_0/…/nome.jpg`, 14–41 KB): il video parte sopra la stessa immagine, quindi senza fade né salto. Su mobile lo stage è `display: none` e lo sfondo non viene scaricato.
+  - Lo stage sfuma (900ms) e si smonta su: `ended`; click (che chiama anche `remote.play()` — in 04 l'overlay era `pointer-events-none` e il click finiva sul player nascosto); `error` o autoplay bloccato; player partito in altro modo; oppure se la preview non è partita entro 3s (rete lenta), così la pagina non resta mai nera.
+- **Cambio video:** la pagina dettaglio passa `key={vimeoId}`. I controlli restano visibili da subito (classe `player-controls-ready`, niente auto-hide né transizione) finché il video non è partito, così non c'è un frame vuoto in attesa di `[data-visible]`. Dopo il play: `hideDelay={3000}` e `hideOnMouseLeave`.
 
 ### Chrome mobile (`< md`)
 
@@ -151,10 +174,12 @@ Usare `pointerup` per entrambi causa un double-fire sullo stesso elemento.
 
 ```js
 "img-src 'self' data: blob: https://i.vimeocdn.com"
+"media-src 'self' https://res.cloudinary.com"
 "connect-src 'self' https://vimeo.com"
 ```
 
 - `i.vimeocdn.com` — thumbnail/poster dei video
+- `res.cloudinary.com` (media) — MP4 della preview intro; senza, `default-src 'self'` la blocca
 - `vimeo.com` — API oEmbed per metadati (titolo, durata, ecc.)
 
 ## Workaround React 19: niente `TimeSlider.Preview`

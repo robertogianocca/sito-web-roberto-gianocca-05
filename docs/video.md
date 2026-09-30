@@ -48,7 +48,8 @@ Modifica [`src/data/videos.js`](../src/data/videos.js).
 |-------|-------------|
 | `credits` | Array di `{ role, names }` — `role` localizzato, `names` testo piano |
 | `thumbnailUrl` | URL HTTPS per anteprima card / filmstrip |
-| `coverUrl` | URL HTTPS per poster player (dettaglio e featured); se assente si usa `thumbnailUrl` |
+| `coverUrl` | URL HTTPS per la copertina del player (dettaglio e featured), servita via `next/image`; se assente si usa `thumbnailUrl` |
+| `previewUrl` | URL HTTPS di un MP4 muto: intro sopra la copertina nel dettaglio, solo desktop (`≥ 1024px`, senza reduced motion) |
 | `tags` | Array di stringhe per filtrare nella listing (`?tag=…`) |
 | `featured` | `true` per il video in evidenza in homepage |
 
@@ -68,6 +69,8 @@ Modifica [`src/data/videos.js`](../src/data/videos.js).
 ### Dettaglio (`/video/[slug]`)
 
 Layout desktop (`lg+`): testi a sinistra (`28rem`), player a destra (`flex-1`). Mobile: stack verticale.
+
+Player: copertina visibile dal primo paint finché il video non riproduce davvero. Su desktop, se c'è `previewUrl`, parte l'intro (vedi [vidstack-player.md](vidstack-player.md#copertina-e-preview-intro)). I controlli sono visibili subito (senza fade); dopo il play si nascondono da soli.
 
 Filmstrip nel footer via parallel route `@footer/video/[slug]`. `SiteFooter` monta lo slot **solo** su `/video/[slug]`: la soft navigation di Next può tenere lo stato del parallel route dopo un click Home (o verso altre pagine), quindi senza questo gate i thumbnail resterebbero visibili.
 

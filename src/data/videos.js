@@ -2,6 +2,7 @@
  * Elenco video: testi e id Vimeo in repo; player da `https://player.vimeo.com/video/{id}`.
  * Anteprima card (opzionale): `thumbnailUrl` HTTPS; senza, la card mostra un segnaposto.
  * Copertina (opzionale): `coverUrl` HTTPS per poster player / homepage featured; fallback a `thumbnailUrl`.
+ * Anteprima (opzionale): `previewUrl` MP4 HTTPS, intro muta sopra la copertina nel dettaglio (solo desktop).
  *
  * `title` e `subtitle` possono essere stringhe (una sola lingua) o oggetti `{ it, en }`.
  * `subtitle` supporta markdown inline per parti in corsivo, es. `Music video for *Matt Pascale & The Stomps*`.
@@ -18,6 +19,7 @@
  *   credits?: Array<{ role: string | { it: string, en: string }, names: string }>,
  *   thumbnailUrl?: string,
  *   coverUrl?: string,
+ *   previewUrl?: string,
  *   tags?: string[],
  *   featured?: boolean
  * }>}
@@ -63,6 +65,10 @@ export const VIDEOS = [
     vimeoId: "1132948199",
     thumbnailUrl:
       "https://res.cloudinary.com/dqwtukgp2/image/upload/v1767704679/sugar-mama-thumbnail_mduage.jpg",
+    coverUrl:
+      "https://res.cloudinary.com/dqwtukgp2/image/upload/v1767704680/sugar-mama-cover_kdmwog.jpg",
+    previewUrl:
+      "https://res.cloudinary.com/dqwtukgp2/video/upload/v1767704602/sugar-mama-video-preview_jnf1pm.mp4",
     featured: true,
   },
   {
@@ -92,6 +98,10 @@ export const VIDEOS = [
     vimeoId: "1133440458",
     thumbnailUrl:
       "https://res.cloudinary.com/dqwtukgp2/image/upload/v1767534097/hot-sky-thumbnail_aktcgh.jpg",
+    coverUrl:
+      "https://res.cloudinary.com/dqwtukgp2/image/upload/v1767703732/hot-sky-cover_sqwmyh.jpg",
+    previewUrl:
+      "https://res.cloudinary.com/dqwtukgp2/video/upload/v1767704140/hot-sky-video-preview_u58xjb.mp4",
   },
   {
     slug: "carie",
@@ -136,6 +146,10 @@ export const VIDEOS = [
     vimeoId: "676793805",
     thumbnailUrl:
       "https://res.cloudinary.com/dqwtukgp2/image/upload/v1767538035/carie-thumbnail_j2yoq7.jpg",
+    coverUrl:
+      "https://res.cloudinary.com/dqwtukgp2/image/upload/v1767713764/carie-cover_zvf5dc.jpg",
+    previewUrl:
+      "https://res.cloudinary.com/dqwtukgp2/video/upload/v1767713763/carie-video-preview_jk3ute.mp4",
   },
   {
     slug: "met-parachute-mcr",
@@ -172,6 +186,10 @@ export const VIDEOS = [
     vimeoId: "676799834",
     thumbnailUrl:
       "https://res.cloudinary.com/dqwtukgp2/image/upload/v1771599457/met-parachute-thumbnail_djjbmb.jpg",
+    coverUrl:
+      "https://res.cloudinary.com/dqwtukgp2/image/upload/v1771599458/met-parachute-cover_da5ckh.jpg",
+    previewUrl:
+      "https://res.cloudinary.com/dqwtukgp2/video/upload/v1771599452/met-parachute-video-preview_fc8cjx.mp4",
   },
   {
     slug: "memorie-future",

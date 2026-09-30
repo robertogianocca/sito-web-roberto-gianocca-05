@@ -7,9 +7,9 @@ import '@vidstack/react/player/styles/default/sliders.css';
 import '@vidstack/react/player/styles/default/controls.css';
 import '@vidstack/react/player/styles/default/buttons.css';
 import '@vidstack/react/player/styles/default/time.css';
-import '@vidstack/react/player/styles/default/poster.css';
 
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import Image from 'next/image';
 import {
   Controls,
   FullscreenButton,
@@ -18,7 +18,6 @@ import {
   MediaProvider,
   MuteButton,
   PlayButton,
-  Poster,
   Time,
   TimeSlider,
   VolumeSlider,
@@ -38,27 +37,22 @@ import {
 } from '@vidstack/react/icons';
 
 const DESKTOP_MQ = '(min-width: 768px)';
+const PREVIEW_MQ = '(min-width: 1024px) and (prefers-reduced-motion: no-preference)';
 
-function subscribeDesktop(onChange) {
-  const mql = window.matchMedia(DESKTOP_MQ);
-  mql.addEventListener('change', onChange);
-  return () => mql.removeEventListener('change', onChange);
-}
-
-function getDesktopSnapshot() {
-  return window.matchMedia(DESKTOP_MQ).matches;
-}
-
-function getDesktopServerSnapshot() {
-  return false;
+function useMediaQuery(query) {
+  return useSyncExternalStore(
+    (onChange) => {
+      const mql = window.matchMedia(query);
+      mql.addEventListener('change', onChange);
+      return () => mql.removeEventListener('change', onChange);
+    },
+    () => window.matchMedia(query).matches,
+    () => false,
+  );
 }
 
 function useIsDesktop() {
-  return useSyncExternalStore(
-    subscribeDesktop,
-    getDesktopSnapshot,
-    getDesktopServerSnapshot,
-  );
+  return useMediaQuery(DESKTOP_MQ);
 }
 
 // ─── Shared colour tokens (mobile + base) ─────────────────────────────────────
@@ -416,6 +410,94 @@ function IdlePlaySurface({ isDesktop }) {
   );
 }
 
+const PREVIEW_FADE_OUT_MS = 900;
+const PREVIEW_START_TIMEOUT_MS = 3000;
+
+/** Cloudinary still of the clip's first frame (same asset, `.jpg` + `so_0`). */
+function previewFirstFrameUrl(src) {
+  return src.replace('/video/upload/', '/video/upload/so_0/').replace(/\.mp4$/, '.jpg');
+}
+
+/**
+ * Opaque stage over the whole player with a muted teaser clip (project 04
+ * UX). The stage is shown by CSS breakpoints (same query as PREVIEW_MQ) so it
+ * is server-rendered and hides cover/controls from the first frame; its
+ * background is the clip's first frame, so the clip starts seamlessly with no
+ * fade. Only the <video> waits for the client check, so mobile never
+ * downloads it (background images of display:none elements are not fetched).
+ * The stage fades out on ended, click (which also plays), error, blocked
+ * autoplay, playback started elsewhere, or if the clip has not started within
+ * PREVIEW_START_TIMEOUT_MS.
+ */
+function PreviewIntro({ src }) {
+  const remote = useMediaRemote();
+  const started = useMediaState('started');
+  const canPreview = useMediaQuery(PREVIEW_MQ);
+  const videoRef = useRef(null);
+  const [shown, setShown] = useState(false);
+  const [done, setDone] = useState(false);
+  const [gone, setGone] = useState(false);
+  const leaving = done || started;
+
+  useEffect(() => {
+    if (!canPreview) return;
+    videoRef.current?.play()?.catch(() => setDone(true));
+  }, [canPreview]);
+
+  useEffect(() => {
+    if (shown || leaving) return;
+    const id = setTimeout(() => setDone(true), PREVIEW_START_TIMEOUT_MS);
+    return () => clearTimeout(id);
+  }, [shown, leaving]);
+
+  useEffect(() => {
+    if (!leaving) return;
+    const id = setTimeout(() => setGone(true), PREVIEW_FADE_OUT_MS);
+    return () => clearTimeout(id);
+  }, [leaving]);
+
+  if (gone) return null;
+
+  function skip() {
+    setDone(true);
+    remote.play();
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={skip}
+      aria-label="Riproduci"
+      className={[
+        'absolute inset-0 z-[5] hidden cursor-pointer border-0 bg-black bg-cover bg-center p-0 motion-safe:lg:block',
+        leaving
+          ? 'pointer-events-none opacity-0 transition-opacity ease-out'
+          : 'opacity-100',
+      ].join(' ')}
+      style={{
+        backgroundImage: `url("${previewFirstFrameUrl(src)}")`,
+        ...(leaving ? { transitionDuration: `${PREVIEW_FADE_OUT_MS}ms` } : {}),
+      }}
+    >
+      {canPreview ? (
+        <video
+          ref={videoRef}
+          src={src}
+          muted
+          playsInline
+          preload="auto"
+          aria-hidden="true"
+          tabIndex={-1}
+          onPlaying={() => setShown(true)}
+          onEnded={() => setDone(true)}
+          onError={() => setDone(true)}
+          className="pointer-events-none h-full w-full object-cover"
+        />
+      ) : null}
+    </button>
+  );
+}
+
 // ─── Mobile controls (previous white chrome) ──────────────────────────────────
 function MobileControls() {
   const paused     = useMediaState('paused');
@@ -514,11 +596,49 @@ function DesktopControls() {
   );
 }
 
+const COVER_INSTANT_MS = 100;
+
+/**
+ * Cover on a black backdrop (also hides the Vimeo iframe's own thumbnail).
+ * A cached cover shows instantly; only one still loading after
+ * COVER_INSTANT_MS is hidden and faded in, so it never pops in after black.
+ */
+function PlayerCover({ src, alt }) {
+  const [loaded, setLoaded] = useState(false);
+  const [slow, setSlow] = useState(false);
+
+  useEffect(() => {
+    if (loaded) return;
+    const id = setTimeout(() => setSlow(true), COVER_INSTANT_MS);
+    return () => clearTimeout(id);
+  }, [loaded]);
+
+  return (
+    <div className="pointer-events-none absolute inset-0 z-[1] bg-black">
+      <Image
+        src={src}
+        alt={alt ?? ""}
+        fill
+        sizes="(min-width: 1024px) 66vw, 100vw"
+        loading="eager"
+        fetchPriority="high"
+        onLoad={() => setLoaded(true)}
+        className={[
+          'object-cover',
+          slow ? 'transition-opacity duration-300 ease-out' : '',
+          slow && !loaded ? 'opacity-0' : 'opacity-100',
+        ].filter(Boolean).join(' ')}
+      />
+    </div>
+  );
+}
+
 // ─── PlayerUI ─────────────────────────────────────────────────────────────────
 function PlayerUI({
   idlePlayOnly = false,
   poster,
   posterAlt,
+  preview,
 }) {
   const paused = useMediaState('paused');
   const started = useMediaState('started');
@@ -526,12 +646,10 @@ function PlayerUI({
   const isDesktop = useIsDesktop();
   const playOnly = idlePlayOnly && !started;
 
-  // Keep the Cloudinary cover until real frames are playing (not merely "started").
+  // Keep the cover until real frames are playing (not merely "started").
   const [coverGone, setCoverGone] = useState(false);
-  useEffect(() => {
-    if (playing) setCoverGone(true);
-  }, [playing]);
-  const showPosterCover = idlePlayOnly && Boolean(poster) && !coverGone;
+  if (playing && !coverGone) setCoverGone(true);
+  const showPosterCover = Boolean(poster) && !coverGone;
 
   const [flash, setFlash] = useState(false);
   const prevPaused = useRef(paused);
@@ -546,14 +664,7 @@ function PlayerUI({
 
   return (
     <>
-      {showPosterCover ? (
-        // eslint-disable-next-line @next/next/no-img-element -- player overlay; Next/Image not needed here
-        <img
-          src={poster}
-          alt={posterAlt ?? ""}
-          className="pointer-events-none absolute inset-0 z-[1] h-full w-full object-cover"
-        />
-      ) : null}
+      {showPosterCover ? <PlayerCover src={poster} alt={posterAlt} /> : null}
 
       {!playOnly ? (
         <>
@@ -562,11 +673,13 @@ function PlayerUI({
             event="click"
             action="toggle:paused"
           />
-          <Gesture
-            className="vds-gesture"
-            event="pointerup"
-            action="toggle:controls"
-          />
+          {started ? (
+            <Gesture
+              className="vds-gesture"
+              event="pointerup"
+              action="toggle:controls"
+            />
+          ) : null}
         </>
       ) : null}
 
@@ -585,7 +698,18 @@ function PlayerUI({
       {playOnly ? (
         <IdlePlaySurface isDesktop={isDesktop} />
       ) : (
-        <Controls.Root className="vds-controls z-[4] justify-end" hideDelay={3000}>
+        <Controls.Root
+          className={[
+            'vds-controls z-[4] justify-end',
+            started ? '' : 'player-controls-ready',
+          ].filter(Boolean).join(' ')}
+          hideDelay={started ? 3000 : 1e8}
+          hideOnMouseLeave={started}
+          style={started ? undefined : {
+            '--media-controls-in-transition': 'none',
+            '--media-controls-out-transition': 'none',
+          }}
+        >
           <div
             aria-hidden="true"
             className="pointer-events-none absolute inset-x-0 bottom-0 h-25 bg-linear-to-t from-black via-black/85 to-transparent"
@@ -593,6 +717,8 @@ function PlayerUI({
           {isDesktop ? <DesktopControls /> : <MobileControls />}
         </Controls.Root>
       )}
+
+      {preview ? <PreviewIntro src={preview} /> : null}
     </>
   );
 }
@@ -607,6 +733,7 @@ function PlayerUI({
  *   autoPlay?: boolean;
  *   poster?: string;
  *   posterAlt?: string;
+ *   preview?: string;
  *   load?: 'eager' | 'idle' | 'visible' | 'play';
  *   idlePlayOnly?: boolean;
  * }} props
@@ -618,6 +745,7 @@ export function VimeoPlayer({
   autoPlay = false,
   poster,
   posterAlt,
+  preview,
   load = 'visible',
   idlePlayOnly = false,
 }) {
@@ -635,19 +763,12 @@ export function VimeoPlayer({
         autoPlay={autoPlay}
         style={PLAYER_STYLE}
       >
-        <MediaProvider>
-          {poster ? (
-            <Poster
-              className="vds-poster h-full w-full object-cover [&_img]:object-cover!"
-              src={poster}
-              alt={posterAlt ?? title}
-            />
-          ) : null}
-        </MediaProvider>
+        <MediaProvider />
         <PlayerUI
           idlePlayOnly={idlePlayOnly}
           poster={poster}
           posterAlt={posterAlt ?? title}
+          preview={preview}
         />
       </MediaPlayer>
     </div>

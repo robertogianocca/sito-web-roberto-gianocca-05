@@ -253,6 +253,18 @@ body {
 }
 
 /*
+  VidStack .vds-controls starts at opacity 0 until [data-visible]. On a video
+  switch that delay is a one-frame blank bar. Force the chrome visible until
+  playback has started; after that the usual hide/show applies.
+*/
+.vds-controls.player-controls-ready {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition: none;
+}
+
+/*
   Custom seek timestamp (replaces TimeSlider.Preview — React 19 teardown race).
   Positioned via inline `left` % from useSliderState; clamped in JS at the edges.
 */
