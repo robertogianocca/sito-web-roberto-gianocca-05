@@ -15,18 +15,25 @@ const MAX_VELOCITY = 2800;
 const MIN_IMPULSE = 6;
 /** Once a trackpad event is seen, events within this window stay on the trackpad path. */
 const TRACKPAD_GESTURE_MS = 150;
+/** A trackpad gesture opens with steps below this; a mouse notch is never smaller. */
+const TRACKPAD_START_MAX_DELTA = 10;
+
+/** Some browsers report a mouse notch as a multiple of 120 in `wheelDeltaY`. */
+function isMouseNotch(e) {
+  return Boolean(e.wheelDeltaY) && e.wheelDeltaY % 120 === 0;
+}
 
 /**
- * Heuristic: Chrome/Safari expose `wheelDeltaY === -3 * deltaY` for trackpads (a mouse
- * notch reports 120 regardless of deltaY, which can itself be fractional on macOS), so
- * trust that signal when present. Otherwise fall back to fractional pixel deltas or
- * sideways drift, both typical of fingers.
+ * Decides how a gesture starts (later events follow via the gesture lock). Timing can't
+ * tell the devices apart: a fast-spun mouse fires as densely as fingers. Shape can: a
+ * trackpad ramps up from 1–3px steps, often with sideways drift, while a macOS mouse
+ * notch is at least ~12px (and grows to 100px+ with acceleration) and never drifts.
  */
 function isTrackpadWheel(e) {
   if (e.deltaMode !== 0) return false;
-  if (e.wheelDeltaY) return e.wheelDeltaY === -3 * e.deltaY;
-  if (!Number.isInteger(e.deltaY)) return true;
-  return e.deltaX !== 0;
+  if (isMouseNotch(e)) return false;
+  if (e.deltaX !== 0) return true;
+  return Math.abs(e.deltaY) < TRACKPAD_START_MAX_DELTA;
 }
 
 /**
