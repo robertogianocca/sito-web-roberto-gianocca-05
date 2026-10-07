@@ -6,6 +6,7 @@ import {
   toLocalDateInput,
 } from "@/lib/timeFormat";
 import { projectLabel } from "./ProjectCombobox";
+import { RestartButton } from "./RestartButton";
 
 function defaultRange() {
   const to = new Date();
@@ -173,6 +174,8 @@ function DescriptionGroup({
   group,
   isOpen,
   onToggle,
+  timerActive,
+  onRestart,
   onRename,
   onEdit,
   onDelete,
@@ -217,10 +220,15 @@ function DescriptionGroup({
                 {formatDuration(group.totalSeconds)}
               </span>
             </ExpandToggle>
+            <RestartButton
+              timerActive={timerActive}
+              onClick={() => onRestart(isEmpty ? "" : group.label)}
+              label="Start timer for this task"
+            />
             <button
               type="button"
               onClick={() => setEditing(true)}
-              className="mr-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-zinc-200 hover:text-zinc-700"
+              className="mx-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-zinc-200 hover:text-zinc-700"
               title="Rename description"
               aria-label={`Rename ${group.label}`}
             >
@@ -245,7 +253,14 @@ function DescriptionGroup({
   );
 }
 
-export function ProjectsView({ projectMap, onEdit, onDelete, onChanged }) {
+export function ProjectsView({
+  projectMap,
+  timerActive,
+  onRestart,
+  onEdit,
+  onDelete,
+  onChanged,
+}) {
   const defaults = defaultRange();
   const [from, setFrom] = useState(defaults.from);
   const [to, setTo] = useState(defaults.to);
@@ -427,6 +442,13 @@ export function ProjectsView({ projectMap, onEdit, onDelete, onChanged }) {
                               group={d}
                               isOpen={expanded.has(descKey)}
                               onToggle={() => toggle(descKey)}
+                              timerActive={timerActive}
+                              onRestart={(description) =>
+                                onRestart({
+                                  projectId: g.projectId,
+                                  description,
+                                })
+                              }
                               onRename={(group, nextName) =>
                                 handleRename(g.projectId, group, nextName)
                               }

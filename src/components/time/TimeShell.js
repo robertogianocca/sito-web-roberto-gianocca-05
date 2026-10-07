@@ -78,6 +78,7 @@ export function TimeShell({
     initialTodayTotalSeconds ?? 0
   );
   const [todayEntries, setTodayEntries] = useState([]);
+  const [recentTasks, setRecentTasks] = useState([]);
   const [loadingToday, setLoadingToday] = useState(true);
   const [error, setError] = useState(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -106,6 +107,7 @@ export function TimeShell({
       const data = await res.json();
       setTodayEntries(data.entries ?? []);
       setTodayTotalSeconds(data.todayTotalSeconds ?? 0);
+      setRecentTasks(data.recentTasks ?? []);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -291,6 +293,7 @@ export function TimeShell({
         timer={timer}
         tick={tick}
         projects={projects}
+        recentTasks={recentTasks}
         todayTotalSeconds={displayTodayTotal}
         onAction={timerAction}
         draftRef={draftRef}
@@ -342,6 +345,7 @@ export function TimeShell({
         {view === "today" && (
           <TodayView
             entries={todayEntries}
+            recentTasks={recentTasks}
             loading={loadingToday}
             projectMap={projectMap}
             todayTotalSeconds={displayTodayTotal}
@@ -358,6 +362,8 @@ export function TimeShell({
           <ProjectsView
             key={listVersion}
             projectMap={projectMap}
+            timerActive={Boolean(timer)}
+            onRestart={handleRestart}
             onEdit={openEditEntry}
             onDelete={handleDeleteEntry}
             onChanged={() => {
@@ -373,6 +379,7 @@ export function TimeShell({
         <EntryDrawer
           entry={editingEntry}
           projects={projects}
+          recentTasks={recentTasks}
           onClose={() => {
             setDrawerOpen(false);
             setEditingEntry(null);

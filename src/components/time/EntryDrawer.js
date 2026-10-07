@@ -7,8 +7,18 @@ import {
   toLocalTimeInput,
 } from "@/lib/timeFormat";
 import { ProjectCombobox } from "./ProjectCombobox";
+import {
+  DescriptionCombobox,
+  descriptionsForProject,
+} from "./DescriptionCombobox";
 
-export function EntryDrawer({ entry, projects, onClose, onSave }) {
+export function EntryDrawer({
+  entry,
+  projects,
+  recentTasks = [],
+  onClose,
+  onSave,
+}) {
   const isEdit = Boolean(entry);
   const initialStart = entry?.startedAt ? new Date(entry.startedAt) : new Date();
   const initialEnd = entry?.endedAt
@@ -110,15 +120,18 @@ export function EntryDrawer({ entry, projects, onClose, onSave }) {
               />
             </div>
 
-            <label className="block space-y-1">
-              <span className="text-sm font-medium">Description</span>
-              <input
-                type="text"
+            <div className="block space-y-1">
+              <label htmlFor="entry-description" className="text-sm font-medium">
+                Description
+              </label>
+              <DescriptionCombobox
+                id="entry-description"
                 value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-zinc-400"
+                onChange={setDescription}
+                suggestions={descriptionsForProject(recentTasks, projectId)}
+                inputClassName="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-zinc-400"
               />
-            </label>
+            </div>
 
             <label className="block space-y-1">
               <span className="text-sm font-medium">Date</span>

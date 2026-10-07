@@ -4,6 +4,10 @@ import { useEffect, useMemo, useState } from "react";
 import { formatDuration, formatDurationHMS } from "@/lib/timeFormat";
 import { formatLiveDurationHMS, liveElapsedSeconds } from "./timerLive";
 import { ProjectCombobox } from "./ProjectCombobox";
+import {
+  DescriptionCombobox,
+  descriptionsForProject,
+} from "./DescriptionCombobox";
 
 function ClockIcon({ className }) {
   return (
@@ -42,6 +46,7 @@ export function TimerBar({
   timer,
   tick,
   projects,
+  recentTasks,
   todayTotalSeconds,
   onAction,
   draftRef,
@@ -79,6 +84,11 @@ export function TimerBar({
       applyDraft,
     };
   }, [draftRef, projectId, description, pomodoro]);
+
+  const descriptionSuggestions = useMemo(
+    () => descriptionsForProject(recentTasks, projectId),
+    [recentTasks, projectId]
+  );
 
   const isRunning = Boolean(timer) && timer.status === "running";
   const isPaused = Boolean(timer) && timer.status === "paused";
@@ -217,19 +227,23 @@ export function TimerBar({
           />
         </div>
 
-        <label className="min-w-[10rem] flex-[1.5] space-y-1">
-          <span className="text-2xs font-mono uppercase tracking-wider text-zinc-400">
+        <div className="min-w-[10rem] flex-[1.5] space-y-1">
+          <label
+            htmlFor="timer-description"
+            className="text-2xs font-mono uppercase tracking-wider text-zinc-400"
+          >
             Description
-          </span>
-          <input
-            type="text"
+          </label>
+          <DescriptionCombobox
+            id="timer-description"
             value={description}
-            onChange={(e) => setDescription(e.target.value)}
+            onChange={setDescription}
+            suggestions={descriptionSuggestions}
             disabled={busy}
             placeholder="What are you working on?"
-            className="w-full rounded-lg border border-zinc-300 bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-zinc-400 disabled:opacity-60"
+            inputClassName="w-full rounded-lg border border-zinc-300 bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-zinc-400 disabled:opacity-60"
           />
-        </label>
+        </div>
 
         <div className="flex items-center gap-2 pb-2">
           <label className="flex cursor-pointer items-center gap-2 text-sm text-zinc-600">

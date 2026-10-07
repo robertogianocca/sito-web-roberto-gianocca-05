@@ -118,6 +118,7 @@ export function ProjectCombobox({
         aria-expanded={open}
         aria-controls={listId}
         aria-autocomplete="list"
+        autoComplete="off"
         disabled={disabled}
         value={displayValue}
         placeholder="Search projects…"

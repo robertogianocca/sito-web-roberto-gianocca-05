@@ -377,6 +377,33 @@ export async function renameDescription({ projectId = "", from = "", to = "" } =
   return { updated: ids.length };
 }
 
+/** Distinct project + description pairs, most recently used first. */
+export async function listRecentTasks() {
+  const db = getTursoClient();
+  const { rows } = await db.execute(
+    "SELECT projectId, description, startedAt FROM time_entries ORDER BY startedAt DESC"
+  );
+  const map = new Map();
+  for (const row of rows) {
+    const projectId = row.projectId ?? "";
+    const description = String(row.description ?? "").trim();
+    if (!projectId && !description) continue;
+    const key = `${projectId}::${descriptionKey(description)}`;
+    const prev = map.get(key);
+    if (prev) {
+      prev.count += 1;
+      continue;
+    }
+    map.set(key, {
+      projectId,
+      description,
+      lastUsedAt: row.startedAt ?? "",
+      count: 1,
+    });
+  }
+  return [...map.values()];
+}
+
 export async function deleteTimeEntry(id) {
   const db = getTursoClient();
   await db.execute({

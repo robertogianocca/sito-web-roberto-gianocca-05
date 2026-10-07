@@ -59,9 +59,10 @@ Timer persistente sul server (Turso), inserimento manuale, Pomodoro 25 min, Toda
 | Pomodoro | Opzionale; stop automatico dopo 25 min di tempo effettivo (le pause non contano); notifica browser + beep multi-tono |
 | Manuale | Drawer: data + start/end oppure durata in ore |
 | Progetti | Collegati ai progetti Archivio (`projectId`); selettore con ricerca |
-| Today | Totale giorno + elenco voci; play per ripartire sullo stesso progetto |
+| Today | Sezione Recent (ultime 5 coppie progetto + descrizione, con play) sopra l’elenco voci del giorno; play per ripartire sullo stesso progetto |
+| Suggerimenti descrizione | Nel timer e nel drawer, la descrizione suggerisce quelle già usate sul progetto selezionato (autocomplete del browser disattivato) |
 | Week | Timesheet lun–dom con navigazione settimane |
-| Projects | Per progetto: totale ore + subtotale per descrizione (voci con la stessa descrizione sommate, espandibili; range date). La matita su una descrizione la rinomina per tutte le voci del progetto, su tutte le date (e sul timer in corso se corrisponde) |
+| Projects | Per progetto: totale ore + subtotale per descrizione (voci con la stessa descrizione sommate, espandibili; range date). Il play su una descrizione fa ripartire il timer su quel task. La matita su una descrizione la rinomina per tutte le voci del progetto, su tutte le date (e sul timer in corso se corrisponde) |
 | Report | Totali per progetto e per cliente in un range date |
 | Export | `/api/time/export?format=xlsx\|csv` (+ `from` / `to` opzionali) |
 
@@ -80,7 +81,7 @@ La colonna legacy `activityType` resta nelle tabelle ma non è più usata: una m
 | Route | Metodi | Descrizione |
 |-------|--------|-------------|
 | `/api/time/timer` | GET, POST | Stato timer; POST `action`: `start` \| `pause` \| `resume` \| `stop` \| `update` \| `checkPomodoro` |
-| `/api/time/entries` | GET, POST, PATCH | Lista (`view=today` \| `week`, oppure `from`/`to`); crea voce manuale; PATCH `{ projectId, from, to }` rinomina una descrizione su tutte le voci del progetto |
+| `/api/time/entries` | GET, POST, PATCH | Lista (`view=today` \| `week`, oppure `from`/`to`; `today` include anche `recentTasks`); crea voce manuale; PATCH `{ projectId, from, to }` rinomina una descrizione su tutte le voci del progetto |
 | `/api/time/entries/[id]` | PUT, DELETE | Aggiorna / elimina |
 | `/api/time/report` | GET | Report aggregato (`from`, `to`) |
 | `/api/time/export` | GET | Export file |

@@ -7,6 +7,7 @@ import {
   getTodayTotalSeconds,
   getWeekSummary,
   renameDescription,
+  listRecentTasks,
 } from "@/lib/time";
 
 export async function GET(request) {
@@ -26,8 +27,11 @@ export async function GET(request) {
       from: from.toISOString(),
       to: to.toISOString(),
     });
-    const todayTotalSeconds = await getTodayTotalSeconds(now);
-    return NextResponse.json({ entries, todayTotalSeconds });
+    const [todayTotalSeconds, recentTasks] = await Promise.all([
+      getTodayTotalSeconds(now),
+      listRecentTasks(),
+    ]);
+    return NextResponse.json({ entries, todayTotalSeconds, recentTasks });
   }
 
   if (view === "week") {

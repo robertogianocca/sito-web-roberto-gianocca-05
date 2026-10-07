@@ -2,6 +2,8 @@
 
 import { formatDuration } from "@/lib/timeFormat";
 import { projectLabel } from "./ProjectCombobox";
+import { RecentTasks } from "./RecentTasks";
+import { RestartButton } from "./RestartButton";
 
 function formatTimeRange(startedAt, endedAt) {
   const opts = { hour: "2-digit", minute: "2-digit" };
@@ -16,6 +18,7 @@ function formatTimeRange(startedAt, endedAt) {
 
 export function TodayView({
   entries,
+  recentTasks = [],
   loading,
   projectMap,
   todayTotalSeconds,
@@ -30,6 +33,13 @@ export function TodayView({
 
   return (
     <div className="space-y-4">
+      <RecentTasks
+        tasks={recentTasks}
+        projectMap={projectMap}
+        timerActive={timerActive}
+        onRestart={onRestart}
+      />
+
       <div className="flex items-baseline justify-between gap-3">
         <h2 className="text-sm font-medium text-zinc-700">Today&apos;s entries</h2>
         <p className="font-mono text-sm text-zinc-500">
@@ -50,27 +60,11 @@ export function TodayView({
                 key={entry.id}
                 className="flex flex-wrap items-center gap-3 px-4 py-3 hover:bg-zinc-50"
               >
-                <button
-                  type="button"
-                  disabled={timerActive}
+                <RestartButton
+                  timerActive={timerActive}
                   onClick={() => onRestart(entry)}
-                  title={
-                    timerActive
-                      ? "Stop the current timer first"
-                      : "Start timer with this project"
-                  }
-                  aria-label="Start timer for this entry"
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-zinc-200 text-emerald-700 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  <svg
-                    className="h-3.5 w-3.5"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                    aria-hidden
-                  >
-                    <path d="M8 5v14l11-7z" />
-                  </svg>
-                </button>
+                  label="Start timer for this entry"
+                />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium text-foreground">
                     {projectLabel(project)}
