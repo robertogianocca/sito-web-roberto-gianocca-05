@@ -75,7 +75,12 @@ function EditableList({ label, items, onChange, onRename }) {
                 onChange={(e) => setEditValue(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") { e.preventDefault(); confirmEdit(); }
-                  if (e.key === "Escape") cancelEdit();
+                  if (e.key === "Escape") {
+                    // Cancel only the rename: without this the drawer's own
+                    // Escape handler also closes it and drops every change.
+                    e.stopPropagation();
+                    cancelEdit();
+                  }
                 }}
               />
               <button
@@ -233,7 +238,12 @@ function DrivesEditor({ drives, capacities, onChangeDrives, onChangeCapacities, 
                       onChange={(e) => setEditValue(e.target.value)}
                       onKeyDown={(e) => {
                         if (e.key === "Enter") { e.preventDefault(); confirmEdit(); }
-                        if (e.key === "Escape") cancelEdit();
+                        if (e.key === "Escape") {
+                          // Cancel only the rename: without this the drawer's own
+                          // Escape handler also closes it and drops every change.
+                          e.stopPropagation();
+                          cancelEdit();
+                        }
                       }}
                     />
                     <button

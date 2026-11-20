@@ -197,7 +197,9 @@ export function EntryDrawer({
                   <input
                     type="number"
                     min="0.01"
-                    step="0.25"
+                    // "any": with min 0.01 and step 0.25 only 0.01, 0.26, …
+                    // were valid, so "1" or "2" blocked the form.
+                    step="any"
                     required
                     value={durationHours}
                     onChange={(e) => setDurationHours(e.target.value)}

@@ -9,6 +9,7 @@ import {
   renameDescription,
   listRecentTasks,
 } from "@/lib/time";
+import { zonedDayRange } from "@/lib/timeZone";
 
 export async function GET(request) {
   if (!isStudioAuthenticated(request)) return unauthorizedJson();
@@ -18,14 +19,12 @@ export async function GET(request) {
   const view = searchParams.get("view");
 
   if (view === "today") {
+    // "Today" in the studio time zone, not the server's (UTC on Vercel).
     const now = new Date();
-    const from = new Date(now);
-    from.setHours(0, 0, 0, 0);
-    const to = new Date(from);
-    to.setDate(to.getDate() + 1);
+    const { start, end } = zonedDayRange(now);
     const entries = await listTimeEntries({
-      from: from.toISOString(),
-      to: to.toISOString(),
+      from: start.toISOString(),
+      to: end.toISOString(),
     });
     const [todayTotalSeconds, recentTasks] = await Promise.all([
       getTodayTotalSeconds(now),

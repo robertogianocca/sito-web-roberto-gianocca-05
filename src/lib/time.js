@@ -1,14 +1,26 @@
 import { getTursoClient } from "./turso";
 import {
-  formatDuration,
-  formatDurationHours,
-  toLocalDateInput,
-} from "./timeFormat";
+  addZonedDays,
+  startOfZonedWeek,
+  toZonedDateKey,
+  zonedDayRange,
+} from "./timeZone";
 
 export { formatDuration, formatDurationHours } from "./timeFormat";
 
 const TIMER_ROW_ID = "current";
 const DEFAULT_POMODORO_MINUTES = 25;
+
+/**
+ * The timer is not in the state the action expects (already running, already
+ * stopped, …). Expected during normal use, e.g. two tabs; the API answers 409.
+ */
+export class TimerConflictError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = "TimerConflictError";
+  }
+}
 
 export function generateTimeId() {
   return `time_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
@@ -87,10 +99,11 @@ export async function getTimer() {
   return enrichTimer(rowToTimer(rows[0] ?? null));
 }
 
-async function writeTimer(timer) {
+/** Creates the timer row; fails if one already exists (never overwrites). */
+async function insertTimer(timer) {
   const db = getTursoClient();
-  await db.execute({
-    sql: `INSERT OR REPLACE INTO time_timer
+  const result = await db.execute({
+    sql: `INSERT OR IGNORE INTO time_timer
       (id, projectId, description, startedAt, pausedAt, pauseSeconds, pomodoroEnabled, pomodoroMinutes)
       VALUES (?,?,?,?,?,?,?,?)`,
     args: [
@@ -104,15 +117,41 @@ async function writeTimer(timer) {
       Number(timer.pomodoroMinutes ?? DEFAULT_POMODORO_MINUTES),
     ],
   });
+  if (result.rowsAffected === 0) {
+    throw new TimerConflictError(
+      "A timer is already running. Stop or pause it first."
+    );
+  }
   return getTimer();
 }
 
-async function clearTimer() {
+/**
+ * Updates the running timer, but only if it is still the one that was read
+ * (same `startedAt`). A plain upsert could bring back a timer that another
+ * request stopped in the meantime, which would later create a second entry.
+ */
+async function updateTimer(timer) {
   const db = getTursoClient();
-  await db.execute({
-    sql: "DELETE FROM time_timer WHERE id = ?",
-    args: [TIMER_ROW_ID],
+  const result = await db.execute({
+    sql: `UPDATE time_timer SET
+      projectId = ?, description = ?, pausedAt = ?, pauseSeconds = ?,
+      pomodoroEnabled = ?, pomodoroMinutes = ?
+      WHERE id = ? AND startedAt = ?`,
+    args: [
+      timer.projectId ?? "",
+      timer.description ?? "",
+      timer.pausedAt ?? null,
+      Number(timer.pauseSeconds ?? 0),
+      timer.pomodoroEnabled ? 1 : 0,
+      Number(timer.pomodoroMinutes ?? DEFAULT_POMODORO_MINUTES),
+      TIMER_ROW_ID,
+      timer.startedAt,
+    ],
   });
+  if (result.rowsAffected === 0) {
+    throw new TimerConflictError("No timer is running.");
+  }
+  return getTimer();
 }
 
 export async function startTimer({
@@ -121,12 +160,8 @@ export async function startTimer({
   pomodoroEnabled = false,
   pomodoroMinutes = DEFAULT_POMODORO_MINUTES,
 } = {}) {
-  const existing = await getTimer();
-  if (existing) {
-    throw new Error("A timer is already running. Stop or pause it first.");
-  }
   const now = new Date().toISOString();
-  return writeTimer({
+  return insertTimer({
     projectId,
     description,
     startedAt: now,
@@ -139,9 +174,9 @@ export async function startTimer({
 
 export async function pauseTimer() {
   const timer = await getTimer();
-  if (!timer) throw new Error("No timer is running.");
-  if (timer.pausedAt) throw new Error("Timer is already paused.");
-  return writeTimer({
+  if (!timer) throw new TimerConflictError("No timer is running.");
+  if (timer.pausedAt) throw new TimerConflictError("Timer is already paused.");
+  return updateTimer({
     ...timer,
     pausedAt: new Date().toISOString(),
   });
@@ -149,22 +184,32 @@ export async function pauseTimer() {
 
 export async function resumeTimer() {
   const timer = await getTimer();
-  if (!timer) throw new Error("No timer is running.");
-  if (!timer.pausedAt) throw new Error("Timer is not paused.");
+  if (!timer) throw new TimerConflictError("No timer is running.");
+  if (!timer.pausedAt) throw new TimerConflictError("Timer is not paused.");
 
   const pausedMs = new Date(timer.pausedAt).getTime();
   const extraPause = Math.max(0, Math.floor((Date.now() - pausedMs) / 1000));
 
-  return writeTimer({
+  return updateTimer({
     ...timer,
     pausedAt: null,
     pauseSeconds: Number(timer.pauseSeconds ?? 0) + extraPause,
   });
 }
 
-export async function stopTimer({ source } = {}) {
+/**
+ * Stops the timer and records its entry, atomically: removing the timer row
+ * and inserting the entry run in one transaction, and the entry is inserted
+ * only if this request is the one that removed the row. Two concurrent stops
+ * (double click, two tabs, Pomodoro check) therefore record one entry; the
+ * other gets a TimerConflictError.
+ *
+ * `description` (optional) overrides the stored one, so text typed in the
+ * timer bar but not yet saved is not lost.
+ */
+export async function stopTimer({ source, description } = {}) {
   const timer = await getTimer();
-  if (!timer) throw new Error("No timer is running.");
+  if (!timer) throw new TimerConflictError("No timer is running.");
 
   const now = new Date();
   const endedAt = now.toISOString();
@@ -184,21 +229,45 @@ export async function stopTimer({ source } = {}) {
     durationSeconds = timer.pomodoroMinutes * 60;
   }
 
-  const entry = await createTimeEntry({
+  const entry = buildTimeEntry({
     projectId: timer.projectId,
-    description: timer.description,
+    description:
+      typeof description === "string" ? description : timer.description,
     startedAt: timer.startedAt,
     endedAt,
     durationSeconds,
     source: entrySource,
   });
 
-  await clearTimer();
+  const db = getTursoClient();
+  const [, inserted] = await db.batch(
+    [
+      {
+        sql: "DELETE FROM time_timer WHERE id = ? AND startedAt = ?",
+        args: [TIMER_ROW_ID, timer.startedAt],
+      },
+      {
+        // changes() = rows removed by the DELETE above, in this transaction.
+        sql: `INSERT INTO time_entries (${ENTRY_COLUMNS.join(", ")})
+          SELECT ${ENTRY_COLUMNS.map(() => "?").join(", ")}
+          WHERE changes() = 1`,
+        args: entryArgs(entry),
+      },
+    ],
+    "write"
+  );
+
+  if (inserted.rowsAffected === 0) {
+    throw new TimerConflictError("No timer is running.");
+  }
   return { entry, timer: null };
 }
 
-/** Auto-stop when pomodoro duration is reached (idempotent if already stopped). */
-export async function checkAndCompletePomodoro() {
+/**
+ * Auto-stop when pomodoro duration is reached. Safe to call repeatedly or
+ * concurrently: only one call records the entry.
+ */
+export async function checkAndCompletePomodoro({ description } = {}) {
   const timer = await getTimer();
   if (!timer || !timer.pomodoroEnabled || timer.pausedAt) {
     return { completed: false, timer, entry: null };
@@ -207,14 +276,22 @@ export async function checkAndCompletePomodoro() {
   if (elapsed < timer.pomodoroMinutes * 60) {
     return { completed: false, timer, entry: null };
   }
-  const result = await stopTimer({ source: "pomodoro" });
-  return { completed: true, timer: null, entry: result.entry };
+  try {
+    const result = await stopTimer({ source: "pomodoro", description });
+    return { completed: true, timer: null, entry: result.entry };
+  } catch (err) {
+    // Another request stopped it first and reported the completion.
+    if (err instanceof TimerConflictError) {
+      return { completed: false, timer: await getTimer(), entry: null };
+    }
+    throw err;
+  }
 }
 
 export async function updateRunningTimer(patch = {}) {
   const timer = await getTimer();
-  if (!timer) throw new Error("No timer is running.");
-  return writeTimer({
+  if (!timer) throw new TimerConflictError("No timer is running.");
+  return updateTimer({
     ...timer,
     projectId:
       patch.projectId !== undefined ? patch.projectId : timer.projectId,
@@ -231,8 +308,24 @@ export async function updateRunningTimer(patch = {}) {
   });
 }
 
-export async function createTimeEntry(data) {
-  const db = getTursoClient();
+const ENTRY_COLUMNS = [
+  "id",
+  "projectId",
+  "description",
+  "startedAt",
+  "endedAt",
+  "durationSeconds",
+  "source",
+  "createdAt",
+  "updatedAt",
+];
+
+function entryArgs(entry) {
+  return ENTRY_COLUMNS.map((column) => entry[column]);
+}
+
+/** Normalizes entry data (defaults, duration from start/end if missing). */
+function buildTimeEntry(data) {
   const now = new Date().toISOString();
   const startedAt = data.startedAt || now;
   const endedAt = data.endedAt || now;
@@ -246,7 +339,7 @@ export async function createTimeEntry(data) {
         : Math.max(0, Math.floor((endMs - startMs) / 1000));
   }
 
-  const entry = {
+  return {
     id: data.id || generateTimeId(),
     projectId: data.projectId ?? "",
     description: data.description ?? "",
@@ -257,22 +350,16 @@ export async function createTimeEntry(data) {
     createdAt: data.createdAt || now,
     updatedAt: data.updatedAt || now,
   };
+}
+
+export async function createTimeEntry(data) {
+  const db = getTursoClient();
+  const entry = buildTimeEntry(data);
 
   await db.execute({
-    sql: `INSERT INTO time_entries
-      (id, projectId, description, startedAt, endedAt, durationSeconds, source, createdAt, updatedAt)
-      VALUES (?,?,?,?,?,?,?,?,?)`,
-    args: [
-      entry.id,
-      entry.projectId,
-      entry.description,
-      entry.startedAt,
-      entry.endedAt,
-      entry.durationSeconds,
-      entry.source,
-      entry.createdAt,
-      entry.updatedAt,
-    ],
+    sql: `INSERT INTO time_entries (${ENTRY_COLUMNS.join(", ")})
+      VALUES (${ENTRY_COLUMNS.map(() => "?").join(", ")})`,
+    args: entryArgs(entry),
   });
 
   return entry;
@@ -371,7 +458,12 @@ export async function renameDescription({ projectId = "", from = "", to = "" } =
     timer.projectId === projectId &&
     descriptionKey(timer.description) === fromKey
   ) {
-    await writeTimer({ ...timer, description: next });
+    try {
+      await updateTimer({ ...timer, description: next });
+    } catch (err) {
+      // The timer was stopped meanwhile: nothing left to rename.
+      if (!(err instanceof TimerConflictError)) throw err;
+    }
   }
 
   return { updated: ids.length };
@@ -433,47 +525,34 @@ export async function listTimeEntries({ from, to } = {}) {
   return rows.map(rowToEntry);
 }
 
-function startOfLocalDay(date = new Date()) {
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
-
-function addDays(date, days) {
-  const d = new Date(date);
-  d.setDate(d.getDate() + days);
-  return d;
-}
-
-/** Monday 00:00 local of the week containing `date`. */
-export function startOfWeek(date = new Date()) {
-  const d = startOfLocalDay(date);
-  const day = d.getDay(); // 0 Sun … 6 Sat
-  const diff = day === 0 ? -6 : 1 - day;
-  return addDays(d, diff);
-}
-
+/** Day and week boundaries are in the studio time zone (see ./timeZone). */
 export async function getTodayTotalSeconds(now = new Date()) {
-  const from = startOfLocalDay(now).toISOString();
-  const to = addDays(startOfLocalDay(now), 1).toISOString();
-  const entries = await listTimeEntries({ from, to });
+  const { start, end } = zonedDayRange(now);
+  const entries = await listTimeEntries({
+    from: start.toISOString(),
+    to: end.toISOString(),
+  });
   let total = entries.reduce((sum, e) => sum + e.durationSeconds, 0);
 
   const timer = await getTimer();
   if (timer) {
-    // Count running timer toward today if it started today or overlaps today
-    const timerStart = new Date(timer.startedAt);
-    const todayStart = startOfLocalDay(now);
-    if (timerStart >= todayStart || !timer.pausedAt) {
-      total += computeRunningSeconds(timer, now);
-    }
+    // Only the part of the timer that falls within today counts.
+    const elapsed = computeRunningSeconds(timer, now);
+    const timerStartMs = new Date(timer.startedAt).getTime();
+    const timerEndMs = timer.pausedAt
+      ? new Date(timer.pausedAt).getTime()
+      : now.getTime();
+    const todaySeconds = Math.floor(
+      (timerEndMs - Math.max(timerStartMs, start.getTime())) / 1000
+    );
+    total += Math.max(0, Math.min(elapsed, todaySeconds));
   }
   return total;
 }
 
 export async function getWeekSummary(weekStartDate = new Date()) {
-  const weekStart = startOfWeek(weekStartDate);
-  const weekEnd = addDays(weekStart, 7);
+  const weekStart = startOfZonedWeek(weekStartDate);
+  const weekEnd = addZonedDays(weekStart, 7);
   const entries = await listTimeEntries({
     from: weekStart.toISOString(),
     to: weekEnd.toISOString(),
@@ -481,8 +560,9 @@ export async function getWeekSummary(weekStartDate = new Date()) {
 
   const days = [];
   for (let i = 0; i < 7; i++) {
-    const dayStart = addDays(weekStart, i);
-    const dayEnd = addDays(weekStart, i + 1);
+    // Calendar days, so a DST week has one 23 h and one 25 h day.
+    const dayStart = addZonedDays(weekStart, i);
+    const dayEnd = addZonedDays(weekStart, i + 1);
     const dayEntries = entries.filter((e) => {
       const t = new Date(e.startedAt).getTime();
       return t >= dayStart.getTime() && t < dayEnd.getTime();
@@ -492,7 +572,7 @@ export async function getWeekSummary(weekStartDate = new Date()) {
       0
     );
     days.push({
-      date: toLocalDateInput(dayStart),
+      date: toZonedDateKey(dayStart),
       totalSeconds,
       entries: dayEntries,
     });
