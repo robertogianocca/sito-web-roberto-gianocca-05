@@ -137,7 +137,7 @@ export function TimerBar({
           <div className="min-w-0">
             <p
               className={`font-mono text-4xl font-semibold tracking-tight tabular-nums sm:text-5xl ${timeColor}`}
-              aria-live="polite"
+              role="timer"
             >
               {elapsedLabel}
             </p>

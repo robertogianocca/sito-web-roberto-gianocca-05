@@ -8,7 +8,9 @@ import {
 } from "@/lib/timeFormat";
 import { projectLabel } from "./ProjectCombobox";
 import { RestartButton } from "./RestartButton";
-import { useJsonResource } from "./useJsonResource";
+import { useJsonResource } from "@/components/studio/hooks/useJsonResource";
+import { apiFetch } from "@/components/studio/api";
+import { ErrorBanner } from "@/components/studio/ui/ErrorBanner";
 
 function formatEntryMeta(entry) {
   const opts = { hour: "2-digit", minute: "2-digit" };
@@ -305,18 +307,14 @@ export function ProjectsView({
 
   async function handleRename(projectId, group, nextName) {
     setActionError(null);
-    const res = await fetch("/api/time/entries", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ projectId, from: group.key, to: nextName }),
-    }).catch(() => null);
-    if (!res) {
-      setActionError("Failed to rename description.");
-      return false;
-    }
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      setActionError(data.error || "Failed to rename description.");
+    try {
+      await apiFetch("/api/time/entries", {
+        method: "PATCH",
+        body: { projectId, from: group.key, to: nextName },
+        fallbackMessage: "Failed to rename description.",
+      });
+    } catch (err) {
+      setActionError(err.message);
       return false;
     }
     setReloadKey((k) => k + 1);
@@ -356,11 +354,7 @@ export function ProjectsView({
         </div>
       </div>
 
-      {error && (
-        <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-          {error}
-        </p>
-      )}
+      <ErrorBanner>{error}</ErrorBanner>
 
       {loading && <p className="text-sm text-zinc-500">Loading…</p>}
 

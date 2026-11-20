@@ -20,7 +20,10 @@ function SortableTh({ column, sortKey, sortDir, onSort }) {
   const alignClass = column.align === "center" ? "text-center" : "text-left";
 
   return (
-    <th className={`px-3 py-2.5 ${alignClass}`}>
+    <th
+      className={`px-3 py-2.5 ${alignClass}`}
+      aria-sort={active ? (sortDir === "asc" ? "ascending" : "descending") : undefined}
+    >
       <button
         type="button"
         onClick={() => onSort(column.key)}

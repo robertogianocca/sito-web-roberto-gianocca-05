@@ -73,7 +73,11 @@ export function DescriptionCombobox({
 
   function onKeyDown(e) {
     if (e.key === "Escape") {
-      setOpen(false);
+      // Close the suggestions first; with none shown, Escape reaches the drawer.
+      if (showList) {
+        e.preventDefault();
+        setOpen(false);
+      }
       return;
     }
     if (e.key === "ArrowDown") {

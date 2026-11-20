@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { formatDuration, toLocalDateInput } from "@/lib/timeFormat";
-import { useJsonResource } from "./useJsonResource";
+import { useJsonResource } from "@/components/studio/hooks/useJsonResource";
+import { ErrorBanner } from "@/components/studio/ui/ErrorBanner";
 
 function projectLabel(project) {
   if (!project) return "No project";
@@ -39,6 +40,7 @@ export function WeekView({ projectMap, locale }) {
         <div className="flex items-center gap-2">
           <button
             type="button"
+            aria-label="Previous week"
             onClick={() => setWeekOffset((o) => o - 1)}
             className="rounded-lg border border-zinc-200 px-2.5 py-1 text-sm text-zinc-600 hover:bg-zinc-100"
           >
@@ -53,6 +55,7 @@ export function WeekView({ projectMap, locale }) {
           </button>
           <button
             type="button"
+            aria-label="Next week"
             onClick={() => setWeekOffset((o) => o + 1)}
             disabled={weekOffset >= 0}
             className="rounded-lg border border-zinc-200 px-2.5 py-1 text-sm text-zinc-600 hover:bg-zinc-100 disabled:opacity-40"
@@ -63,11 +66,7 @@ export function WeekView({ projectMap, locale }) {
         </div>
       </div>
 
-      {error && (
-        <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-          {error}
-        </p>
-      )}
+      <ErrorBanner>{error}</ErrorBanner>
 
       {loading && <p className="text-sm text-zinc-500">Loading…</p>}
 

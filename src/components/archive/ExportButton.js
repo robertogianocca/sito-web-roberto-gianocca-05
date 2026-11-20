@@ -16,14 +16,25 @@ export function ExportButton() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  function onKeyDown(e) {
+    if (e.key === "Escape" && open) {
+      e.preventDefault();
+      setOpen(false);
+      ref.current?.querySelector("button")?.focus();
+    }
+  }
+
   function download(format) {
     setOpen(false);
     window.location.href = `/api/archive/export?format=${format}`;
   }
 
   return (
-    <div ref={ref} className="relative">
+    <div ref={ref} className="relative" onKeyDown={onKeyDown}>
       <button
+        type="button"
+        aria-haspopup="true"
+        aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
         className="flex h-8 items-center gap-1.5 rounded-lg border border-zinc-300 bg-background px-3 text-sm text-zinc-600 transition hover:bg-zinc-100 hover:text-foreground"
       >
@@ -55,6 +66,7 @@ export function ExportButton() {
       {open && (
         <div className="absolute right-0 top-9 z-50 min-w-[10rem] overflow-hidden rounded-lg border border-zinc-200 bg-background shadow-lg">
           <button
+            type="button"
             onClick={() => download("xlsx")}
             className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-foreground transition hover:bg-zinc-100"
           >
@@ -62,6 +74,7 @@ export function ExportButton() {
             Excel / Numbers
           </button>
           <button
+            type="button"
             onClick={() => download("csv")}
             className="flex w-full items-center gap-2 border-t border-zinc-100 px-4 py-2.5 text-left text-sm text-foreground transition hover:bg-zinc-100"
           >

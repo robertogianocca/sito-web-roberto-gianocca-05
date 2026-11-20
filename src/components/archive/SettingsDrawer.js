@@ -1,6 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { Drawer } from "@/components/studio/ui/Drawer";
+import { ErrorBanner } from "@/components/studio/ui/ErrorBanner";
+import { apiFetch } from "@/components/studio/api";
 
 const inputClass =
   "w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-foreground placeholder-zinc-400 outline-none transition focus:border-zinc-400 focus:ring-1 focus:ring-zinc-300";
@@ -357,14 +360,6 @@ export function SettingsDrawer({ open, settings, clients, onClose, onSaved }) {
     }
   }
 
-  useEffect(() => {
-    if (!open) return;
-    function onKey(e) {
-      if (e.key === "Escape") onClose();
-    }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
 
   async function handleSave() {
     setSaving(true);
@@ -372,24 +367,20 @@ export function SettingsDrawer({ open, settings, clients, onClose, onSaved }) {
     try {
       // One request, one transaction: lists, renames (applied to every
       // project) and the client list. Either all of it is saved or nothing.
-      const res = await fetch("/api/archive/settings", {
+      const newSettings = await apiFetch("/api/archive/settings", {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+        body: {
           projectTypes,
           archiveDrives,
           driveCapacities,
           renames,
           clients: localClients,
-        }),
+        },
+        fallbackMessage: "Failed to save settings.",
       });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || "Failed to save settings.");
-      }
-      const newSettings = await res.json();
-      const clientsRes = await fetch("/api/archive/clients");
-      const updatedClients = clientsRes.ok ? await clientsRes.json() : localClients;
+      const updatedClients = await apiFetch("/api/archive/clients").catch(
+        () => localClients
+      );
       onSaved(newSettings, updatedClients);
       onClose();
     } catch (err) {
@@ -400,37 +391,13 @@ export function SettingsDrawer({ open, settings, clients, onClose, onSaved }) {
   }
 
   return (
-    <>
-      {open && (
-        <div
-          className="fixed inset-0 z-30 bg-black/30 backdrop-blur-sm"
-          onClick={onClose}
-          aria-hidden
-        />
-      )}
-
-      <aside
-        role="dialog"
-        aria-label="Settings"
-        aria-modal="true"
-        className={`fixed inset-y-0 right-0 z-40 flex w-full max-w-sm flex-col bg-white shadow-2xl transition-transform duration-300 ${
-          open ? "translate-x-0" : "translate-x-full"
-        }`}
-      >
-        <header className="flex items-center justify-between border-b border-zinc-200 px-5 py-4">
-          <h2 className="text-sm font-semibold text-foreground">Settings</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex h-7 w-7 items-center justify-center rounded-md text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700"
-            aria-label="Close settings"
-          >
-            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} className="h-4 w-4" aria-hidden>
-              <path d="M18 6 6 18M6 6l12 12" />
-            </svg>
-          </button>
-        </header>
-
+    <Drawer
+      open={open}
+      onClose={onClose}
+      title="Settings"
+      closeLabel="Close settings"
+      widthClass="max-w-sm"
+    >
         <div className="flex-1 overflow-y-auto px-5 py-5 space-y-7">
           <EditableList
             label="Project Types"
@@ -454,9 +421,7 @@ export function SettingsDrawer({ open, settings, clients, onClose, onSaved }) {
         </div>
 
         <footer className="border-t border-zinc-200 px-5 py-4 space-y-2">
-          {saveError && (
-            <p className="text-xs text-red-500">{saveError}</p>
-          )}
+          <ErrorBanner>{saveError}</ErrorBanner>
           <div className="flex gap-2">
             <button
               type="button"
@@ -475,7 +440,6 @@ export function SettingsDrawer({ open, settings, clients, onClose, onSaved }) {
             </button>
           </div>
         </footer>
-      </aside>
-    </>
+    </Drawer>
   );
 }

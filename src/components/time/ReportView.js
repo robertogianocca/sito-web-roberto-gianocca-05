@@ -7,7 +7,8 @@ import {
   lastDaysRange,
   localDateRangeParams,
 } from "@/lib/timeFormat";
-import { useJsonResource } from "./useJsonResource";
+import { useJsonResource } from "@/components/studio/hooks/useJsonResource";
+import { ErrorBanner } from "@/components/studio/ui/ErrorBanner";
 
 export function ReportView() {
   const [from, setFrom] = useState(() => lastDaysRange().from);
@@ -55,11 +56,7 @@ export function ReportView() {
         </a>
       </div>
 
-      {error && (
-        <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-          {error}
-        </p>
-      )}
+      <ErrorBanner>{error}</ErrorBanner>
 
       {loading && <p className="text-sm text-zinc-500">Loading…</p>}
 
