@@ -47,7 +47,7 @@ TURSO_AUTH_TOKEN=eyJ...
 6. `turso db tokens create archive` → copia in `TURSO_AUTH_TOKEN`
 7. Aggiungi le stesse variabili su Vercel e ridistribuisci
 
-Al primo accesso, `ensureInit()` in `src/lib/turso.js` crea le tabelle e popola le impostazioni di default da `src/data/archive/config.js`.
+Al primo accesso, `ensureInit()` in `src/lib/turso.js` applica le migrazioni dello schema (`src/lib/studio/migrations.js`): crea le tabelle e popola le impostazioni di default da `src/data/archive/config.js`. Vedi [Migrazioni](#migrazioni-dello-schema).
 
 ---
 
@@ -121,6 +121,8 @@ Ogni lista: pill rimovibili, rinomina inline (click sul nome), aggiunta con inpu
 
 **Rinomina a cascata:** quando rinomini un elemento e clicchi Save, tutti i progetti che usano il vecchio nome vengono aggiornati automaticamente (es. `Drone` → `Drone Video` su tutti i progetti con quel type). La rinomina di un disco aggiorna sia `archiveDrive` sia `backupDrive`.
 
+**Salvataggio in un'unica transazione:** il Save delle impostazioni invia liste, rinomine e lista clienti in una sola richiesta; il server salva tutto o niente. Allo stesso modo, salvando un progetto con un cliente, tipo o disco nuovo, il valore viene aggiunto alla lista insieme al progetto.
+
 ### Export
 
 Pulsante Export → `.xlsx` o `.csv` con tutti i campi del progetto.
@@ -141,11 +143,26 @@ Elenco nomi clienti (`name TEXT PRIMARY KEY`).
 
 ### Tabella `settings`
 
-Chiavi `projectTypes`, `archiveDrives` (JSON array) e `driveCapacities` (JSON object nome → capacity, es. `{"Archive 01":"4 TB"}`). Archive drive e Backup drive sul progetto usano la stessa lista `archiveDrives`. Eventuali valori legacy in `backupDrives` vengono uniti in `archiveDrives` alla lettura.
+Chiavi `projectTypes`, `archiveDrives` (JSON array) e `driveCapacities` (JSON object nome → capacity, es. `{"Archive 01":"4 TB"}`). Archive drive e Backup drive sul progetto usano la stessa lista `archiveDrives`. Eventuali valori legacy in `backupDrives` sono stati uniti in `archiveDrives` una volta, dalla migrazione 3. La tabella contiene anche righe interne (segnali di vecchie migrazioni) che l'API non restituisce.
 
 ### Seed iniziale
 
 Alla prima esecuzione, i default provengono da `src/data/archive/config.js`. Dopo il primo avvio le liste vivono nel DB e si modificano dall’UI Impostazioni.
+
+---
+
+## Migrazioni dello schema
+
+Lo schema del database è gestito da migrazioni versionate in `src/lib/studio/migrations.js`; la tabella `schema_migrations` registra quelle già applicate. `ensureInit()` le applica alla prima richiesta di ogni istanza del server: se il database è aggiornato costa una sola query.
+
+Per cambiare lo schema si aggiunge una migrazione in fondo a `MIGRATIONS`, con il numero successivo; quelle già pubblicate non si modificano. Ogni migrazione deve essere:
+
+- **ripetibile senza danni** (`IF NOT EXISTS`, `OR IGNORE`, aggiornamenti condizionati), perché due istanze possono partire insieme;
+- **compatibile con il codice già online**, perché le anteprime Vercel usano lo stesso database di produzione e applicano la migrazione appena vengono aperte, prima che la modifica sia unita.
+
+## Validazione
+
+Ogni API valida l'input con gli schemi di `src/lib/studio/schemas.js`. I campi sconosciuti vengono ignorati; un valore non valido produce `400` con `{ error, issues }` (es. `title: Invalid input: expected string, received number`). Gli errori interni rispondono `500` con un messaggio generico; il dettaglio finisce solo nei log.
 
 ---
 
@@ -154,9 +171,9 @@ Alla prima esecuzione, i default provengono da `src/data/archive/config.js`. Dop
 | Route | Metodi | Descrizione |
 |-------|--------|-------------|
 | `/api/archive` | GET, POST | Lista / crea progetti |
-| `/api/archive/[id]` | PUT, DELETE | Aggiorna / elimina progetto |
-| `/api/archive/clients` | GET, POST, PUT, DELETE | Clienti; PUT rinomina con cascade |
-| `/api/archive/settings` | GET, PUT | Impostazioni; PUT accetta `renames` per cascade |
+| `/api/archive/[id]` | PATCH, PUT, DELETE | Aggiorna solo i campi inviati (PUT è un alias di PATCH) / elimina progetto |
+| `/api/archive/clients` | GET, POST, PUT, DELETE | Clienti; PUT `{ from, to }` rinomina nella lista e nei progetti, in una transazione |
+| `/api/archive/settings` | GET, PUT | Impostazioni (`projectTypes`, `archiveDrives`, `driveCapacities`). PUT accetta anche `renames` (`projectTypes`, `archiveDrives`, `clients`) e la lista finale `clients`, salvati in una transazione |
 | `/api/archive/export` | GET | Export `?format=xlsx` o `?format=csv` |
 
 ---
@@ -173,7 +190,10 @@ Alla prima esecuzione, i default provengono da `src/data/archive/config.js`. Dop
 
 | Percorso | Ruolo |
 |----------|--------|
-| `src/lib/turso.js` | Client Turso, `ensureInit()`, creazione tabelle |
+| `src/lib/turso.js` | Client Turso, `ensureInit()` |
+| `src/lib/studio/migrations.js` | Migrazioni versionate dello schema |
+| `src/lib/studio/schemas.js` | Validazione degli input delle API (zod) |
+| `src/lib/studio/errors.js` | Errori restituiti dalle API (400, 404) |
 | `src/lib/archive.js` | CRUD progetti, clienti, settings, `cascadeFieldRename()` |
 | `src/lib/studio-auth.js` | Sessione firmata e `withStudioAuth()` (Studio) |
 | `src/lib/login-throttle.js` | Limite ai tentativi di login |

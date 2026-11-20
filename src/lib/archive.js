@@ -4,6 +4,8 @@ import { normalizeBackupType, isBackupDone } from "./archiveBackup";
 
 export { normalizeBackupType, isBackupDone, backupTypeLabel } from "./archiveBackup";
 
+// ── Rows ↔ projects ──────────────────────────────────────────────────────
+
 function parseArrayField(val) {
   if (!val) return [];
   try {
@@ -38,6 +40,73 @@ function rowToProject(row) {
   };
 }
 
+const LIST_FIELDS = new Set(["client", "type", "archiveDrive", "backupDrive", "tags"]);
+const TEXT_FIELDS = new Set([
+  "invoiceNumber",
+  "title",
+  "date",
+  "location",
+  "size",
+  "contact",
+  "notes",
+]);
+
+/**
+ * Database columns and values for the given project fields. Only fields that
+ * are present are returned, so it serves both inserts and partial updates.
+ */
+function projectColumns(fields) {
+  const columns = {};
+  for (const [key, value] of Object.entries(fields)) {
+    if (value === undefined) continue;
+    if (key === "projectId") columns.projectId = formatProjectId(value);
+    else if (LIST_FIELDS.has(key)) columns[key] = JSON.stringify(Array.isArray(value) ? value : []);
+    else if (TEXT_FIELDS.has(key)) columns[key] = value ?? "";
+    else if (key === "cleaned") columns.cleaned = value ? 1 : 0;
+    else if (key === "paid") columns.paid = value !== false ? 1 : 0;
+    else if (key === "backupType") {
+      const backupType = normalizeBackupType(value);
+      columns.backupType = backupType;
+      columns.backupCompleted = isBackupDone(backupType) ? 1 : 0;
+    } else if (key === "createdAt" || key === "updatedAt") columns[key] = value ?? "";
+  }
+  return columns;
+}
+
+/** Defaults for a new project; `fields` overrides them. */
+function newProjectFields(fields) {
+  return {
+    projectId: "",
+    invoiceNumber: "",
+    title: "",
+    client: [],
+    type: [],
+    date: "",
+    location: "",
+    archiveDrive: [],
+    backupDrive: [],
+    size: "",
+    cleaned: false,
+    backupType: "",
+    contact: "",
+    paid: true,
+    notes: "",
+    tags: [],
+    ...fields,
+  };
+}
+
+function insertProjectStatement(project) {
+  const columns = { id: project.id, ...projectColumns(newProjectFields(project)) };
+  const names = Object.keys(columns);
+  return {
+    sql: `INSERT INTO projects (${names.join(", ")}) VALUES (${names.map(() => "?").join(", ")})`,
+    args: Object.values(columns),
+  };
+}
+
+// ── Projects ─────────────────────────────────────────────────────────────
+
 export async function readProjects() {
   const db = getTursoClient();
   const { rows } = await db.execute(
@@ -46,69 +115,87 @@ export async function readProjects() {
   return rows.map(rowToProject);
 }
 
-export async function createProject(project) {
+/** One project by id, or null. */
+export async function readProject(id) {
   const db = getTursoClient();
-  const backupType = normalizeBackupType(project.backupType);
-  await db.execute({
-    sql: `INSERT INTO projects
-      (id, projectId, invoiceNumber, title, client, type, date, location,
-       archiveDrive, backupDrive, size, cleaned, backupCompleted, backupType, contact, paid, notes, tags, createdAt, updatedAt)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-    args: [
-      project.id,
-      formatProjectId(project.projectId),
-      project.invoiceNumber ?? "",
-      project.title ?? "",
-      JSON.stringify(Array.isArray(project.client) ? project.client : []),
-      JSON.stringify(Array.isArray(project.type) ? project.type : []),
-      project.date ?? "",
-      project.location ?? "",
-      JSON.stringify(Array.isArray(project.archiveDrive) ? project.archiveDrive : []),
-      JSON.stringify(Array.isArray(project.backupDrive) ? project.backupDrive : []),
-      project.size ?? "",
-      project.cleaned ? 1 : 0,
-      isBackupDone(backupType) ? 1 : 0,
-      backupType,
-      project.contact ?? "",
-      project.paid !== false ? 1 : 0,
-      project.notes ?? "",
-      JSON.stringify(Array.isArray(project.tags) ? project.tags : []),
-      project.createdAt ?? "",
-      project.updatedAt ?? "",
-    ],
+  const { rows } = await db.execute({
+    sql: "SELECT * FROM projects WHERE id = ?",
+    args: [id],
   });
+  return rows[0] ? rowToProject(rows[0]) : null;
 }
 
-export async function updateProject(id, fields) {
+/** Inserts a project as given (missing fields get defaults). */
+export async function createProject(project) {
   const db = getTursoClient();
-  const backupType = normalizeBackupType(fields.backupType);
-  await db.execute({
-    sql: `UPDATE projects SET
-      projectId=?, invoiceNumber=?, title=?, client=?, type=?, date=?, location=?,
-      archiveDrive=?, backupDrive=?, size=?, cleaned=?, backupCompleted=?, backupType=?, contact=?, paid=?, notes=?, tags=?, updatedAt=?
-      WHERE id=?`,
-    args: [
-      formatProjectId(fields.projectId),
-      fields.invoiceNumber ?? "",
-      fields.title ?? "",
-      JSON.stringify(Array.isArray(fields.client) ? fields.client : []),
-      JSON.stringify(Array.isArray(fields.type) ? fields.type : []),
-      fields.date ?? "",
-      fields.location ?? "",
-      JSON.stringify(Array.isArray(fields.archiveDrive) ? fields.archiveDrive : []),
-      JSON.stringify(Array.isArray(fields.backupDrive) ? fields.backupDrive : []),
-      fields.size ?? "",
-      fields.cleaned ? 1 : 0,
-      isBackupDone(backupType) ? 1 : 0,
-      backupType,
-      fields.contact ?? "",
-      fields.paid !== false ? 1 : 0,
-      fields.notes ?? "",
-      JSON.stringify(Array.isArray(fields.tags) ? fields.tags : []),
-      fields.updatedAt ?? new Date().toISOString(),
-      id,
+  await db.execute(insertProjectStatement(project));
+}
+
+/**
+ * Statements that add the project's clients, types and drives that are not
+ * in the lists yet, so a value created inline in the project form is saved
+ * together with the project.
+ */
+async function vocabularyStatements(fields) {
+  const statements = [];
+  for (const name of fields.client ?? []) {
+    statements.push({ sql: "INSERT OR IGNORE INTO clients (name) VALUES (?)", args: [name] });
+  }
+
+  const wantedTypes = fields.type ?? [];
+  const wantedDrives = [...(fields.archiveDrive ?? []), ...(fields.backupDrive ?? [])];
+  if (wantedTypes.length === 0 && wantedDrives.length === 0) return statements;
+
+  const settings = await readSettings();
+  const newTypes = [...new Set(wantedTypes)].filter((t) => !settings.projectTypes.includes(t));
+  const newDrives = [...new Set(wantedDrives)].filter((d) => !settings.archiveDrives.includes(d));
+  if (newTypes.length > 0) {
+    statements.push(settingStatement("projectTypes", [...settings.projectTypes, ...newTypes]));
+  }
+  if (newDrives.length > 0) {
+    statements.push(settingStatement("archiveDrives", [...settings.archiveDrives, ...newDrives]));
+  }
+  return statements;
+}
+
+/** Creates a project and registers its new clients/types/drives, atomically. */
+export async function createProjectWithVocabulary(project) {
+  const db = getTursoClient();
+  await db.batch(
+    [...(await vocabularyStatements(project)), insertProjectStatement(project)],
+    "write"
+  );
+  return readProject(project.id);
+}
+
+/**
+ * Updates only the given fields of a project (and registers new
+ * clients/types/drives), atomically. Returns the project, or null if it does
+ * not exist.
+ */
+export async function patchProject(id, fields) {
+  const db = getTursoClient();
+  const columns = {
+    ...projectColumns(fields),
+    updatedAt: new Date().toISOString(),
+  };
+  const names = Object.keys(columns);
+  // Nothing to register for a project that does not exist.
+  const { rows } = await db.execute({ sql: "SELECT 1 FROM projects WHERE id = ?", args: [id] });
+  if (rows.length === 0) return null;
+  const results = await db.batch(
+    [
+      ...(await vocabularyStatements(fields)),
+      {
+        sql: `UPDATE projects SET ${names.map((n) => `${n} = ?`).join(", ")} WHERE id = ?`,
+        args: [...Object.values(columns), id],
+      },
     ],
-  });
+    "write"
+  );
+  // Deleted in the meantime.
+  if (results.at(-1).rowsAffected === 0) return null;
+  return readProject(id);
 }
 
 export async function deleteProject(id) {
@@ -116,11 +203,11 @@ export async function deleteProject(id) {
   await db.execute({ sql: "DELETE FROM projects WHERE id=?", args: [id] });
 }
 
+// ── Clients ──────────────────────────────────────────────────────────────
+
 export async function readClients() {
   const db = getTursoClient();
-  const { rows } = await db.execute(
-    "SELECT name FROM clients ORDER BY name"
-  );
+  const { rows } = await db.execute("SELECT name FROM clients ORDER BY name");
   return rows.map((r) => r.name);
 }
 
@@ -135,18 +222,30 @@ export async function addClient(name) {
 
 export async function deleteClient(name) {
   const db = getTursoClient();
-  await db.execute({
-    sql: "DELETE FROM clients WHERE name=?",
-    args: [name],
-  });
+  await db.execute({ sql: "DELETE FROM clients WHERE name=?", args: [name] });
   return readClients();
 }
 
-const DEFAULT_SETTINGS = {
-  projectTypes: [],
-  archiveDrives: [],
-  driveCapacities: {},
-};
+function renameClientStatements(from, to) {
+  return [
+    { sql: "DELETE FROM clients WHERE name = ?", args: [from] },
+    { sql: "INSERT OR IGNORE INTO clients (name) VALUES (?)", args: [to] },
+    cascadeRenameStatement("client", from, to),
+  ].filter(Boolean);
+}
+
+/** Renames a client in the list and in every project, atomically. */
+export async function renameClient(from, to) {
+  if (from !== to) {
+    const db = getTursoClient();
+    await db.batch(renameClientStatements(from, to), "write");
+  }
+  return readClients();
+}
+
+// ── Settings ─────────────────────────────────────────────────────────────
+
+const SETTING_KEYS = ["projectTypes", "archiveDrives", "driveCapacities"];
 
 function normalizeStringList(value) {
   return Array.isArray(value) ? value.filter((v) => typeof v === "string" && v) : [];
@@ -166,77 +265,121 @@ function normalizeDriveCapacities(value, driveNames) {
   return out;
 }
 
+function settingStatement(key, value) {
+  return {
+    sql: "INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)",
+    args: [key, JSON.stringify(value)],
+  };
+}
+
+/**
+ * The editable lists: `{ projectTypes, archiveDrives, driveCapacities }`.
+ * Reads only those keys, so internal rows of the settings table (migration
+ * flags) are never exposed.
+ */
 export async function readSettings() {
   const db = getTursoClient();
-  const { rows } = await db.execute("SELECT key, value FROM settings");
-  const settings = { ...DEFAULT_SETTINGS };
-  let legacyBackupDrives = [];
-
+  const { rows } = await db.execute({
+    sql: `SELECT key, value FROM settings WHERE key IN (${SETTING_KEYS.map(() => "?").join(", ")})`,
+    args: SETTING_KEYS,
+  });
+  const raw = {};
   for (const row of rows) {
     try {
-      const parsed = JSON.parse(row.value);
-      if (row.key === "backupDrives") {
-        legacyBackupDrives = normalizeStringList(parsed);
-        continue;
-      }
-      settings[row.key] = parsed;
+      raw[row.key] = JSON.parse(row.value);
     } catch {
       // ignore malformed rows
     }
   }
+  const archiveDrives = normalizeStringList(raw.archiveDrives);
+  return {
+    projectTypes: normalizeStringList(raw.projectTypes),
+    archiveDrives,
+    driveCapacities: normalizeDriveCapacities(raw.driveCapacities, archiveDrives),
+  };
+}
 
-  settings.projectTypes = normalizeStringList(settings.projectTypes);
-  settings.archiveDrives = normalizeStringList(settings.archiveDrives);
-  settings.driveCapacities = normalizeDriveCapacities(
-    settings.driveCapacities,
-    settings.archiveDrives
-  );
-
-  const extras = legacyBackupDrives.filter((d) => !settings.archiveDrives.includes(d));
-  if (extras.length > 0 || legacyBackupDrives.length > 0) {
-    if (extras.length > 0) {
-      settings.archiveDrives = [...settings.archiveDrives, ...extras];
-      settings.driveCapacities = normalizeDriveCapacities(
-        settings.driveCapacities,
-        settings.archiveDrives
-      );
-    }
-    await writeSettings(settings);
-  }
-
-  return settings;
+function writeSettingsStatements(settings) {
+  const archiveDrives = normalizeStringList(settings.archiveDrives);
+  return [
+    settingStatement("projectTypes", normalizeStringList(settings.projectTypes)),
+    settingStatement("archiveDrives", archiveDrives),
+    settingStatement(
+      "driveCapacities",
+      normalizeDriveCapacities(settings.driveCapacities, archiveDrives)
+    ),
+  ];
 }
 
 export async function writeSettings(settings) {
   const db = getTursoClient();
-  const archiveDrives = normalizeStringList(settings.archiveDrives);
-  const driveCapacities = normalizeDriveCapacities(
-    settings.driveCapacities,
-    archiveDrives
-  );
-
-  await db.batch(
-    [
-      {
-        sql: "INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)",
-        args: ["projectTypes", JSON.stringify(normalizeStringList(settings.projectTypes))],
-      },
-      {
-        sql: "INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)",
-        args: ["archiveDrives", JSON.stringify(archiveDrives)],
-      },
-      {
-        sql: "INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)",
-        args: ["driveCapacities", JSON.stringify(driveCapacities)],
-      },
-      {
-        sql: "DELETE FROM settings WHERE key = ?",
-        args: ["backupDrives"],
-      },
-    ],
-    "write"
-  );
+  await db.batch(writeSettingsStatements(settings), "write");
 }
+
+function remapDriveCapacities(capacities, renames) {
+  const next = { ...(capacities ?? {}) };
+  for (const { from, to } of renames) {
+    if (from !== to && Object.prototype.hasOwnProperty.call(next, from)) {
+      next[to] = next[from];
+      delete next[from];
+    }
+  }
+  return next;
+}
+
+/**
+ * Saves the settings drawer in one transaction: the lists, the renames
+ * cascaded to every project (types, drives on both drive fields, clients),
+ * and, when `clients` is given, the final client list (clients not in it are
+ * removed, new ones added).
+ */
+export async function saveSettings({
+  projectTypes,
+  archiveDrives,
+  driveCapacities = {},
+  renames = {},
+  clients,
+}) {
+  const typeRenames = renames.projectTypes ?? [];
+  const driveRenames = renames.archiveDrives ?? [];
+  const clientRenames = renames.clients ?? [];
+
+  const statements = [
+    ...writeSettingsStatements({
+      projectTypes,
+      archiveDrives,
+      driveCapacities: remapDriveCapacities(driveCapacities, driveRenames),
+    }),
+    ...typeRenames.map(({ from, to }) => cascadeRenameStatement("type", from, to)),
+    ...driveRenames.flatMap(({ from, to }) => [
+      cascadeRenameStatement("archiveDrive", from, to),
+      cascadeRenameStatement("backupDrive", from, to),
+    ]),
+  ];
+
+  statements.push(...clientRenames.flatMap(({ from, to }) => renameClientStatements(from, to)));
+  if (clients) {
+    const finalClients = [...new Set(clients)];
+    statements.push(
+      finalClients.length > 0
+        ? {
+            sql: `DELETE FROM clients WHERE name NOT IN (${finalClients.map(() => "?").join(", ")})`,
+            args: finalClients,
+          }
+        : "DELETE FROM clients",
+      ...finalClients.map((name) => ({
+        sql: "INSERT OR IGNORE INTO clients (name) VALUES (?)",
+        args: [name],
+      }))
+    );
+  }
+
+  const db = getTursoClient();
+  await db.batch(statements.filter(Boolean), "write");
+  return readSettings();
+}
+
+// ── Renames ──────────────────────────────────────────────────────────────
 
 const RENAMEABLE_FIELDS = new Set([
   "type",
@@ -245,13 +388,23 @@ const RENAMEABLE_FIELDS = new Set([
   "client",
 ]);
 
-export async function cascadeFieldRename(dbField, from, to) {
-  if (!RENAMEABLE_FIELDS.has(dbField) || !from || !to || from === to) return;
-  const db = getTursoClient();
-  await db.execute({
+/**
+ * Statement renaming a value inside a JSON list column of every project, or
+ * null when there is nothing to do. The column name comes from a fixed list.
+ */
+function cascadeRenameStatement(dbField, from, to) {
+  if (!RENAMEABLE_FIELDS.has(dbField) || !from || !to || from === to) return null;
+  return {
     sql: `UPDATE projects SET ${dbField} = REPLACE(${dbField}, ?, ?) WHERE ${dbField} LIKE ?`,
     args: [`"${from}"`, `"${to}"`, `%"${from}"%`],
-  });
+  };
+}
+
+export async function cascadeFieldRename(dbField, from, to) {
+  const statement = cascadeRenameStatement(dbField, from, to);
+  if (!statement) return;
+  const db = getTursoClient();
+  await db.execute(statement);
 }
 
 export function generateId() {

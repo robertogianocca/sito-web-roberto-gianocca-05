@@ -1,17 +1,20 @@
 import { NextResponse } from "next/server";
 import ExcelJS from "exceljs";
+import { z } from "zod";
 import { withStudioAuth } from "@/lib/studio-auth";
 import { ensureInit } from "@/lib/turso";
 import { readProjects } from "@/lib/archive";
 import { listTimeEntries, formatDuration, formatDurationHours } from "@/lib/time";
+import { parseSearchParams, rangeQuerySchema } from "@/lib/studio/schemas";
+
+const exportQuerySchema = rangeQuerySchema.extend({
+  format: z.enum(["xlsx", "csv"]).optional(),
+});
 
 export const GET = withStudioAuth(async (request) => {
   await ensureInit();
 
-  const { searchParams } = new URL(request.url);
-  const format = searchParams.get("format") === "csv" ? "csv" : "xlsx";
-  const from = searchParams.get("from") || undefined;
-  const to = searchParams.get("to") || undefined;
+  const { from, to, format = "xlsx" } = parseSearchParams(request, exportQuerySchema);
 
   const [entries, projects] = await Promise.all([
     listTimeEntries({ from, to }),

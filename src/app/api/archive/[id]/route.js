@@ -1,55 +1,27 @@
 import { NextResponse } from "next/server";
-import {
-  readProjects,
-  updateProject,
-  deleteProject,
-  normalizeBackupType,
-} from "@/lib/archive";
+import { patchProject, deleteProject } from "@/lib/archive";
 import { ensureInit } from "@/lib/turso";
 import { withStudioAuth } from "@/lib/studio-auth";
+import { NotFoundError } from "@/lib/studio/errors";
+import { parseJsonBody, projectSchema } from "@/lib/studio/schemas";
 
-
-export const PUT = withStudioAuth(async (request, { params }) => {
+/**
+ * Updates only the fields sent (others are kept); new clients/types/drives
+ * are added to the lists in the same transaction.
+ */
+async function updateProjectFields(request, { params }) {
   const { id } = await params;
-
-  let body;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
-  }
-
+  const fields = await parseJsonBody(request, projectSchema);
   await ensureInit();
+  const project = await patchProject(id, fields);
+  if (!project) throw new NotFoundError();
+  return NextResponse.json(project);
+}
 
-  const fields = {
-    projectId: body.projectId ?? "",
-    invoiceNumber: body.invoiceNumber ?? "",
-    title: body.title ?? "",
-    client: Array.isArray(body.client) ? body.client : [],
-    type: Array.isArray(body.type) ? body.type : [],
-    date: body.date ?? "",
-    location: body.location ?? "",
-    archiveDrive: Array.isArray(body.archiveDrive) ? body.archiveDrive : [],
-    backupDrive: Array.isArray(body.backupDrive) ? body.backupDrive : [],
-    size: body.size ?? "",
-    cleaned: Boolean(body.cleaned),
-    backupType: normalizeBackupType(body.backupType),
-    contact: body.contact ?? "",
-    paid: body.paid !== false,
-    notes: body.notes ?? "",
-    tags: Array.isArray(body.tags) ? body.tags : [],
-    updatedAt: new Date().toISOString(),
-  };
+export const PATCH = withStudioAuth(updateProjectFields);
 
-  await updateProject(id, fields);
-
-  const projects = await readProjects();
-  const updated = projects.find((p) => p.id === id);
-  if (!updated) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
-  }
-  return NextResponse.json(updated);
-});
+/** Kept for older clients: same as PATCH (fields not sent are kept). */
+export const PUT = withStudioAuth(updateProjectFields);
 
 export const DELETE = withStudioAuth(async (request, { params }) => {
   const { id } = await params;

@@ -1,53 +1,28 @@
 import { NextResponse } from "next/server";
 import {
   readProjects,
-  createProject,
+  createProjectWithVocabulary,
   generateId,
-  normalizeBackupType,
 } from "@/lib/archive";
 import { ensureInit } from "@/lib/turso";
 import { withStudioAuth } from "@/lib/studio-auth";
+import { parseJsonBody, projectSchema } from "@/lib/studio/schemas";
 
-
-export const GET = withStudioAuth(async (request) => {
+export const GET = withStudioAuth(async () => {
   await ensureInit();
-  const projects = await readProjects();
-  return NextResponse.json(projects);
+  return NextResponse.json(await readProjects());
 });
 
+/** Creates a project; new clients/types/drives it uses are added to the lists. */
 export const POST = withStudioAuth(async (request) => {
-  let body;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
-  }
-
+  const fields = await parseJsonBody(request, projectSchema);
   await ensureInit();
   const now = new Date().toISOString();
-
-  const project = {
+  const project = await createProjectWithVocabulary({
+    ...fields,
     id: generateId(),
-    projectId: body.projectId ?? "",
-    invoiceNumber: body.invoiceNumber ?? "",
-    title: body.title ?? "",
-    client: Array.isArray(body.client) ? body.client : [],
-    type: Array.isArray(body.type) ? body.type : [],
-    date: body.date ?? "",
-    location: body.location ?? "",
-    archiveDrive: Array.isArray(body.archiveDrive) ? body.archiveDrive : [],
-    backupDrive: Array.isArray(body.backupDrive) ? body.backupDrive : [],
-    size: body.size ?? "",
-    cleaned: Boolean(body.cleaned),
-    backupType: normalizeBackupType(body.backupType),
-    contact: body.contact ?? "",
-    paid: body.paid !== false,
-    notes: body.notes ?? "",
-    tags: Array.isArray(body.tags) ? body.tags : [],
     createdAt: now,
     updatedAt: now,
-  };
-
-  await createProject(project);
+  });
   return NextResponse.json(project, { status: 201 });
 });

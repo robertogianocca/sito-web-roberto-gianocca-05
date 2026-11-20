@@ -9,34 +9,26 @@ import {
   stopTimer,
   updateRunningTimer,
   checkAndCompletePomodoro,
-  TimerConflictError,
 } from "@/lib/time";
+import { parseJsonBody, timerActionSchema } from "@/lib/studio/schemas";
 
 /** Read-only: completing a Pomodoro goes through POST `checkPomodoro`. */
-export const GET = withStudioAuth(async (request) => {
+export const GET = withStudioAuth(async () => {
   await ensureInit();
-
   const timer = await getTimer();
   return NextResponse.json({ timer, pomodoroCompleted: false, entry: null });
 });
 
-function optionalString(value) {
-  return typeof value === "string" ? value : undefined;
-}
-
+/**
+ * Timer actions. A state conflict (already running, already stopped, …)
+ * is answered 409 by withStudioAuth (TimerConflictError).
+ */
 export const POST = withStudioAuth(async (request) => {
+  const body = await parseJsonBody(request, timerActionSchema);
   await ensureInit();
 
-  let body;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
-  }
-
-  const action = body.action;
-  try {
-    if (action === "start") {
+  switch (body.action) {
+    case "start": {
       const timer = await startTimer({
         projectId: body.projectId ?? "",
         description: body.description ?? "",
@@ -45,47 +37,25 @@ export const POST = withStudioAuth(async (request) => {
       });
       return NextResponse.json({ timer }, { status: 201 });
     }
-
-    if (action === "pause") {
-      const timer = await pauseTimer();
-      return NextResponse.json({ timer });
+    case "pause":
+      return NextResponse.json({ timer: await pauseTimer() });
+    case "resume":
+      return NextResponse.json({ timer: await resumeTimer() });
+    case "stop":
+      return NextResponse.json(
+        await stopTimer({ source: body.source, description: body.description })
+      );
+    case "update": {
+      const { action: _action, ...patch } = body;
+      return NextResponse.json({ timer: await updateRunningTimer(patch) });
     }
-
-    if (action === "resume") {
-      const timer = await resumeTimer();
-      return NextResponse.json({ timer });
-    }
-
-    if (action === "stop") {
-      const result = await stopTimer({
-        source: body.source,
-        description: optionalString(body.description),
-      });
-      return NextResponse.json(result);
-    }
-
-    if (action === "update") {
-      const timer = await updateRunningTimer(body);
-      return NextResponse.json({ timer });
-    }
-
-    if (action === "checkPomodoro") {
-      const result = await checkAndCompletePomodoro({
-        description: optionalString(body.description),
-      });
+    case "checkPomodoro": {
+      const result = await checkAndCompletePomodoro({ description: body.description });
       return NextResponse.json({
         timer: result.timer,
         pomodoroCompleted: result.completed,
         entry: result.entry,
       });
     }
-
-    return NextResponse.json({ error: "Unknown action" }, { status: 400 });
-  } catch (err) {
-    if (err instanceof TimerConflictError) {
-      return NextResponse.json({ error: err.message }, { status: 409 });
-    }
-    console.error("Timer action failed", action, err);
-    return NextResponse.json({ error: "Timer error" }, { status: 500 });
   }
 });

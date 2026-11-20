@@ -6,6 +6,8 @@ import {
   zonedDayRange,
 } from "./timeZone";
 
+import { InputError, StudioError } from "./studio/errors";
+
 export { formatDuration, formatDurationHours } from "./timeFormat";
 
 const TIMER_ROW_ID = "current";
@@ -15,9 +17,9 @@ const DEFAULT_POMODORO_MINUTES = 25;
  * The timer is not in the state the action expects (already running, already
  * stopped, …). Expected during normal use, e.g. two tabs; the API answers 409.
  */
-export class TimerConflictError extends Error {
+export class TimerConflictError extends StudioError {
   constructor(message) {
-    super(message);
+    super(message, 409);
     this.name = "TimerConflictError";
   }
 }
@@ -392,6 +394,10 @@ export async function updateTimeEntry(id, data) {
     }
   }
 
+  if (new Date(endedAt).getTime() < new Date(startedAt).getTime()) {
+    throw new InputError("End must not be before start.");
+  }
+
   const updated = {
     ...current,
     projectId: data.projectId !== undefined ? data.projectId : current.projectId,
@@ -469,28 +475,38 @@ export async function renameDescription({ projectId = "", from = "", to = "" } =
   return { updated: ids.length };
 }
 
-/** Distinct project + description pairs, most recently used first. */
+/**
+ * Distinct project + description pairs, most recently used first.
+ * The database groups exact descriptions (one row per distinct text instead
+ * of one per entry); variants that differ only in case are then merged here
+ * with the same rule as renameDescription (JS toLowerCase, which unlike
+ * SQLite's LOWER also folds accented letters).
+ */
 export async function listRecentTasks() {
   const db = getTursoClient();
   const { rows } = await db.execute(
-    "SELECT projectId, description, startedAt FROM time_entries ORDER BY startedAt DESC"
+    `SELECT projectId, TRIM(description) AS description,
+        MAX(startedAt) AS lastUsedAt, COUNT(*) AS count
+      FROM time_entries
+      WHERE projectId != '' OR TRIM(description) != ''
+      GROUP BY projectId, TRIM(description)
+      ORDER BY lastUsedAt DESC`
   );
   const map = new Map();
   for (const row of rows) {
     const projectId = row.projectId ?? "";
-    const description = String(row.description ?? "").trim();
-    if (!projectId && !description) continue;
+    const description = String(row.description ?? "");
     const key = `${projectId}::${descriptionKey(description)}`;
     const prev = map.get(key);
     if (prev) {
-      prev.count += 1;
+      prev.count += Number(row.count);
       continue;
     }
     map.set(key, {
       projectId,
       description,
-      lastUsedAt: row.startedAt ?? "",
-      count: 1,
+      lastUsedAt: row.lastUsedAt ?? "",
+      count: Number(row.count),
     });
   }
   return [...map.values()];
