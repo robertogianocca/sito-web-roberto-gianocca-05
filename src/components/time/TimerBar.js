@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { formatDuration, formatDurationHMS } from "@/lib/timeFormat";
-import { formatLiveDurationHMS, liveElapsedSeconds } from "./timerLive";
+import { liveElapsedSeconds } from "./timerLive";
 import { ProjectCombobox } from "./ProjectCombobox";
 import {
   DescriptionCombobox,
@@ -44,7 +44,7 @@ function PauseIcon({ className }) {
 
 export function TimerBar({
   timer,
-  tick,
+  now,
   projects,
   recentTasks,
   todayTotalSeconds,
@@ -56,18 +56,20 @@ export function TimerBar({
   const [pomodoro, setPomodoro] = useState(Boolean(timer?.pomodoroEnabled));
   const [busy, setBusy] = useState(false);
 
-  useEffect(() => {
+  // When the server's timer changes (started, edited, renamed elsewhere),
+  // show its values in the fields. Done during render, not in an effect.
+  const timerFields = timer
+    ? [timer.startedAt, timer.projectId, timer.description, timer.pomodoroEnabled].join("|")
+    : null;
+  const [syncedFields, setSyncedFields] = useState(timerFields);
+  if (timerFields !== syncedFields) {
+    setSyncedFields(timerFields);
     if (timer) {
       setProjectId(timer.projectId ?? "");
       setDescription(timer.description ?? "");
       setPomodoro(Boolean(timer.pomodoroEnabled));
     }
-  }, [
-    timer?.startedAt,
-    timer?.projectId,
-    timer?.description,
-    timer?.pomodoroEnabled,
-  ]);
+  }
 
   function applyDraft(next) {
     if (next.projectId !== undefined) setProjectId(next.projectId ?? "");
@@ -92,14 +94,11 @@ export function TimerBar({
 
   const isRunning = Boolean(timer) && timer.status === "running";
   const isPaused = Boolean(timer) && timer.status === "paused";
-  const elapsedLabel = timer ? formatLiveDurationHMS(timer) : "0:00:00";
-
-  const pomodoroRemaining = useMemo(() => {
-    if (!timer?.pomodoroEnabled) return null;
-    const elapsed = liveElapsedSeconds(timer);
-    const total = (timer.pomodoroMinutes || 25) * 60;
-    return Math.max(0, total - elapsed);
-  }, [timer, tick]);
+  const elapsedSeconds = timer ? liveElapsedSeconds(timer, now) : 0;
+  const elapsedLabel = formatDurationHMS(elapsedSeconds);
+  const pomodoroRemaining = timer?.pomodoroEnabled
+    ? Math.max(0, (timer.pomodoroMinutes || 25) * 60 - elapsedSeconds)
+    : null;
 
   const clockColor = isPaused
     ? "text-amber-600"

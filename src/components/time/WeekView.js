@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { formatDuration } from "@/lib/timeFormat";
+import { useState } from "react";
+import { formatDuration, toLocalDateInput } from "@/lib/timeFormat";
+import { useJsonResource } from "./useJsonResource";
 
 function projectLabel(project) {
   if (!project) return "No project";
@@ -11,31 +12,15 @@ function projectLabel(project) {
 
 export function WeekView({ projectMap, locale }) {
   const [weekOffset, setWeekOffset] = useState(0);
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const d = new Date();
-      d.setDate(d.getDate() + weekOffset * 7);
-      const res = await fetch(
-        `/api/time/entries?view=week&week=${encodeURIComponent(d.toISOString())}`
-      );
-      if (!res.ok) throw new Error("Failed to load week.");
-      setData(await res.json());
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [weekOffset]);
-
-  useEffect(() => {
-    load();
-  }, [load]);
+  // A day of the requested week, as a date (not a timestamp) so the URL stays
+  // the same between renders. Noon UTC is that same calendar day in Zurich.
+  const day = new Date();
+  day.setDate(day.getDate() + weekOffset * 7);
+  const { data, loading, error } = useJsonResource(
+    `/api/time/entries?view=week&week=${toLocalDateInput(day)}T12:00:00Z`,
+    { errorMessage: "Failed to load week." }
+  );
 
   const weekLabel = data
     ? `${new Date(data.weekStart).toLocaleDateString(locale, {

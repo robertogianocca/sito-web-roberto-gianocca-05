@@ -493,6 +493,28 @@ function TagInput({ tags, onChange }) {
   );
 }
 
+function asList(value) {
+  if (Array.isArray(value)) return value;
+  return value ? [value] : [];
+}
+
+function formFromProject(project) {
+  if (!project) return { ...EMPTY_FORM };
+  return {
+    ...EMPTY_FORM,
+    ...project,
+    client: asList(project.client),
+    type: asList(project.type),
+    archiveDrive: asList(project.archiveDrive),
+    backupDrive: asList(project.backupDrive),
+    backupType: project.backupType ?? "",
+    paid: project.paid !== false,
+    contact: project.contact ?? "",
+    size: project.size ?? "",
+    notes: project.notes ?? "",
+  };
+}
+
 export function ProjectDrawer({
   open,
   project,
@@ -508,29 +530,17 @@ export function ProjectDrawer({
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
+  // On opening (or when another project is passed while open), load its
+  // values into the form. Done during render, not in an effect.
+  const [syncedFor, setSyncedFor] = useState({ open: false, project: null });
+  if (syncedFor.open !== open || syncedFor.project !== project) {
+    setSyncedFor({ open, project });
     if (open) {
-      if (project) {
-        setForm({
-          ...EMPTY_FORM,
-          ...project,
-          client: Array.isArray(project.client) ? project.client : (project.client ? [project.client] : []),
-          type: Array.isArray(project.type) ? project.type : (project.type ? [project.type] : []),
-          archiveDrive: Array.isArray(project.archiveDrive) ? project.archiveDrive : (project.archiveDrive ? [project.archiveDrive] : []),
-          backupDrive: Array.isArray(project.backupDrive) ? project.backupDrive : (project.backupDrive ? [project.backupDrive] : []),
-          backupType: project.backupType ?? "",
-          paid: project.paid !== false,
-          contact: project.contact ?? "",
-          size: project.size ?? "",
-          notes: project.notes ?? "",
-        });
-      } else {
-        setForm({ ...EMPTY_FORM });
-      }
+      setForm(formFromProject(project));
       setConfirmDelete(false);
       setError(null);
     }
-  }, [open, project]);
+  }
 
   const set = useCallback((key, value) => {
     setForm((prev) => ({ ...prev, [key]: value }));

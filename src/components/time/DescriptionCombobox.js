@@ -23,7 +23,6 @@ export function DescriptionCombobox({
   const listId = `${id}-list`;
   const rootRef = useRef(null);
   const [open, setOpen] = useState(false);
-  const [highlight, setHighlight] = useState(-1);
 
   const matches = useMemo(() => {
     const q = value.trim().toLowerCase();
@@ -48,9 +47,24 @@ export function DescriptionCombobox({
     return () => document.removeEventListener("mousedown", onDoc);
   }, [open]);
 
-  useEffect(() => {
-    setHighlight(-1);
-  }, [value, open]);
+  // The highlighted option resets whenever the list changes (typing, opening).
+  // Stored with the state it belongs to, so no effect is needed to reset it.
+  const highlightKey = `${open}|${value}`;
+  const [highlightState, setHighlightState] = useState({
+    key: highlightKey,
+    index: -1,
+  });
+  const highlight =
+    highlightState.key === highlightKey ? highlightState.index : -1;
+  function setHighlight(next) {
+    setHighlightState((prev) => {
+      const current = prev.key === highlightKey ? prev.index : -1;
+      return {
+        key: highlightKey,
+        index: typeof next === "function" ? next(current) : next,
+      };
+    });
+  }
 
   function select(text) {
     onChange(text);

@@ -46,3 +46,30 @@ export function localDateTimeToIso(dateStr, timeStr) {
   if (Number.isNaN(d.getTime())) return null;
   return d.toISOString();
 }
+
+/** Local date range of the last `days` days, as `{ from, to }` YYYY-MM-DD. */
+export function lastDaysRange(days = 30) {
+  const to = new Date();
+  const from = new Date();
+  from.setDate(from.getDate() - days);
+  return { from: toLocalDateInput(from), to: toLocalDateInput(to) };
+}
+
+/**
+ * Query params `from` / `to` (ISO) for a local date range; `to` is inclusive,
+ * so it becomes the start of the following day. Empty or invalid dates are
+ * left out.
+ */
+export function localDateRangeParams(from, to, extra = {}) {
+  const params = new URLSearchParams(extra);
+  const start = from ? new Date(`${from}T00:00:00`) : null;
+  if (start && !Number.isNaN(start.getTime())) {
+    params.set("from", start.toISOString());
+  }
+  const end = to ? new Date(`${to}T00:00:00`) : null;
+  if (end && !Number.isNaN(end.getTime())) {
+    end.setDate(end.getDate() + 1);
+    params.set("to", end.toISOString());
+  }
+  return params;
+}

@@ -1,22 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   formatDuration,
-  toLocalDateInput,
+  lastDaysRange,
+  localDateRangeParams,
 } from "@/lib/timeFormat";
 import { projectLabel } from "./ProjectCombobox";
 import { RestartButton } from "./RestartButton";
-
-function defaultRange() {
-  const to = new Date();
-  const from = new Date();
-  from.setDate(from.getDate() - 30);
-  return {
-    from: toLocalDateInput(from),
-    to: toLocalDateInput(to),
-  };
-}
+import { useJsonResource } from "./useJsonResource";
 
 function formatEntryMeta(entry) {
   const opts = { hour: "2-digit", minute: "2-digit" };
@@ -261,39 +253,22 @@ export function ProjectsView({
   onDelete,
   onChanged,
 }) {
-  const defaults = defaultRange();
-  const [from, setFrom] = useState(defaults.from);
-  const [to, setTo] = useState(defaults.to);
-  const [entries, setEntries] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [from, setFrom] = useState(() => lastDaysRange().from);
+  const [to, setTo] = useState(() => lastDaysRange().to);
+  const [reloadKey, setReloadKey] = useState(0);
+  const [actionError, setActionError] = useState(null);
   const [expanded, setExpanded] = useState(() => new Set());
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const fromIso = from ? new Date(`${from}T00:00:00`).toISOString() : "";
-      const toEnd = to ? new Date(`${to}T00:00:00`) : null;
-      if (toEnd) toEnd.setDate(toEnd.getDate() + 1);
-      const toIso = toEnd ? toEnd.toISOString() : "";
-      const qs = new URLSearchParams();
-      if (fromIso) qs.set("from", fromIso);
-      if (toIso) qs.set("to", toIso);
-      const res = await fetch(`/api/time/entries?${qs}`);
-      if (!res.ok) throw new Error("Failed to load entries.");
-      const data = await res.json();
-      setEntries(data.entries ?? []);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [from, to]);
-
-  useEffect(() => {
-    load();
-  }, [load]);
+  const {
+    data,
+    loading,
+    error: loadError,
+  } = useJsonResource(`/api/time/entries?${localDateRangeParams(from, to)}`, {
+    reloadKey,
+    errorMessage: "Failed to load entries.",
+  });
+  const entries = useMemo(() => data?.entries ?? [], [data]);
+  const error = actionError ?? loadError;
 
   const groups = useMemo(() => {
     const map = new Map();
@@ -329,22 +304,22 @@ export function ProjectsView({
   }
 
   async function handleRename(projectId, group, nextName) {
-    setError(null);
+    setActionError(null);
     const res = await fetch("/api/time/entries", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ projectId, from: group.key, to: nextName }),
     }).catch(() => null);
     if (!res) {
-      setError("Failed to rename description.");
+      setActionError("Failed to rename description.");
       return false;
     }
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      setError(data.error || "Failed to rename description.");
+      setActionError(data.error || "Failed to rename description.");
       return false;
     }
-    await load();
+    setReloadKey((k) => k + 1);
     onChanged?.();
     return true;
   }
