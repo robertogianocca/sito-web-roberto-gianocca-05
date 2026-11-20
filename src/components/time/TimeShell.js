@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { liveElapsedSeconds } from "./timerLive";
+import { useTimer } from "./useTimer";
 import { useNow } from "@/components/studio/hooks/useNow";
 import { TimerBar } from "./TimerBar";
 import { TodayView } from "./TodayView";
@@ -20,72 +21,16 @@ const VIEWS = [
   { id: "report", label: "Report" },
 ];
 
-function playPomodoroBeep() {
-  try {
-    const Ctx = window.AudioContext || window.webkitAudioContext;
-    if (!Ctx) return;
-    const ctx = new Ctx();
-    const pulses = [
-      { at: 0, freq: 880, dur: 0.18 },
-      { at: 0.28, freq: 880, dur: 0.18 },
-      { at: 0.56, freq: 1175, dur: 0.35 },
-    ];
-    for (const p of pulses) {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.frequency.value = p.freq;
-      const t0 = ctx.currentTime + p.at;
-      gain.gain.setValueAtTime(0.0001, t0);
-      gain.gain.exponentialRampToValueAtTime(0.18, t0 + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.0001, t0 + p.dur);
-      osc.start(t0);
-      osc.stop(t0 + p.dur + 0.02);
-    }
-    setTimeout(() => {
-      ctx.close().catch(() => {});
-    }, 1200);
-  } catch {
-    // ignore
-  }
-}
-
 async function fetchToday() {
   return apiFetch("/api/time/entries?view=today", {
     fallbackMessage: "Failed to load today's entries.",
   });
 }
 
-function notifyPomodoro() {
-  playPomodoroBeep();
-  if (
-    typeof Notification !== "undefined" &&
-    Notification.permission === "granted"
-  ) {
-    try {
-      new Notification("Pomodoro complete", {
-        body: "25 minutes done. Timer stopped.",
-      });
-    } catch {
-      // ignore
-    }
-  }
-}
-
-export function TimeShell({
-  locale,
-  active = true,
-  initialTimer,
-  initialTodayTotalSeconds,
-}) {
+export function TimeShell({ locale, active = true, initialTimer }) {
   const { projects } = useStudioData();
 
   const [view, setView] = useState("today");
-  const [timer, setTimer] = useState(initialTimer ?? null);
-  const [todayTotalSeconds, setTodayTotalSeconds] = useState(
-    initialTodayTotalSeconds ?? 0
-  );
   const [todayEntries, setTodayEntries] = useState([]);
   const [recentTasks, setRecentTasks] = useState([]);
   const [loadingToday, setLoadingToday] = useState(true);
@@ -93,8 +38,6 @@ export function TimeShell({
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
   const [listVersion, setListVersion] = useState(0);
-  const pomodoroNotifiedRef = useRef(false);
-  const timerCheckInFlightRef = useRef(false);
   const draftRef = useRef(null);
 
   const projectMap = useMemo(() => {
@@ -109,7 +52,6 @@ export function TimeShell({
 
   const applyToday = useCallback((data) => {
     setTodayEntries(data.entries ?? []);
-    setTodayTotalSeconds(data.todayTotalSeconds ?? 0);
     setRecentTasks(data.recentTasks ?? []);
   }, []);
 
@@ -125,39 +67,19 @@ export function TimeShell({
     }
   }, [applyToday]);
 
-  // Syncs the timer with the server and lets the server complete a due
-  // Pomodoro. One request at a time: the server records the entry only once
-  // anyway, but there is no point in piling up requests every second.
-  const refreshTimer = useCallback(async () => {
-    if (timerCheckInFlightRef.current) return;
-    timerCheckInFlightRef.current = true;
-    try {
-      const data = await apiFetch("/api/time/timer", {
-        method: "POST",
-        body: {
-          action: "checkPomodoro",
-          // Unsaved text in the timer bar goes into the entry if it completes.
-          description: draftRef.current?.description,
-        },
-      });
-      if (data.pomodoroCompleted) {
-        setTimer(null);
-        if (!pomodoroNotifiedRef.current) {
-          pomodoroNotifiedRef.current = true;
-          notifyPomodoro();
-        }
-        await refreshToday();
-        bumpLists();
-        return;
-      }
-      setTimer(data.timer);
-      if (data.timer) pomodoroNotifiedRef.current = false;
-    } catch {
-      // Network or server error: the next check retries.
-    } finally {
-      timerCheckInFlightRef.current = false;
-    }
-  }, [refreshToday, bumpLists]);
+  const {
+    timer,
+    run: runTimer,
+    refresh: refreshTimer,
+  } = useTimer({
+    initialTimer,
+    active,
+    draftRef,
+    onEntryRecorded: async () => {
+      await refreshToday();
+      bumpLists();
+    },
+  });
 
   // First load. State is set only when the response arrives.
   useEffect(() => {
@@ -180,60 +102,13 @@ export function TimeShell({
   // Live clock while the timer runs and this tab is visible.
   const now = useNow(active && timer?.status === "running");
 
-  useEffect(() => {
-    // Still poll while hidden so Pomodoro can complete in background
-    if (!timer) return undefined;
-    const id = setInterval(() => {
-      refreshTimer();
-    }, 30000);
-    return () => clearInterval(id);
-  }, [timer, refreshTimer]);
-
-  useEffect(() => {
-    // Ask the server to complete the Pomodoro when it is due. If the server's
-    // clock says "not yet", the timer state comes back and this re-arms, at
-    // most once per second.
-    if (!active) return undefined;
-    if (!timer || !timer.pomodoroEnabled || timer.status !== "running") {
-      return undefined;
-    }
-    const remainingMs =
-      (timer.pomodoroMinutes * 60 - liveElapsedSeconds(timer)) * 1000;
-    const id = setTimeout(() => {
-      refreshTimer();
-    }, Math.max(1000, remainingMs));
-    return () => clearTimeout(id);
-  }, [active, timer, refreshTimer]);
-
   async function timerAction(action, payload = {}) {
     setError(null);
-    if (action === "start" && typeof Notification !== "undefined") {
-      if (Notification.permission === "default") {
-        Notification.requestPermission().catch(() => {});
-      }
-    }
-    let data;
     try {
-      data = await apiFetch("/api/time/timer", {
-        method: "POST",
-        body: { action, ...payload },
-        fallbackMessage: "Timer action failed.",
-      });
+      await runTimer(action, payload);
     } catch (err) {
       setError(err.message);
-      return;
     }
-    if (action === "stop" || data.pomodoroCompleted) {
-      if (data.pomodoroCompleted && !pomodoroNotifiedRef.current) {
-        pomodoroNotifiedRef.current = true;
-        notifyPomodoro();
-      }
-      setTimer(null);
-      await refreshToday();
-      bumpLists();
-      return;
-    }
-    setTimer(data.timer);
   }
 
   async function handleRestart(entry) {
