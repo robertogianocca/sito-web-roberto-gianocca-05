@@ -1,5 +1,7 @@
 "use client";
 
+import { Drawer } from "@/components/studio/ui/Drawer";
+import { ErrorBanner } from "@/components/studio/ui/ErrorBanner";
 import { useState } from "react";
 import {
   localDateTimeToIso,
@@ -84,27 +86,14 @@ export function EntryDrawer({
     }
   }
 
+  // Mounted only while open (see TimeShell), so `open` is always true here.
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-black/30">
-      <button
-        type="button"
-        className="absolute inset-0 cursor-default"
-        aria-label="Close"
-        onClick={onClose}
-      />
-      <aside className="relative z-10 flex h-full w-full max-w-md flex-col bg-background shadow-xl">
-        <header className="flex items-center justify-between border-b border-zinc-200 px-5 py-4">
-          <h2 className="text-lg font-semibold">
-            {isEdit ? "Edit entry" : "Add hours"}
-          </h2>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-lg px-2 py-1 text-sm text-zinc-500 hover:bg-zinc-100"
-          >
-            Close
-          </button>
-        </header>
+    <Drawer
+      open
+      onClose={onClose}
+      title={isEdit ? "Edit entry" : "Add hours"}
+      widthClass="max-w-md"
+    >
 
         <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
           <div className="space-y-4 overflow-auto px-5 py-4">
@@ -147,6 +136,7 @@ export function EntryDrawer({
             <div className="flex gap-2">
               <button
                 type="button"
+                aria-pressed={mode === "range"}
                 onClick={() => setMode("range")}
                 className={`rounded-lg px-3 py-1.5 text-xs font-medium ${
                   mode === "range"
@@ -158,6 +148,7 @@ export function EntryDrawer({
               </button>
               <button
                 type="button"
+                aria-pressed={mode === "duration"}
                 onClick={() => setMode("duration")}
                 className={`rounded-lg px-3 py-1.5 text-xs font-medium ${
                   mode === "duration"
@@ -209,11 +200,7 @@ export function EntryDrawer({
               )}
             </div>
 
-            {error && (
-              <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-                {error}
-              </p>
-            )}
+            <ErrorBanner>{error}</ErrorBanner>
           </div>
 
           <footer className="border-t border-zinc-200 px-5 py-4">
@@ -226,7 +213,6 @@ export function EntryDrawer({
             </button>
           </footer>
         </form>
-      </aside>
-    </div>
+    </Drawer>
   );
 }

@@ -9,10 +9,11 @@ function sortAlpha(list) {
   );
 }
 
-function Select({ value, onChange, active, children }) {
+function Select({ label, value, onChange, active, children }) {
   return (
     <div className="relative">
       <select
+        aria-label={label}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className={`${selectBaseClass} ${
@@ -64,6 +65,7 @@ export function FilterBar({
   return (
     <div className="flex flex-wrap items-center gap-2">
       <Select
+        label="Filter by type"
         value={filterType}
         onChange={onFilterType}
         active={filterType !== "all"}
@@ -77,6 +79,7 @@ export function FilterBar({
       </Select>
 
       <Select
+        label="Filter by year"
         value={filterYear}
         onChange={onFilterYear}
         active={filterYear !== "all"}
@@ -90,6 +93,7 @@ export function FilterBar({
       </Select>
 
       <Select
+        label="Filter by status"
         value={filterStatus}
         onChange={onFilterStatus}
         active={filterStatus !== "all"}
@@ -102,6 +106,7 @@ export function FilterBar({
       </Select>
 
       <Select
+        label="Filter by archive drive"
         value={filterArchiveDrive}
         onChange={onFilterArchiveDrive}
         active={filterArchiveDrive !== "all"}

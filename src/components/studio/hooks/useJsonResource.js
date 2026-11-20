@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { apiFetch } from "../api";
 
 /**
  * Loads JSON from `url`, again whenever `url` or `reloadKey` changes.
@@ -16,11 +17,7 @@ export function useJsonResource(url, { reloadKey = 0, errorMessage = "Failed to 
 
   useEffect(() => {
     const controller = new AbortController();
-    fetch(url, { signal: controller.signal })
-      .then((res) => {
-        if (!res.ok) throw new Error(errorMessage);
-        return res.json();
-      })
+    apiFetch(url, { signal: controller.signal, fallbackMessage: errorMessage })
       .then((data) => setResult({ key: requestKey, data, error: null }))
       .catch((err) => {
         if (err.name === "AbortError") return;

@@ -7,6 +7,7 @@ import {
   useMemo,
   useState,
 } from "react";
+import { apiFetch } from "@/components/studio/api";
 
 const StudioDataContext = createContext(null);
 
@@ -30,9 +31,9 @@ export function StudioDataProvider({
   const refreshProjects = useCallback(async ({ silent = false } = {}) => {
     if (!silent) setProjectsLoading(true);
     try {
-      const res = await fetch("/api/archive");
-      if (!res.ok) throw new Error("Failed to load projects.");
-      const data = await res.json();
+      const data = await apiFetch("/api/archive", {
+        fallbackMessage: "Failed to load projects.",
+      });
       setProjects(data);
       return data;
     } finally {

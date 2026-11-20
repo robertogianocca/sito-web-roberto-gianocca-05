@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { Drawer } from "@/components/studio/ui/Drawer";
+import { ErrorBanner } from "@/components/studio/ui/ErrorBanner";
 import { formatProjectId } from "./archiveStatus";
 
 function sortAlpha(list) {
@@ -37,7 +39,7 @@ function ToggleCheckbox({ id, label, checked, onChange }) {
   return (
     <label
       htmlFor={id}
-      className={`flex cursor-pointer items-center gap-3 rounded-lg border px-4 py-3 transition select-none ${
+      className={`flex cursor-pointer items-center gap-3 rounded-lg border px-4 py-3 transition select-none has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-zinc-400 ${
         checked
           ? "border-emerald-300 bg-emerald-50/80 text-emerald-800"
           : "border-zinc-200 bg-zinc-50/80 text-zinc-500"
@@ -82,14 +84,15 @@ const BACKUP_TYPE_OPTIONS = [
 function BackupTypeSelect({ value, onChange }) {
   return (
     <div>
-      <p className={`${labelClass} mb-2`}>Backup type</p>
-      <div className="grid grid-cols-3 gap-1.5">
+      <p id="f-backupType-label" className={`${labelClass} mb-2`}>Backup type</p>
+      <div className="grid grid-cols-3 gap-1.5" role="group" aria-labelledby="f-backupType-label">
         {BACKUP_TYPE_OPTIONS.map((option) => {
           const selected = value === option.value;
           return (
             <button
               key={option.value || "none"}
               type="button"
+              aria-pressed={selected}
               onClick={() => onChange(option.value)}
               className={`rounded-lg border px-2 py-2 text-center transition ${
                 selected
@@ -358,7 +361,12 @@ function CreatableMultiPills({ options, selected, onChange, placeholder, addLabe
                   placeholder={addPlaceholder ?? "New name"}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") { e.preventDefault(); confirmNew(); }
-                    if (e.key === "Escape") { setAddingNew(false); setNewName(""); }
+                    if (e.key === "Escape") {
+                      // Cancel only the new name, not the whole drawer.
+                      e.preventDefault();
+                      setAddingNew(false);
+                      setNewName("");
+                    }
                   }}
                 />
                 <button
@@ -480,6 +488,7 @@ function TagInput({ tags, onChange }) {
           </span>
         ))}
         <input
+          id="tag-input"
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -583,43 +592,12 @@ export function ProjectDrawer({
   const isEditing = Boolean(project);
 
   return (
-    <>
-      {open && (
-        <div
-          className="fixed inset-0 z-40 bg-black/20 backdrop-blur-[2px]"
-          onClick={onClose}
-          aria-hidden
-        />
-      )}
-
-      <aside
-        className={`fixed right-0 top-0 z-50 flex h-full w-full max-w-lg flex-col bg-background shadow-2xl transition-transform duration-300 ${
-          open ? "translate-x-0" : "translate-x-full"
-        }`}
-        aria-label="Project drawer"
-      >
-        <div className="flex items-center justify-between border-b border-zinc-200 px-6 py-4">
-          <h2 className="text-base font-semibold text-foreground">
-            {isEditing ? "Edit project" : "New project"}
-          </h2>
-          <button
-            onClick={onClose}
-            className="flex h-7 w-7 items-center justify-center rounded-md text-zinc-400 transition hover:bg-zinc-100 hover:text-foreground"
-            aria-label="Close"
-          >
-            <svg
-              className="h-4 w-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-              aria-hidden
-            >
-              <path d="M18 6 6 18M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-
+    <Drawer
+      open={open}
+      onClose={onClose}
+      title={isEditing ? "Edit project" : "New project"}
+      closeLabel="Close project"
+    >
         <form
           onSubmit={handleSubmit}
           className="flex flex-1 flex-col overflow-y-auto"
@@ -832,9 +810,9 @@ export function ProjectDrawer({
 
           <div className="border-t border-zinc-200 px-6 py-4">
             {error && (
-              <p className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+<ErrorBanner className="mb-3">
                 {error}
-              </p>
+              </ErrorBanner>
             )}
             <div className="flex items-center gap-2">
               {isEditing && (
@@ -879,7 +857,6 @@ export function ProjectDrawer({
             </div>
           </div>
         </form>
-      </aside>
-    </>
+    </Drawer>
   );
 }

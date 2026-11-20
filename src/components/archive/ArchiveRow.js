@@ -47,7 +47,16 @@ export function ArchiveRow({ project, onEdit }) {
     >
       <td className={mutedCellClass}>{formatProjectId(project.projectId) || "—"}</td>
       <td className={cellClass}>
-        <span className="font-medium">{project.title || "Untitled"}</span>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation(); // the row would open it a second time
+            onEdit(project);
+          }}
+          className="rounded text-left font-medium hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-500"
+        >
+          {project.title || "Untitled"}
+        </button>
         {project.notes?.trim() && (
           <span title={project.notes.trim()} className="ml-1.5 inline-flex align-text-bottom">
             <svg

@@ -93,9 +93,12 @@ export function ProjectCombobox({
   function onKeyDown(e) {
     if (disabled) return;
     if (e.key === "Escape") {
-      e.preventDefault();
-      setOpen(false);
-      setQuery("");
+      // Close the list first; with the list closed, Escape reaches the drawer.
+      if (open) {
+        e.preventDefault();
+        setOpen(false);
+        setQuery("");
+      }
       return;
     }
     if (!open && (e.key === "ArrowDown" || e.key === "Enter")) {

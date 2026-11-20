@@ -11,6 +11,7 @@ import { SettingsDrawer } from "./SettingsDrawer";
 import { getStatus, formatProjectId } from "./archiveStatus";
 import { parseSize, formatBytes } from "@/lib/archiveSize";
 import { useStudioData } from "@/components/studio/StudioDataProvider";
+import { apiFetch } from "@/components/studio/api";
 
 function projectArchiveDrives(project) {
   if (Array.isArray(project.archiveDrive)) return project.archiveDrive;
@@ -185,35 +186,33 @@ export function ArchiveShell() {
         (name) => name && !knownDrives.includes(name)
       );
 
-    const res = await fetch(isUpdate ? `/api/archive/${payload.id}` : "/api/archive", {
+    // Errors are shown inside the drawer (ProjectDrawer catches them).
+    const saved = await apiFetch(isUpdate ? `/api/archive/${payload.id}` : "/api/archive", {
       method: isUpdate ? "PATCH" : "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+      body: payload,
+      fallbackMessage: isUpdate ? "Failed to update project." : "Failed to create project.",
     });
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      throw new Error(
-        data.error || (isUpdate ? "Failed to update project." : "Failed to create project.")
-      );
-    }
-    const saved = await res.json();
     setProjects((prev) =>
       isUpdate ? prev.map((p) => (p.id === saved.id ? saved : p)) : [...prev, saved]
     );
 
     if (addsToLists) {
-      const [clientsRes, settingsRes] = await Promise.all([
-        fetch("/api/archive/clients"),
-        fetch("/api/archive/settings"),
+      // The project is saved; a failed refresh of the lists only means they
+      // show up after the next reload.
+      const [nextClients, nextSettings] = await Promise.all([
+        apiFetch("/api/archive/clients").catch(() => null),
+        apiFetch("/api/archive/settings").catch(() => null),
       ]);
-      if (clientsRes.ok) setClients(await clientsRes.json());
-      if (settingsRes.ok) setSettings(await settingsRes.json());
+      if (nextClients) setClients(nextClients);
+      if (nextSettings) setSettings(nextSettings);
     }
   }, [clients, settings, setClients, setSettings, setProjects]);
 
   const handleDelete = useCallback(async (id) => {
-    const res = await fetch(`/api/archive/${id}`, { method: "DELETE" });
-    if (!res.ok) throw new Error("Failed to delete project.");
+    await apiFetch(`/api/archive/${id}`, {
+      method: "DELETE",
+      fallbackMessage: "Failed to delete project.",
+    });
     setProjects((prev) => prev.filter((p) => p.id !== id));
   }, [setProjects]);
 

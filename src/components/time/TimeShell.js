@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { liveElapsedSeconds } from "./timerLive";
-import { useNow } from "./useNow";
+import { useNow } from "@/components/studio/hooks/useNow";
 import { TimerBar } from "./TimerBar";
 import { TodayView } from "./TodayView";
 import { WeekView } from "./WeekView";
@@ -10,6 +10,8 @@ import { ReportView } from "./ReportView";
 import { ProjectsView } from "./ProjectsView";
 import { EntryDrawer } from "./EntryDrawer";
 import { useStudioData } from "@/components/studio/StudioDataProvider";
+import { apiFetch } from "@/components/studio/api";
+import { ErrorBanner } from "@/components/studio/ui/ErrorBanner";
 
 const VIEWS = [
   { id: "today", label: "Today" },
@@ -50,9 +52,9 @@ function playPomodoroBeep() {
 }
 
 async function fetchToday() {
-  const res = await fetch("/api/time/entries?view=today");
-  if (!res.ok) throw new Error("Failed to load today's entries.");
-  return res.json();
+  return apiFetch("/api/time/entries?view=today", {
+    fallbackMessage: "Failed to load today's entries.",
+  });
 }
 
 function notifyPomodoro() {
@@ -130,17 +132,14 @@ export function TimeShell({
     if (timerCheckInFlightRef.current) return;
     timerCheckInFlightRef.current = true;
     try {
-      const res = await fetch("/api/time/timer", {
+      const data = await apiFetch("/api/time/timer", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+        body: {
           action: "checkPomodoro",
           // Unsaved text in the timer bar goes into the entry if it completes.
           description: draftRef.current?.description,
-        }),
+        },
       });
-      if (!res.ok) return;
-      const data = await res.json();
       if (data.pomodoroCompleted) {
         setTimer(null);
         if (!pomodoroNotifiedRef.current) {
@@ -154,7 +153,7 @@ export function TimeShell({
       setTimer(data.timer);
       if (data.timer) pomodoroNotifiedRef.current = false;
     } catch {
-      // Network error: the next poll retries.
+      // Network or server error: the next check retries.
     } finally {
       timerCheckInFlightRef.current = false;
     }
@@ -213,14 +212,15 @@ export function TimeShell({
         Notification.requestPermission().catch(() => {});
       }
     }
-    const res = await fetch("/api/time/timer", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action, ...payload }),
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      setError(data.error || "Timer action failed.");
+    let data;
+    try {
+      data = await apiFetch("/api/time/timer", {
+        method: "POST",
+        body: { action, ...payload },
+        fallbackMessage: "Timer action failed.",
+      });
+    } catch (err) {
+      setError(err.message);
       return;
     }
     if (action === "stop" || data.pomodoroCompleted) {
@@ -264,26 +264,19 @@ export function TimeShell({
   }
 
   async function handleSaveEntry(payload) {
+    // Errors are shown inside the drawer (EntryDrawer catches them).
     if (editingEntry) {
-      const res = await fetch(`/api/time/entries/${editingEntry.id}`, {
+      await apiFetch(`/api/time/entries/${editingEntry.id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: payload,
+        fallbackMessage: "Failed to update entry.",
       });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || "Failed to update entry.");
-      }
     } else {
-      const res = await fetch("/api/time/entries", {
+      await apiFetch("/api/time/entries", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: payload,
+        fallbackMessage: "Failed to create entry.",
       });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || "Failed to create entry.");
-      }
     }
     setDrawerOpen(false);
     setEditingEntry(null);
@@ -292,9 +285,14 @@ export function TimeShell({
   }
 
   async function handleDeleteEntry(id) {
-    const res = await fetch(`/api/time/entries/${id}`, { method: "DELETE" });
-    if (!res.ok) {
-      setError("Failed to delete entry.");
+    setError(null);
+    try {
+      await apiFetch(`/api/time/entries/${id}`, {
+        method: "DELETE",
+        fallbackMessage: "Failed to delete entry.",
+      });
+    } catch (err) {
+      setError(err.message);
       return;
     }
     await refreshToday();
@@ -357,11 +355,7 @@ export function TimeShell({
         </div>
       </div>
 
-      {error ? (
-        <div className="mx-6 mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-          {error}
-        </div>
-      ) : null}
+      <ErrorBanner className="mx-6 mt-3">{error}</ErrorBanner>
 
       <div className="min-h-0 flex-1 overflow-auto px-6 py-4">
         {view === "today" && (

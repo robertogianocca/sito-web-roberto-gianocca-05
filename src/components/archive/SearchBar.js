@@ -16,6 +16,7 @@ export function SearchBar({ value, onChange }) {
       </svg>
       <input
         type="search"
+        aria-label="Search projects"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder="Search title, client, ID…"
