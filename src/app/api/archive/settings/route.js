@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { readSettings, writeSettings, cascadeFieldRename } from "@/lib/archive";
 import { ensureInit } from "@/lib/turso";
-import { isStudioAuthenticated } from "@/lib/studio-auth";
+import { withStudioAuth } from "@/lib/studio-auth";
 
 
 function remapDriveCapacities(capacities, renames) {
@@ -24,20 +24,13 @@ function remapDriveCapacities(capacities, renames) {
   return next;
 }
 
-export async function GET(request) {
-  if (!isStudioAuthenticated(request)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+export const GET = withStudioAuth(async (request) => {
   await ensureInit();
   const settings = await readSettings();
   return NextResponse.json(settings);
-}
+});
 
-export async function PUT(request) {
-  if (!isStudioAuthenticated(request)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export const PUT = withStudioAuth(async (request) => {
   let body;
   try {
     body = await request.json();
@@ -78,4 +71,4 @@ export async function PUT(request) {
 
   const saved = await readSettings();
   return NextResponse.json(saved);
-}
+});

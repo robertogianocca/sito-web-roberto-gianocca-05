@@ -1,4 +1,6 @@
 import { setRequestLocale } from "next-intl/server";
+import { redirect } from "next/navigation";
+import { getStudioSession } from "@/lib/studio-auth";
 import { StudioShell } from "@/components/studio/StudioShell";
 import { StudioDataProvider } from "@/components/studio/StudioDataProvider";
 import { StudioWorkspace } from "@/components/studio/StudioWorkspace";
@@ -10,6 +12,12 @@ import { getTimer, getTodayTotalSeconds } from "@/lib/time";
 export default async function StudioAppLayout({ children, params }) {
   const { locale } = await params;
   setRequestLocale(locale);
+
+  // The proxy already redirects signed-out visitors; this check keeps the
+  // data below protected even if the proxy matcher changes.
+  if (!(await getStudioSession())) {
+    redirect(`/${locale}/studio/login`);
+  }
 
   await ensureInit();
   const [projects, clients, settings, timer, todayTotalSeconds] =

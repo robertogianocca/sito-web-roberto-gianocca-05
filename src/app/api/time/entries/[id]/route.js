@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
-import { isStudioAuthenticated, unauthorizedJson } from "@/lib/studio-auth";
+import { withStudioAuth } from "@/lib/studio-auth";
 import { ensureInit } from "@/lib/turso";
 import { updateTimeEntry, deleteTimeEntry } from "@/lib/time";
 
-export async function PUT(request, { params }) {
-  if (!isStudioAuthenticated(request)) return unauthorizedJson();
+export const PUT = withStudioAuth(async (request, { params }) => {
   await ensureInit();
 
   const { id } = await params;
@@ -20,13 +19,12 @@ export async function PUT(request, { params }) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
   return NextResponse.json(updated);
-}
+});
 
-export async function DELETE(request, { params }) {
-  if (!isStudioAuthenticated(request)) return unauthorizedJson();
+export const DELETE = withStudioAuth(async (request, { params }) => {
   await ensureInit();
 
   const { id } = await params;
   await deleteTimeEntry(id);
   return NextResponse.json({ ok: true });
-}
+});
