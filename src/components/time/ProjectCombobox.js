@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useId, useMemo, useRef, useState } from "react";
+import { useListbox } from "@/components/studio/hooks/useListbox";
+import { useOutsideClick } from "@/components/studio/hooks/useOutsideClick";
 
 export function projectLabel(p) {
   if (!p) return "No project";
@@ -13,6 +15,11 @@ function projectSearchText(p) {
   return `${p.projectId ?? ""} ${p.title ?? ""} ${clients}`.toLowerCase();
 }
 
+/**
+ * Project picker: type to search by ID, title or client. The list opens on a
+ * click, on typing or with ↓ (not on focus, so a drawer that focuses this
+ * field does not pop the list open). Keyboard and ARIA from useListbox.
+ */
 export function ProjectCombobox({
   projects,
   value,
@@ -22,15 +29,13 @@ export function ProjectCombobox({
 }) {
   const autoId = useId();
   const inputId = idProp ?? autoId;
-  const listId = `${inputId}-list`;
   const rootRef = useRef(null);
+  const [query, setQuery] = useState("");
+
   const selected = useMemo(
     () => (value ? projects.find((p) => p.id === value) : null),
     [projects, value]
   );
-
-  const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState("");
 
   const sorted = useMemo(
     () =>
@@ -42,85 +47,43 @@ export function ProjectCombobox({
     [projects]
   );
 
-  const filtered = useMemo(() => {
+  const options = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return sorted;
-    return sorted.filter((p) => projectSearchText(p).includes(q));
+    const matches = q ? sorted.filter((p) => projectSearchText(p).includes(q)) : sorted;
+    return [
+      { id: "", label: "No project" },
+      ...matches.map((p) => ({ id: p.id, label: projectLabel(p) })),
+    ];
   }, [sorted, query]);
 
-  const options = useMemo(
-    () => [{ id: "", label: "No project" }, ...filtered.map((p) => ({ id: p.id, label: projectLabel(p), project: p }))],
-    [filtered]
-  );
-
-  useEffect(() => {
-    if (!open) return undefined;
-    function onDoc(e) {
-      if (rootRef.current && !rootRef.current.contains(e.target)) {
-        setOpen(false);
-        setQuery("");
-      }
-    }
-    document.addEventListener("mousedown", onDoc);
-    return () => document.removeEventListener("mousedown", onDoc);
-  }, [open]);
-
-  // The highlighted option resets whenever the list changes (typing, opening).
-  // Stored with the state it belongs to, so no effect is needed to reset it.
-  const highlightKey = `${open}|${query}`;
-  const [highlightState, setHighlightState] = useState({
-    key: highlightKey,
-    index: 0,
-  });
-  const highlight =
-    highlightState.key === highlightKey ? highlightState.index : 0;
-  function setHighlight(next) {
-    setHighlightState((prev) => {
-      const current = prev.key === highlightKey ? prev.index : 0;
-      return {
-        key: highlightKey,
-        index: typeof next === "function" ? next(current) : next,
-      };
-    });
-  }
-
-  function select(id) {
-    onChange(id);
-    setOpen(false);
+  function close() {
+    listbox.closeList();
     setQuery("");
   }
 
+  const listbox = useListbox({
+    items: options,
+    resetKey: query,
+    disabled,
+    onPick: (option) => {
+      onChange(option.id);
+      close();
+    },
+  });
+
+  useOutsideClick(rootRef, close, listbox.open);
+
   function onKeyDown(e) {
-    if (disabled) return;
-    if (e.key === "Escape") {
-      // Close the list first; with the list closed, Escape reaches the drawer.
-      if (open) {
-        e.preventDefault();
-        setOpen(false);
-        setQuery("");
-      }
+    if (e.key === "Enter" && !listbox.open) {
+      e.preventDefault();
+      listbox.openList();
       return;
     }
-    if (!open && (e.key === "ArrowDown" || e.key === "Enter")) {
-      e.preventDefault();
-      setOpen(true);
-      return;
-    }
-    if (!open) return;
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      setHighlight((h) => Math.min(h + 1, options.length - 1));
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      setHighlight((h) => Math.max(h - 1, 0));
-    } else if (e.key === "Enter") {
-      e.preventDefault();
-      const opt = options[highlight];
-      if (opt) select(opt.id);
-    }
+    if (e.key === "Escape" && listbox.open) setQuery("");
+    listbox.inputProps.onKeyDown(e);
   }
 
-  const displayValue = open
+  const displayValue = listbox.open
     ? query
     : selected
       ? projectLabel(selected)
@@ -131,56 +94,40 @@ export function ProjectCombobox({
       <input
         id={inputId}
         type="text"
-        role="combobox"
-        aria-expanded={open}
-        aria-controls={listId}
-        aria-autocomplete="list"
-        autoComplete="off"
+        {...listbox.inputProps}
+        onKeyDown={onKeyDown}
         disabled={disabled}
         value={displayValue}
         placeholder="Search projects…"
-        onChange={(e) => {
-          setQuery(e.target.value);
-          if (!open) setOpen(true);
-        }}
-        onFocus={() => {
-          if (!disabled) {
-            setOpen(true);
+        onFocus={(e) => e.target.select()}
+        onClick={() => {
+          if (!listbox.open) {
             setQuery("");
+            listbox.openList();
           }
         }}
-        onKeyDown={onKeyDown}
+        onChange={(e) => {
+          setQuery(e.target.value);
+          if (!listbox.open) listbox.openList();
+        }}
         className="w-full rounded-lg border border-zinc-300 bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-zinc-400 disabled:opacity-60"
       />
-      {open && !disabled && (
+      {listbox.open && !disabled && (
         <ul
-          id={listId}
-          role="listbox"
+          {...listbox.listProps}
           className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-zinc-200 bg-background py-1 shadow-lg"
         >
-          {options.length === 0 ? (
-            <li className="px-3 py-2 text-sm text-zinc-400">No matches</li>
-          ) : (
-            options.map((opt, i) => (
-              <li key={opt.id || "__none__"} role="option" aria-selected={value === opt.id}>
-                <button
-                  type="button"
-                  className={`block w-full truncate px-3 py-2 text-left text-sm ${
-                    i === highlight
-                      ? "bg-zinc-100 text-zinc-900"
-                      : "text-zinc-700 hover:bg-zinc-50"
-                  } ${value === opt.id ? "font-medium" : ""}`}
-                  onMouseEnter={() => setHighlight(i)}
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    select(opt.id);
-                  }}
-                >
-                  {opt.label}
-                </button>
-              </li>
-            ))
-          )}
+          {options.map((option, i) => (
+            <li
+              key={option.id || "__none__"}
+              {...listbox.optionProps(i, { selected: value === option.id })}
+              className={`block cursor-pointer truncate px-3 py-2 text-sm ${
+                i === listbox.active ? "bg-zinc-100 text-zinc-900" : "text-zinc-700"
+              } ${value === option.id ? "font-medium" : ""}`}
+            >
+              {option.label}
+            </li>
+          ))}
         </ul>
       )}
     </div>

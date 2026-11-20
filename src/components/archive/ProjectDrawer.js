@@ -1,15 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useCallback } from "react";
 import { Drawer } from "@/components/studio/ui/Drawer";
+import { MultiCombobox } from "@/components/studio/ui/MultiCombobox";
 import { ErrorBanner } from "@/components/studio/ui/ErrorBanner";
 import { formatProjectId } from "./archiveStatus";
-
-function sortAlpha(list) {
-  return [...(list ?? [])].sort((a, b) =>
-    String(a).localeCompare(String(b), undefined, { sensitivity: "base" })
-  );
-}
 
 const EMPTY_FORM = {
   projectId: "",
@@ -110,336 +105,6 @@ function BackupTypeSelect({ value, onChange }) {
           );
         })}
       </div>
-    </div>
-  );
-}
-
-function MultiSelectPills({ options, selected, onChange, placeholder }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef(null);
-
-  useEffect(() => {
-    if (!open) return;
-    function handleClick(e) {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
-    }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [open]);
-
-  function toggle(option) {
-    if (selected.includes(option)) {
-      onChange(selected.filter((s) => s !== option));
-    } else {
-      onChange([...selected, option]);
-    }
-  }
-
-  function remove(option) {
-    onChange(selected.filter((s) => s !== option));
-  }
-
-  return (
-    <div ref={ref} className="relative">
-      <div
-        className="min-h-9 cursor-pointer rounded-lg border border-zinc-300 bg-background px-2 py-1.5 focus-within:ring-2 focus-within:ring-zinc-400"
-        onClick={() => setOpen((v) => !v)}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setOpen((v) => !v); }}}
-      >
-        <div className="flex flex-wrap gap-1">
-          {selected.length === 0 && (
-            <span className="py-0.5 text-sm text-zinc-400">{placeholder ?? "— Select —"}</span>
-          )}
-          {selected.map((item) => (
-            <span
-              key={item}
-              className="flex items-center gap-1 rounded-md bg-zinc-200 px-2 py-0.5 text-xs font-medium text-zinc-700"
-            >
-              {item}
-              <button
-                type="button"
-                onClick={(e) => { e.stopPropagation(); remove(item); }}
-                className="ml-0.5 text-zinc-400 transition hover:text-zinc-700"
-                aria-label={`Remove ${item}`}
-              >
-                ×
-              </button>
-            </span>
-          ))}
-        </div>
-      </div>
-
-      {open && options.length > 0 && (
-        <div className="absolute z-50 mt-1 w-full rounded-lg border border-zinc-200 bg-white py-1 shadow-lg">
-          {sortAlpha(options).map((option) => {
-            const active = selected.includes(option);
-            return (
-              <button
-                key={option}
-                type="button"
-                onClick={() => toggle(option)}
-                className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm transition ${
-                  active ? "bg-zinc-100 font-medium text-zinc-900" : "text-zinc-700 hover:bg-zinc-50"
-                }`}
-              >
-                <span
-                  className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
-                    active ? "border-zinc-700 bg-zinc-700" : "border-zinc-300"
-                  }`}
-                >
-                  {active && (
-                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3} className="h-2.5 w-2.5 text-white" aria-hidden>
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                  )}
-                </span>
-                {option}
-              </button>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function CreatableMultiPills({ options, selected, onChange, placeholder, addLabel, addPlaceholder }) {
-  const [open, setOpen] = useState(false);
-  const [addingNew, setAddingNew] = useState(false);
-  const [newName, setNewName] = useState("");
-  const [query, setQuery] = useState("");
-  const [localExtra, setLocalExtra] = useState([]);
-  const ref = useRef(null);
-  const searchRef = useRef(null);
-
-  const allOptions = sortAlpha([
-    ...(options ?? []),
-    ...localExtra.filter((n) => !(options ?? []).includes(n)),
-  ]);
-
-  const trimmedQuery = query.trim();
-  const filteredOptions = trimmedQuery
-    ? allOptions.filter((n) => n.toLowerCase().includes(trimmedQuery.toLowerCase()))
-    : allOptions;
-  const exactMatch = allOptions.some(
-    (n) => n.toLowerCase() === trimmedQuery.toLowerCase()
-  );
-  const canAddFromQuery = Boolean(trimmedQuery) && !exactMatch;
-
-  function closeMenu() {
-    setOpen(false);
-    setAddingNew(false);
-    setNewName("");
-    setQuery("");
-  }
-
-  useEffect(() => {
-    if (!open) return;
-    function handleClick(e) {
-      if (ref.current && !ref.current.contains(e.target)) {
-        setOpen(false);
-        setAddingNew(false);
-        setNewName("");
-        setQuery("");
-      }
-    }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [open]);
-
-  useEffect(() => {
-    if (open && !addingNew) {
-      searchRef.current?.focus();
-    }
-  }, [open, addingNew]);
-
-  function toggle(name) {
-    if (selected.includes(name)) {
-      onChange(selected.filter((s) => s !== name));
-    } else {
-      onChange([...selected, name]);
-    }
-  }
-
-  function remove(name) {
-    onChange(selected.filter((s) => s !== name));
-  }
-
-  function addName(raw) {
-    const name = raw.trim();
-    if (!name) return;
-    setLocalExtra((prev) => (prev.includes(name) ? prev : [...prev, name]));
-    if (!selected.includes(name)) {
-      onChange([...selected, name]);
-    }
-    setAddingNew(false);
-    setNewName("");
-    setQuery("");
-  }
-
-  function confirmNew() {
-    addName(newName);
-  }
-
-  function addFromQuery() {
-    addName(trimmedQuery);
-  }
-
-  return (
-    <div ref={ref} className="relative">
-      <div
-        className="min-h-9 cursor-pointer rounded-lg border border-zinc-300 bg-background px-2 py-1.5 focus-within:ring-2 focus-within:ring-zinc-400"
-        onClick={() => setOpen((v) => !v)}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            setOpen((v) => !v);
-          }
-        }}
-      >
-        <div className="flex flex-wrap gap-1">
-          {selected.length === 0 && (
-            <span className="py-0.5 text-sm text-zinc-400">{placeholder ?? "— Select —"}</span>
-          )}
-          {selected.map((name) => (
-            <span
-              key={name}
-              className="flex items-center gap-1 rounded-md bg-zinc-200 px-2 py-0.5 text-xs font-medium text-zinc-700"
-            >
-              {name}
-              <button
-                type="button"
-                onClick={(e) => { e.stopPropagation(); remove(name); }}
-                className="ml-0.5 text-zinc-400 transition hover:text-zinc-700"
-                aria-label={`Remove ${name}`}
-              >
-                ×
-              </button>
-            </span>
-          ))}
-        </div>
-      </div>
-
-      {open && (
-        <div className="absolute z-50 mt-1 w-full overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-lg">
-          <div className="border-b border-zinc-100 p-1.5">
-            <input
-              ref={searchRef}
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search…"
-              className="w-full rounded border border-zinc-200 bg-zinc-50 px-2 py-1.5 text-sm text-foreground outline-none placeholder:text-zinc-400 focus:border-zinc-400 focus:bg-white"
-              onClick={(e) => e.stopPropagation()}
-              onKeyDown={(e) => {
-                if (e.key === "Escape") {
-                  e.preventDefault();
-                  if (query) setQuery("");
-                  else closeMenu();
-                }
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  if (canAddFromQuery) addFromQuery();
-                  else if (filteredOptions.length === 1) toggle(filteredOptions[0]);
-                }
-              }}
-            />
-          </div>
-
-          <div className="border-b border-zinc-100">
-            {addingNew ? (
-              <div className="flex gap-1.5 px-2 py-1.5">
-                <input
-                  autoFocus
-                  className="flex-1 rounded border border-zinc-300 px-2 py-1 text-xs text-foreground outline-none focus:border-zinc-400"
-                  value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
-                  placeholder={addPlaceholder ?? "New name"}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") { e.preventDefault(); confirmNew(); }
-                    if (e.key === "Escape") {
-                      // Cancel only the new name, not the whole drawer.
-                      e.preventDefault();
-                      setAddingNew(false);
-                      setNewName("");
-                    }
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={confirmNew}
-                  className="rounded bg-zinc-900 px-2 text-xs font-medium text-white transition hover:bg-zinc-700"
-                >
-                  Add
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setAddingNew(false); setNewName(""); }}
-                  className="rounded border border-zinc-200 px-2 text-xs text-zinc-500 transition hover:bg-zinc-100"
-                >
-                  ×
-                </button>
-              </div>
-            ) : canAddFromQuery ? (
-              <button
-                type="button"
-                onClick={(e) => { e.stopPropagation(); addFromQuery(); }}
-                className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm font-medium text-zinc-800 transition hover:bg-zinc-50"
-              >
-                <span className="text-base leading-none">＋</span>
-                Add “{trimmedQuery}”
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={(e) => { e.stopPropagation(); setAddingNew(true); }}
-                className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-zinc-500 transition hover:bg-zinc-50"
-              >
-                <span className="text-base leading-none">＋</span> {addLabel ?? "New…"}
-              </button>
-            )}
-          </div>
-
-          <div className="max-h-48 overflow-y-auto py-1">
-            {filteredOptions.length === 0 ? (
-              <p className="px-3 py-2 text-xs text-zinc-400">
-                {trimmedQuery ? "No matches" : "No items yet"}
-              </p>
-            ) : (
-              filteredOptions.map((name) => {
-                const active = selected.includes(name);
-                return (
-                  <button
-                    key={name}
-                    type="button"
-                    onClick={() => toggle(name)}
-                    className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm transition ${
-                      active ? "bg-zinc-100 font-medium text-zinc-900" : "text-zinc-700 hover:bg-zinc-50"
-                    }`}
-                  >
-                    <span
-                      className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
-                        active ? "border-zinc-700 bg-zinc-700" : "border-zinc-300"
-                      }`}
-                    >
-                      {active && (
-                        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3} className="h-2.5 w-2.5 text-white" aria-hidden>
-                          <polyline points="20 6 9 17 4 12" />
-                        </svg>
-                      )}
-                    </span>
-                    {name}
-                  </button>
-                );
-              })
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -652,23 +317,27 @@ export function ProjectDrawer({
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className={labelClass}>Client</label>
-                    <CreatableMultiPills
+                    <label className={labelClass} htmlFor="f-client">Client</label>
+                    <MultiCombobox
+                      id="f-client"
                       options={clients}
                       selected={form.client}
                       onChange={(v) => set("client", v)}
-                      addLabel="New client…"
-                      addPlaceholder="New client name"
+                      creatable
+                      placeholder="Search or add…"
+                      addLabel="Add client"
                     />
                   </div>
                   <div>
-                    <label className={labelClass}>Type</label>
-                    <CreatableMultiPills
+                    <label className={labelClass} htmlFor="f-type">Type</label>
+                    <MultiCombobox
+                      id="f-type"
                       options={projectTypes}
                       selected={form.type}
                       onChange={(v) => set("type", v)}
-                      addLabel="New type…"
-                      addPlaceholder="New type name"
+                      creatable
+                      placeholder="Search or add…"
+                      addLabel="Add type"
                     />
                   </div>
                 </div>
@@ -706,19 +375,21 @@ export function ProjectDrawer({
               <p className={sectionTitle}>Storage</p>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className={labelClass}>Archive drive</label>
-                  <CreatableMultiPills
+                  <label className={labelClass} htmlFor="f-archiveDrive">Archive drive</label>
+                  <MultiCombobox
+                    id="f-archiveDrive"
                     options={archiveDrives}
                     selected={form.archiveDrive}
                     onChange={(v) => set("archiveDrive", v)}
+                    creatable
                     placeholder="— None —"
-                    addLabel="New archive drive…"
-                    addPlaceholder="New archive drive"
+                    addLabel="Add drive"
                   />
                 </div>
                 <div>
-                  <label className={labelClass}>Backup drive</label>
-                  <MultiSelectPills
+                  <label className={labelClass} htmlFor="f-backupDrive">Backup drive</label>
+                  <MultiCombobox
+                    id="f-backupDrive"
                     options={archiveDrives}
                     selected={form.backupDrive}
                     onChange={(v) => set("backupDrive", v)}
