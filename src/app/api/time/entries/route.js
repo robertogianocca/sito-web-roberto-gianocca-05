@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { isStudioAuthenticated, unauthorizedJson } from "@/lib/studio-auth";
+import { withStudioAuth } from "@/lib/studio-auth";
 import { ensureInit } from "@/lib/turso";
 import {
   listTimeEntries,
@@ -11,8 +11,7 @@ import {
 } from "@/lib/time";
 import { zonedDayRange } from "@/lib/timeZone";
 
-export async function GET(request) {
-  if (!isStudioAuthenticated(request)) return unauthorizedJson();
+export const GET = withStudioAuth(async (request) => {
   await ensureInit();
 
   const { searchParams } = new URL(request.url);
@@ -47,10 +46,9 @@ export async function GET(request) {
   const to = searchParams.get("to") || undefined;
   const entries = await listTimeEntries({ from, to });
   return NextResponse.json({ entries });
-}
+});
 
-export async function POST(request) {
-  if (!isStudioAuthenticated(request)) return unauthorizedJson();
+export const POST = withStudioAuth(async (request) => {
   await ensureInit();
 
   let body;
@@ -70,10 +68,9 @@ export async function POST(request) {
   });
 
   return NextResponse.json(entry, { status: 201 });
-}
+});
 
-export async function PATCH(request) {
-  if (!isStudioAuthenticated(request)) return unauthorizedJson();
+export const PATCH = withStudioAuth(async (request) => {
   await ensureInit();
 
   let body;
@@ -96,4 +93,4 @@ export async function PATCH(request) {
     to: body.to,
   });
   return NextResponse.json(result);
-}
+});

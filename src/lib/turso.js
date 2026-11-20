@@ -81,6 +81,13 @@ export async function ensureInit() {
     pomodoroMinutes INTEGER NOT NULL DEFAULT 25
   )`);
 
+  // Failed studio logins per client (see lib/login-throttle.js).
+  await db.execute(`CREATE TABLE IF NOT EXISTS login_attempts (
+    key TEXT PRIMARY KEY,
+    failures INTEGER NOT NULL DEFAULT 0,
+    windowStart TEXT NOT NULL DEFAULT ''
+  )`);
+
   await db
     .execute("ALTER TABLE projects ADD COLUMN size TEXT NOT NULL DEFAULT ''")
     .catch(() => {});

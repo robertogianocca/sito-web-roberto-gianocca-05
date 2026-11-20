@@ -23,15 +23,19 @@ TURSO_DATABASE_URL=libsql://nome-db-....turso.io
 TURSO_AUTH_TOKEN=eyJ...
 ```
 
+`ARCHIVE_SESSION_SECRET` firma i token di sessione: usa una stringa casuale lunga (es. `openssl rand -hex 32`). Cambiarla disconnette tutti i dispositivi.
+
 Il cookie di sessione resta `archive_session` (compatibilità con i deploy esistenti).
 
 ---
 
 ## Autenticazione e SEO
 
-- **Proxy** (`src/proxy.js`): le route `/studio` (tranne login) richiedono il cookie; altrimenti redirect al login. I path `/archive` vengono rediretti a `/studio/...`.
-- **Login / logout**: Server Action in `src/app/[locale]/studio/`.
-- **API**: helper `isStudioAuthenticated()` in `src/lib/studio-auth.js` (cookie; in futuro potrà accettare anche Bearer token per app Mac/mobile).
+- **Sessione** (`src/lib/studio-auth.js`): il cookie contiene un token firmato (HMAC-SHA256 con `ARCHIVE_SESSION_SECRET`) che scade dopo 30 giorni. Il logout cancella il cookie; per invalidare tutte le sessioni aperte si cambia `ARCHIVE_SESSION_SECRET`.
+- **Proxy** (`src/proxy.js`): le route `/studio` (tranne login) richiedono una sessione valida; altrimenti redirect al login. I path `/archive` vengono rediretti a `/studio/...`.
+- **Layout Studio**: verifica di nuovo la sessione prima di leggere i dati, indipendentemente dal proxy.
+- **Login / logout**: Server Action in `src/app/[locale]/studio/`. Password confrontata a tempo costante. Dopo 5 tentativi sbagliati in 15 minuti dallo stesso IP il login è bloccato fino alla fine della finestra (`src/lib/login-throttle.js`, tabella `login_attempts`; l'IP è salvato solo come hash).
+- **API**: ogni route è avvolta in `withStudioAuth()` (`src/lib/studio-auth.js`), che risponde 401 senza sessione valida. In futuro potrà accettare anche un token Bearer per l'app Mac/mobile.
 - **noindex**: header `X-Robots-Tag` su `/studio` e `/archive` in `next.config.mjs`.
 
 ---
@@ -104,7 +108,7 @@ Risposta timer arricchita con `status`, `elapsedSeconds`, `pomodoroEndsAt` (util
 
 - Stesse API REST JSON (non solo Server Actions)
 - Timer sul server già pronto
-- Auth: aggiungere `Authorization: Bearer` in `isStudioAuthenticated` quando serve
+- Auth: aggiungere `Authorization: Bearer` in `readRequestToken()` (`src/lib/studio-auth.js`) quando serve
 - Timestamp ISO UTC già usati ovunque
 
 ---

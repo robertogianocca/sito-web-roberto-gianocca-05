@@ -1,7 +1,7 @@
 import createMiddleware from "next-intl/middleware";
 import { routing } from "@/i18n/routing";
 import { NextResponse } from "next/server";
-import { STUDIO_SESSION_COOKIE } from "@/lib/studio-auth";
+import { isStudioAuthenticated } from "@/lib/studio-auth";
 
 const handler = createMiddleware(routing);
 
@@ -33,7 +33,7 @@ function localeFromPath(pathname) {
   return pathname.startsWith("/it/") || pathname === "/it" ? "it" : "en";
 }
 
-export function proxy(request) {
+export async function proxy(request) {
   const { pathname } = request.nextUrl;
   const locale = localeFromPath(pathname);
 
@@ -48,15 +48,14 @@ export function proxy(request) {
     );
   }
 
-  if (isStudioRoute(pathname) && !isStudioLoginRoute(pathname)) {
-    const session = request.cookies.get(STUDIO_SESSION_COOKIE);
-    const secret = process.env.ARCHIVE_SESSION_SECRET;
-
-    if (!secret || !session || session.value !== secret) {
-      return NextResponse.redirect(
-        new URL(`/${locale}/studio/login`, request.url)
-      );
-    }
+  if (
+    isStudioRoute(pathname) &&
+    !isStudioLoginRoute(pathname) &&
+    !(await isStudioAuthenticated(request))
+  ) {
+    return NextResponse.redirect(
+      new URL(`/${locale}/studio/login`, request.url)
+    );
   }
 
   return handler(request);

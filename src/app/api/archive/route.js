@@ -6,23 +6,16 @@ import {
   normalizeBackupType,
 } from "@/lib/archive";
 import { ensureInit } from "@/lib/turso";
-import { isStudioAuthenticated } from "@/lib/studio-auth";
+import { withStudioAuth } from "@/lib/studio-auth";
 
 
-export async function GET(request) {
-  if (!isStudioAuthenticated(request)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+export const GET = withStudioAuth(async (request) => {
   await ensureInit();
   const projects = await readProjects();
   return NextResponse.json(projects);
-}
+});
 
-export async function POST(request) {
-  if (!isStudioAuthenticated(request)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export const POST = withStudioAuth(async (request) => {
   let body;
   try {
     body = await request.json();
@@ -57,4 +50,4 @@ export async function POST(request) {
 
   await createProject(project);
   return NextResponse.json(project, { status: 201 });
-}
+});

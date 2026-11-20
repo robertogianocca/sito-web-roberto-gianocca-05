@@ -6,14 +6,10 @@ import {
   normalizeBackupType,
 } from "@/lib/archive";
 import { ensureInit } from "@/lib/turso";
-import { isStudioAuthenticated } from "@/lib/studio-auth";
+import { withStudioAuth } from "@/lib/studio-auth";
 
 
-export async function PUT(request, { params }) {
-  if (!isStudioAuthenticated(request)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export const PUT = withStudioAuth(async (request, { params }) => {
   const { id } = await params;
 
   let body;
@@ -53,15 +49,11 @@ export async function PUT(request, { params }) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
   return NextResponse.json(updated);
-}
+});
 
-export async function DELETE(request, { params }) {
-  if (!isStudioAuthenticated(request)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export const DELETE = withStudioAuth(async (request, { params }) => {
   const { id } = await params;
   await ensureInit();
   await deleteProject(id);
   return NextResponse.json({ ok: true });
-}
+});

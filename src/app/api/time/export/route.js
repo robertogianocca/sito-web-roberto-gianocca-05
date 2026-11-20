@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server";
 import ExcelJS from "exceljs";
-import { isStudioAuthenticated, unauthorizedJson } from "@/lib/studio-auth";
+import { withStudioAuth } from "@/lib/studio-auth";
 import { ensureInit } from "@/lib/turso";
 import { readProjects } from "@/lib/archive";
 import { listTimeEntries, formatDuration, formatDurationHours } from "@/lib/time";
 
-export async function GET(request) {
-  if (!isStudioAuthenticated(request)) return unauthorizedJson();
+export const GET = withStudioAuth(async (request) => {
   await ensureInit();
 
   const { searchParams } = new URL(request.url);
@@ -104,4 +103,4 @@ export async function GET(request) {
       "Content-Disposition": `attachment; filename="time-${dateStamp}.xlsx"`,
     },
   });
-}
+});

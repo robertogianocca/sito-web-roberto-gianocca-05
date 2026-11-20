@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { readProjects, backupTypeLabel } from "@/lib/archive";
 import { ensureInit } from "@/lib/turso";
-import { isStudioAuthenticated } from "@/lib/studio-auth";
+import { withStudioAuth } from "@/lib/studio-auth";
 import ExcelJS from "exceljs";
 
 
@@ -35,11 +35,7 @@ function escapeCsvCell(val) {
   return `"${String(val).replace(/"/g, '""')}"`;
 }
 
-export async function GET(request) {
-  if (!isStudioAuthenticated(request)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export const GET = withStudioAuth(async (request) => {
   await ensureInit();
   const { searchParams } = new URL(request.url);
   const format = searchParams.get("format") ?? "xlsx";
@@ -111,4 +107,4 @@ export async function GET(request) {
       "Content-Disposition": `attachment; filename="archive-${dateStamp}.xlsx"`,
     },
   });
-}
+});

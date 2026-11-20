@@ -53,9 +53,9 @@ Al primo accesso, `ensureInit()` in `src/lib/turso.js` crea le tabelle e popola 
 
 ## Autenticazione e SEO
 
-- **Proxy** (`src/proxy.js`): le route `/studio` (tranne login) richiedono il cookie `archive_session` uguale a `ARCHIVE_SESSION_SECRET`; altrimenti redirect al login. I path legacy `/archive` reindirizzano a `/studio/...`.
-- **Login** (`src/app/[locale]/studio/login/`): Server Action imposta cookie HttpOnly, `secure` in produzione, durata 30 giorni.
-- **API**: `isStudioAuthenticated()` in `src/lib/studio-auth.js`.
+- **Proxy** (`src/proxy.js`): le route `/studio` (tranne login) richiedono una sessione valida nel cookie `archive_session`; altrimenti redirect al login. I path legacy `/archive` reindirizzano a `/studio/...`.
+- **Login** (`src/app/[locale]/studio/login/`): Server Action imposta un token firmato in un cookie HttpOnly, `secure` in produzione, valido 30 giorni. Dettagli e limite ai tentativi in [studio.md](./studio.md#autenticazione-e-seo).
+- **API**: ogni route è avvolta in `withStudioAuth()` di `src/lib/studio-auth.js`.
 - **noindex**: header `X-Robots-Tag: noindex, nofollow` in `next.config.mjs` per le route studio e archive.
 
 Se sembra che l’archivio non sia protetto, prova in finestra anonima: potresti avere già un cookie di sessione valido.
@@ -158,7 +158,6 @@ Alla prima esecuzione, i default provengono da `src/data/archive/config.js`. Dop
 | `/api/archive/clients` | GET, POST, PUT, DELETE | Clienti; PUT rinomina con cascade |
 | `/api/archive/settings` | GET, PUT | Impostazioni; PUT accetta `renames` per cascade |
 | `/api/archive/export` | GET | Export `?format=xlsx` o `?format=csv` |
-| `/api/archive/migrate` | POST | Migrazione una tantum da JSON locali |
 
 ---
 
@@ -168,16 +167,6 @@ Alla prima esecuzione, i default provengono da `src/data/archive/config.js`. Dop
 - Modifiche su preview Vercel sono persistenti (a differenza del vecchio storage JSON su filesystem).
 - Per backup aggiuntivo: usa Export → Excel/CSV.
 
-### Migrazione da JSON (solo se avevi dati in `src/data/archive/*.json`)
-
-Dopo il deploy, una volta autenticato:
-
-```js
-await fetch('/api/archive/migrate', { method: 'POST' }).then(r => r.json())
-```
-
-Poi puoi ignorare i file JSON legacy.
-
 ---
 
 ## File coinvolti
@@ -186,7 +175,8 @@ Poi puoi ignorare i file JSON legacy.
 |----------|--------|
 | `src/lib/turso.js` | Client Turso, `ensureInit()`, creazione tabelle |
 | `src/lib/archive.js` | CRUD progetti, clienti, settings, `cascadeFieldRename()` |
-| `src/lib/studio-auth.js` | Auth cookie condivisa (Studio) |
+| `src/lib/studio-auth.js` | Sessione firmata e `withStudioAuth()` (Studio) |
+| `src/lib/login-throttle.js` | Limite ai tentativi di login |
 | `src/proxy.js` | Auth middleware per route studio + redirect legacy archive |
 | `src/app/[locale]/studio/(app)/archive/` | Pagina archivio |
 | `src/app/[locale]/studio/login/` | Login Studio |

@@ -1,23 +1,16 @@
 import { NextResponse } from "next/server";
 import { readClients, addClient, deleteClient, cascadeFieldRename } from "@/lib/archive";
 import { ensureInit } from "@/lib/turso";
-import { isStudioAuthenticated } from "@/lib/studio-auth";
+import { withStudioAuth } from "@/lib/studio-auth";
 
 
-export async function GET(request) {
-  if (!isStudioAuthenticated(request)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+export const GET = withStudioAuth(async (request) => {
   await ensureInit();
   const clients = await readClients();
   return NextResponse.json(clients);
-}
+});
 
-export async function POST(request) {
-  if (!isStudioAuthenticated(request)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export const POST = withStudioAuth(async (request) => {
   let body;
   try {
     body = await request.json();
@@ -33,13 +26,9 @@ export async function POST(request) {
   await ensureInit();
   const clients = await addClient(name);
   return NextResponse.json(clients);
-}
+});
 
-export async function PUT(request) {
-  if (!isStudioAuthenticated(request)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export const PUT = withStudioAuth(async (request) => {
   let body;
   try {
     body = await request.json();
@@ -63,13 +52,9 @@ export async function PUT(request) {
   const clients = await addClient(to);
   await cascadeFieldRename("client", from, to);
   return NextResponse.json(clients);
-}
+});
 
-export async function DELETE(request) {
-  if (!isStudioAuthenticated(request)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export const DELETE = withStudioAuth(async (request) => {
   let body;
   try {
     body = await request.json();
@@ -85,4 +70,4 @@ export async function DELETE(request) {
   await ensureInit();
   const clients = await deleteClient(name);
   return NextResponse.json(clients);
-}
+});

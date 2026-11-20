@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { isStudioAuthenticated, unauthorizedJson } from "@/lib/studio-auth";
+import { withStudioAuth } from "@/lib/studio-auth";
 import { ensureInit } from "@/lib/turso";
 import {
   getTimer,
@@ -13,20 +13,18 @@ import {
 } from "@/lib/time";
 
 /** Read-only: completing a Pomodoro goes through POST `checkPomodoro`. */
-export async function GET(request) {
-  if (!isStudioAuthenticated(request)) return unauthorizedJson();
+export const GET = withStudioAuth(async (request) => {
   await ensureInit();
 
   const timer = await getTimer();
   return NextResponse.json({ timer, pomodoroCompleted: false, entry: null });
-}
+});
 
 function optionalString(value) {
   return typeof value === "string" ? value : undefined;
 }
 
-export async function POST(request) {
-  if (!isStudioAuthenticated(request)) return unauthorizedJson();
+export const POST = withStudioAuth(async (request) => {
   await ensureInit();
 
   let body;
@@ -90,4 +88,4 @@ export async function POST(request) {
     console.error("Timer action failed", action, err);
     return NextResponse.json({ error: "Timer error" }, { status: 500 });
   }
-}
+});
