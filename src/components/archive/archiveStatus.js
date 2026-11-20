@@ -12,10 +12,7 @@ export { formatProjectId };
  * unarchived  — no archiveDrive set
  */
 export function getStatus(project) {
-  const hasArchive = Array.isArray(project.archiveDrive)
-    ? project.archiveDrive.length > 0
-    : Boolean(project.archiveDrive);
-  if (!hasArchive) return "unarchived";
+  if ((project.archiveDrive ?? []).length === 0) return "unarchived";
   const backupDone = isBackupDone(project.backupType);
   if (project.cleaned && backupDone) return "complete";
   if (project.cleaned || backupDone) return "partial";

@@ -3,13 +3,9 @@
 import { useState } from "react";
 import { formatDuration, toLocalDateInput } from "@/lib/timeFormat";
 import { useJsonResource } from "@/components/studio/hooks/useJsonResource";
+import { projectLabel } from "./projectLabel";
 import { ErrorBanner } from "@/components/studio/ui/ErrorBanner";
 
-function projectLabel(project) {
-  if (!project) return "No project";
-  const id = project.projectId ? `${project.projectId} — ` : "";
-  return `${id}${project.title || "Untitled"}`;
-}
 
 export function WeekView({ projectMap, locale }) {
   const [weekOffset, setWeekOffset] = useState(0);

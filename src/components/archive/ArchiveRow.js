@@ -3,6 +3,11 @@
 import { getStatus, STATUS_META, formatProjectId } from "./archiveStatus";
 import { backupTypeLabel } from "@/lib/archiveBackup";
 
+/** "A, B" for a list field (always an array from the API), "—" when empty. */
+function listText(values) {
+  return (values ?? []).join(", ") || "—";
+}
+
 function Check({ value }) {
   if (value) {
     return (
@@ -88,11 +93,11 @@ export function ArchiveRow({ project, onEdit }) {
           </span>
         )}
       </td>
-      <td className={mutedCellClass}>{Array.isArray(project.client) ? (project.client.join(", ") || "—") : (project.client || "—")}</td>
-      <td className={mutedCellClass}>{Array.isArray(project.type) ? (project.type.join(", ") || "—") : (project.type || "—")}</td>
+      <td className={mutedCellClass}>{listText(project.client)}</td>
+      <td className={mutedCellClass}>{listText(project.type)}</td>
       <td className={mutedCellClass}>{project.date || "—"}</td>
-      <td className={mutedCellClass}>{Array.isArray(project.archiveDrive) ? (project.archiveDrive.join(", ") || "—") : (project.archiveDrive || "—")}</td>
-      <td className={mutedCellClass}>{Array.isArray(project.backupDrive) ? (project.backupDrive.join(", ") || "—") : (project.backupDrive || "—")}</td>
+      <td className={mutedCellClass}>{listText(project.archiveDrive)}</td>
+      <td className={mutedCellClass}>{listText(project.backupDrive)}</td>
       <td className={mutedCellClass}>{project.size || "—"}</td>
       <td className="px-3 py-2 text-center">
         <Check value={project.cleaned} />

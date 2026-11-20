@@ -3,15 +3,11 @@
 import { useId, useMemo, useRef, useState } from "react";
 import { useListbox } from "@/components/studio/hooks/useListbox";
 import { useOutsideClick } from "@/components/studio/hooks/useOutsideClick";
+import { projectLabel } from "./projectLabel";
 
-export function projectLabel(p) {
-  if (!p) return "No project";
-  const id = p.projectId ? `${p.projectId} — ` : "";
-  return `${id}${p.title || "Untitled"}`;
-}
 
 function projectSearchText(p) {
-  const clients = Array.isArray(p.client) ? p.client.join(" ") : p.client ?? "";
+  const clients = (p.client ?? []).join(" ");
   return `${p.projectId ?? ""} ${p.title ?? ""} ${clients}`.toLowerCase();
 }
 
