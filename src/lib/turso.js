@@ -117,24 +117,23 @@ export async function ensureInit() {
     });
   }
 
-  const { rows } = await db.execute("SELECT COUNT(*) as count FROM settings");
-  const count = Number(rows[0]?.count ?? 0);
-
-  if (count === 0) {
-    await db.batch(
-      [
-        {
-          sql: "INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)",
-          args: ["projectTypes", JSON.stringify(PROJECT_TYPES)],
-        },
-        {
-          sql: "INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)",
-          args: ["archiveDrives", JSON.stringify(ARCHIVE_DRIVES)],
-        },
-      ],
-      "write"
-    );
-  }
+  // Default lists for a new database. INSERT OR IGNORE never touches lists
+  // that already exist (even emptied ones). This used to run only when the
+  // settings table was empty, but the migration flag above is written first,
+  // so a new database never got its default types and drives.
+  await db.batch(
+    [
+      {
+        sql: "INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)",
+        args: ["projectTypes", JSON.stringify(PROJECT_TYPES)],
+      },
+      {
+        sql: "INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)",
+        args: ["archiveDrives", JSON.stringify(ARCHIVE_DRIVES)],
+      },
+    ],
+    "write"
+  );
 
   const { rows: activityMigrationRows } = await db.execute(
     "SELECT value FROM settings WHERE key = 'activityToDescriptionMigrated'"
