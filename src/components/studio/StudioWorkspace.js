@@ -12,7 +12,7 @@ function tabFromPath(pathname) {
   return "archive";
 }
 
-export function StudioWorkspace({ locale, initialTimer = null }) {
+export function StudioWorkspace() {
   const pathname = usePathname();
   const activeTab = tabFromPath(pathname);
 
@@ -55,9 +55,7 @@ export function StudioWorkspace({ locale, initialTimer = null }) {
           inert={activeTab !== "time" ? true : undefined}
         >
           <TimeShell
-            locale={locale}
             active={activeTab === "time"}
-            initialTimer={initialTimer}
           />
         </div>
       ) : null}

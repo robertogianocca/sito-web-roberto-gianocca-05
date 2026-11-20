@@ -1,13 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { formatDuration, toLocalDateInput } from "@/lib/timeFormat";
+import { formatDuration, STUDIO_LOCALE, toLocalDateInput } from "@/lib/timeFormat";
 import { useJsonResource } from "@/components/studio/hooks/useJsonResource";
 import { projectLabel } from "./projectLabel";
 import { ErrorBanner } from "@/components/studio/ui/ErrorBanner";
 
 
-export function WeekView({ projectMap, locale }) {
+export function WeekView({ projectMap }) {
   const [weekOffset, setWeekOffset] = useState(0);
 
   // A day of the requested week, as a date (not a timestamp) so the URL stays
@@ -20,11 +20,11 @@ export function WeekView({ projectMap, locale }) {
   );
 
   const weekLabel = data
-    ? `${new Date(data.weekStart).toLocaleDateString(locale, {
+    ? `${new Date(data.weekStart).toLocaleDateString(STUDIO_LOCALE, {
         day: "numeric",
         month: "short",
       })} – ${new Date(new Date(data.weekEnd).getTime() - 1).toLocaleDateString(
-        locale,
+        STUDIO_LOCALE,
         { day: "numeric", month: "short", year: "numeric" }
       )}`
     : "";
@@ -77,10 +77,10 @@ export function WeekView({ projectMap, locale }) {
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-7">
             {data.days.map((day) => {
               const date = new Date(day.date + "T12:00:00");
-              const weekday = date.toLocaleDateString(locale, {
+              const weekday = date.toLocaleDateString(STUDIO_LOCALE, {
                 weekday: "short",
               });
-              const dayNum = date.toLocaleDateString(locale, {
+              const dayNum = date.toLocaleDateString(STUDIO_LOCALE, {
                 day: "numeric",
                 month: "short",
               });

@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { liveElapsedSeconds } from "./timerLive";
-import { useTimer } from "./useTimer";
+import { useStudioTimer } from "./TimerProvider";
 import { useNow } from "@/components/studio/hooks/useNow";
 import { TimerBar } from "./TimerBar";
 import { TodayView } from "./TodayView";
@@ -27,7 +27,7 @@ async function fetchToday() {
   });
 }
 
-export function TimeShell({ locale, active = true, initialTimer }) {
+export function TimeShell({ active = true }) {
   const { projects } = useStudioData();
 
   const [view, setView] = useState("today");
@@ -38,7 +38,6 @@ export function TimeShell({ locale, active = true, initialTimer }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
   const [listVersion, setListVersion] = useState(0);
-  const draftRef = useRef(null);
 
   const projectMap = useMemo(() => {
     const map = new Map();
@@ -71,15 +70,19 @@ export function TimeShell({ locale, active = true, initialTimer }) {
     timer,
     run: runTimer,
     refresh: refreshTimer,
-  } = useTimer({
-    initialTimer,
-    active,
     draftRef,
-    onEntryRecorded: async () => {
-      await refreshToday();
-      bumpLists();
-    },
-  });
+    onEntryRecorded,
+  } = useStudioTimer();
+
+  // When the timer records an entry (stop, Pomodoro), refresh today's list.
+  useEffect(
+    () =>
+      onEntryRecorded(async () => {
+        await refreshToday();
+        bumpLists();
+      }),
+    [onEntryRecorded, refreshToday, bumpLists]
+  );
 
   // First load. State is set only when the response arrives.
   useEffect(() => {
@@ -193,14 +196,15 @@ export function TimeShell({ locale, active = true, initialTimer }) {
         draftRef={draftRef}
       />
 
-      <div className="flex shrink-0 items-center justify-between gap-3 border-b border-zinc-200 px-6 py-2">
-        <nav className="flex items-center gap-1" aria-label="Time views">
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-zinc-200 px-4 py-2 sm:px-6">
+        <nav className="-mx-1 flex min-w-0 items-center gap-1 overflow-x-auto px-1" aria-label="Time views">
           {VIEWS.map((v) => (
             <button
               key={v.id}
               type="button"
               onClick={() => setView(v.id)}
-              className={`rounded-lg px-3 py-1.5 text-sm font-medium transition ${
+              aria-current={view === v.id ? "page" : undefined}
+              className={`shrink-0 whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium transition ${
                 view === v.id
                   ? "bg-zinc-100 text-zinc-900"
                   : "text-zinc-500 hover:bg-zinc-50 hover:text-zinc-800"
@@ -210,12 +214,12 @@ export function TimeShell({ locale, active = true, initialTimer }) {
             </button>
           ))}
         </nav>
-        <div className="flex items-center gap-2">
+        <div className="ml-auto flex items-center gap-2">
           {view === "today" && (
             <button
               type="button"
               onClick={openNewEntry}
-              className="flex h-8 items-center gap-1.5 rounded-lg bg-zinc-900 px-3 text-sm font-medium text-zinc-50 transition hover:bg-zinc-700"
+              className="flex h-8 items-center gap-1.5 whitespace-nowrap rounded-lg bg-zinc-900 px-3 text-sm font-medium text-zinc-50 transition hover:bg-zinc-700"
             >
               Add hours
             </button>
@@ -230,9 +234,9 @@ export function TimeShell({ locale, active = true, initialTimer }) {
         </div>
       </div>
 
-      <ErrorBanner className="mx-6 mt-3">{error}</ErrorBanner>
+      <ErrorBanner className="mx-4 mt-3 sm:mx-6">{error}</ErrorBanner>
 
-      <div className="min-h-0 flex-1 overflow-auto px-6 py-4">
+      <div className="min-h-0 flex-1 overflow-auto px-4 py-4 sm:px-6">
         {view === "today" && (
           <TodayView
             entries={todayEntries}
@@ -247,7 +251,7 @@ export function TimeShell({ locale, active = true, initialTimer }) {
           />
         )}
         {view === "week" && (
-          <WeekView projectMap={projectMap} locale={locale} />
+          <WeekView projectMap={projectMap} />
         )}
         {view === "projects" && (
           <ProjectsView

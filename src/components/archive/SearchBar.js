@@ -2,7 +2,7 @@
 
 export function SearchBar({ value, onChange }) {
   return (
-    <div className="relative">
+    <div className="relative w-full sm:w-auto">
       <svg
         className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400"
         fill="none"
@@ -20,7 +20,7 @@ export function SearchBar({ value, onChange }) {
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder="Search title, client, ID…"
-        className="h-8 w-64 rounded-lg border border-zinc-300 bg-background pl-8 pr-3 text-sm text-foreground outline-none ring-zinc-400 focus:ring-2 placeholder:text-zinc-400"
+        className="h-9 w-full rounded-lg sm:h-8 sm:w-64 border border-zinc-300 bg-background pl-8 pr-3 text-sm text-foreground outline-none ring-zinc-400 focus:ring-2 placeholder:text-zinc-400"
       />
     </div>
   );

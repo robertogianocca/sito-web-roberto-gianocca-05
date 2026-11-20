@@ -125,7 +125,7 @@ export function TimerBar({
     "inline-flex h-12 items-center justify-center gap-2 rounded-xl px-5 text-sm font-medium transition disabled:opacity-60";
 
   return (
-    <header className="shrink-0 border-b border-zinc-200 bg-background px-6 py-4">
+    <header className="shrink-0 border-b border-zinc-200 bg-background px-4 py-4 sm:px-6">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-lg font-semibold text-foreground">Time</h1>
       </div>

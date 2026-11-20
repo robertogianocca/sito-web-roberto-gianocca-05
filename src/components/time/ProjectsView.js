@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import {
   formatDuration,
+  plural,
   lastDaysRange,
   localDateRangeParams,
 } from "@/lib/timeFormat";
@@ -89,7 +90,7 @@ export function ProjectsView({
             </span>
             <span className="text-zinc-400">
               {" "}
-              · {groups.length} project{groups.length === 1 ? "" : "s"}
+              · {plural(groups.length, "project")}
             </span>
           </p>
 
@@ -116,8 +117,7 @@ export function ProjectsView({
                         {g.label}
                       </span>
                       <span className="text-xs text-zinc-400">
-                        {g.descriptions.length} task
-                        {g.descriptions.length === 1 ? "" : "s"}
+                        {plural(g.descriptions.length, "task")}
                       </span>
                       <span className="font-mono text-sm font-semibold tabular-nums text-zinc-800">
                         {formatDuration(g.totalSeconds)}

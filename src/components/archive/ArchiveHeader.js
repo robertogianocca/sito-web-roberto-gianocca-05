@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { SearchBar } from "./SearchBar";
+import { COLUMNS } from "./ArchiveTable";
 import { FilterBar } from "./FilterBar";
 import { ExportButton } from "./ExportButton";
 import { StatusLegend } from "./StatusLegend";
@@ -19,9 +21,20 @@ export function ArchiveHeader({
   driveUsage,
   onOpenSettings,
   onNew,
+  sortKey,
+  sortDir,
+  onSortKey,
+  onToggleSortDir,
 }) {
+  // Small screens: filters fold away behind a button; the table headers are
+  // hidden there, so sorting gets its own control.
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const activeFilters = ["type", "year", "status", "archiveDrive"].filter(
+    (key) => filters[key] !== "all"
+  ).length;
+
   return (
-    <header className="border-b border-zinc-200 bg-background px-6 py-4">
+    <header className="border-b border-zinc-200 bg-background px-4 py-4 sm:px-6">
       <div className="mb-3 flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <h1 className="text-lg font-semibold text-foreground">Archive</h1>
@@ -77,7 +90,47 @@ export function ArchiveHeader({
 
       <div className="flex flex-wrap items-center gap-3">
         <SearchBar value={filters.search} onChange={setFilter("search")} />
-        <div className="flex-1">
+        <div className="flex w-full items-center gap-2 md:hidden">
+          <button
+            type="button"
+            aria-expanded={filtersOpen}
+            aria-controls="archive-filters"
+            onClick={() => setFiltersOpen((open) => !open)}
+            className={`flex h-9 items-center gap-1.5 rounded-lg border px-3 text-sm transition ${
+              activeFilters > 0
+                ? "border-transparent bg-zinc-600 text-zinc-50"
+                : filtersOpen
+                  ? "border-zinc-400 bg-zinc-100 text-zinc-800"
+                  : "border-zinc-300 bg-background text-zinc-600"
+            }`}
+          >
+            Filters{activeFilters > 0 ? ` (${activeFilters})` : ""}
+          </button>
+          <label className="sr-only" htmlFor="archive-sort">
+            Sort by
+          </label>
+          <select
+            id="archive-sort"
+            value={sortKey}
+            onChange={(e) => onSortKey(e.target.value)}
+            className="h-9 min-w-0 flex-1 rounded-lg border border-zinc-300 bg-background px-2 text-sm text-foreground"
+          >
+            {COLUMNS.map((column) => (
+              <option key={column.key} value={column.key}>
+                Sort: {column.key === "backupType" ? "Backup type" : column.label}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={onToggleSortDir}
+            aria-label={sortDir === "asc" ? "Ascending, switch to descending" : "Descending, switch to ascending"}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-zinc-300 bg-background text-zinc-600"
+          >
+            {sortDir === "asc" ? "↑" : "↓"}
+          </button>
+        </div>
+        <div id="archive-filters" className={`w-full md:block md:w-auto md:flex-1 ${filtersOpen ? "block" : "hidden"}`}>
           <FilterBar
             filterType={filters.type}
             filterYear={filters.year}

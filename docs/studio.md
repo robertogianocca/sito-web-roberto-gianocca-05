@@ -40,6 +40,13 @@ Il cookie di sessione resta `archive_session` (compatibilità con i deploy esist
 
 ---
 
+## Interfaccia
+
+- **Lingua:** lo Studio è solo in inglese, per scelta (è uno strumento privato). Date e orari usano ovunque `en-GB` (24 ore, giorno prima del mese): `STUDIO_LOCALE` e `plural()` in `src/lib/timeFormat.js`.
+- **Telefono:** sotto i 768 px l'archivio mostra schede invece della tabella (`ArchiveCard`), i filtri sono dietro il pulsante "Filters" e l'ordinamento ha un selettore proprio (le intestazioni della tabella non si vedono). Il drawer del progetto passa a una colonna; i pulsanti piccoli hanno un'area di tocco più grande sui dispositivi touch (`TOUCH_TARGET` in `src/components/studio/ui/touch.js`).
+- **Timer condiviso:** `TimerProvider` (nel layout Studio) tiene il timer per entrambe le schede. La scheda Time mostra `● 0:12:34` mentre il timer gira (ambra in pausa), e il Pomodoro si chiude allo scadere anche se la scheda Time non è aperta.
+- **Orologio e hydration:** `useNow()` vale `null` sul server e durante l'hydration; in quel momento il tempo mostrato è `elapsedSeconds` calcolato dal server, poi parte l'orologio vivo. Così l'HTML del server e quello del browser coincidono.
+
 ## Archivio
 
 Documentazione dettagliata: [archive.md](./archive.md).

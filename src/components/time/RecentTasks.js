@@ -2,6 +2,7 @@
 
 import { projectLabel } from "./projectLabel";
 import { RestartButton } from "./RestartButton";
+import { STUDIO_LOCALE } from "@/lib/timeFormat";
 
 const RECENT_LIMIT = 5;
 
@@ -16,7 +17,7 @@ function formatLastUsed(iso) {
   const diffDays = Math.round((today - day) / 86400000);
   if (diffDays === 0) return "Today";
   if (diffDays === 1) return "Yesterday";
-  return date.toLocaleDateString(undefined, { day: "numeric", month: "short" });
+  return date.toLocaleDateString(STUDIO_LOCALE, { day: "numeric", month: "short" });
 }
 
 export function RecentTasks({ tasks, projectMap, timerActive, onRestart }) {

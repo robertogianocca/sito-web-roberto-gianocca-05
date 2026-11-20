@@ -1,5 +1,7 @@
 "use client";
 
+import { TOUCH_TARGET } from "@/components/studio/ui/touch";
+
 const inputClass =
   "w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-foreground placeholder-zinc-400 outline-none transition focus:border-zinc-400 focus:ring-1 focus:ring-zinc-300";
 
@@ -55,7 +57,7 @@ export function RenameField({ value, onChange, onConfirm, onCancel, compact = fa
         type="button"
         aria-label="Confirm rename"
         onClick={onConfirm}
-        className={`${button} text-emerald-600 transition hover:bg-emerald-100`}
+        className={`${button} text-emerald-600 transition hover:bg-emerald-100 ${TOUCH_TARGET}`}
       >
         <CheckIcon className={icon} />
       </button>
@@ -63,7 +65,7 @@ export function RenameField({ value, onChange, onConfirm, onCancel, compact = fa
         type="button"
         aria-label="Cancel rename"
         onClick={onCancel}
-        className={`${button} text-zinc-400 transition hover:bg-zinc-200 hover:text-zinc-700`}
+        className={`${button} text-zinc-400 transition hover:bg-zinc-200 hover:text-zinc-700 ${TOUCH_TARGET}`}
       >
         <CrossIcon className={icon} />
       </button>

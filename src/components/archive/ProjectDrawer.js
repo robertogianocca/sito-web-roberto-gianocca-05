@@ -170,7 +170,7 @@ export function ProjectDrawer({
                     required
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <div>
                     <label className={labelClass} htmlFor="f-client">Client</label>
                     <MultiCombobox
@@ -196,7 +196,7 @@ export function ProjectDrawer({
                     />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <div>
                     <label className={labelClass} htmlFor="f-date">
                       Date
@@ -207,7 +207,7 @@ export function ProjectDrawer({
                       className={inputClass}
                       value={form.date}
                       onChange={(e) => set("date", e.target.value)}
-                      placeholder="2024-06-15 or Maggio 2026"
+                      placeholder="2024-06-15 or May 2026"
                     />
                   </div>
                   <div>
@@ -228,7 +228,7 @@ export function ProjectDrawer({
 
             <section>
               <p className={sectionTitle}>Storage</p>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
                   <label className={labelClass} htmlFor="f-archiveDrive">Archive drive</label>
                   <MultiCombobox

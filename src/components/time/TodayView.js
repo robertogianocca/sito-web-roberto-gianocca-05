@@ -1,6 +1,6 @@
 "use client";
 
-import { formatDuration } from "@/lib/timeFormat";
+import { formatDuration, STUDIO_LOCALE } from "@/lib/timeFormat";
 import { projectLabel } from "./projectLabel";
 import { EntryActions } from "./EntryActions";
 import { RecentTasks } from "./RecentTasks";
@@ -9,10 +9,10 @@ import { RestartButton } from "./RestartButton";
 function formatTimeRange(startedAt, endedAt) {
   const opts = { hour: "2-digit", minute: "2-digit" };
   const start = startedAt
-    ? new Date(startedAt).toLocaleTimeString(undefined, opts)
+    ? new Date(startedAt).toLocaleTimeString(STUDIO_LOCALE, opts)
     : "—";
   const end = endedAt
-    ? new Date(endedAt).toLocaleTimeString(undefined, opts)
+    ? new Date(endedAt).toLocaleTimeString(STUDIO_LOCALE, opts)
     : "—";
   return `${start} – ${end}`;
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef } from "react";
+import { TOUCH_TARGET } from "./touch";
 
 const FOCUSABLE = [
   "a[href]",
@@ -126,7 +127,7 @@ export function Drawer({
           <button
             type="button"
             onClick={onClose}
-            className="flex h-7 w-7 items-center justify-center rounded-md text-zinc-400 transition hover:bg-zinc-100 hover:text-foreground focus-visible:outline-2 focus-visible:outline-zinc-400"
+            className={`flex h-7 w-7 items-center justify-center rounded-md text-zinc-400 transition hover:bg-zinc-100 hover:text-foreground focus-visible:outline-2 focus-visible:outline-zinc-400 ${TOUCH_TARGET}`}
             aria-label={closeLabel}
           >
             <svg
