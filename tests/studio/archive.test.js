@@ -100,6 +100,68 @@ describe("projects", () => {
   });
 });
 
+describe("renames and removals in projects", () => {
+  const listOf = async (column) =>
+    (await db().execute(`SELECT ${column} AS v FROM projects ORDER BY createdAt, id`)).rows.map((r) => r.v);
+
+  it("renames names containing quotes and backslashes", async () => {
+    await addProject({ client: ['Studio "Luce"', "Anna"] });
+    await addProject({ archiveDrive: ["Back\\slash"] });
+    await cascadeFieldRename("client", 'Studio "Luce"', 'Studio "Ombra"');
+    await cascadeFieldRename("archiveDrive", "Back\\slash", "Slash");
+    const projects = await readProjects();
+    expect(projects.flatMap((p) => p.client).sort()).toEqual(["Anna", 'Studio "Ombra"']);
+    expect(projects.flatMap((p) => p.archiveDrive)).toEqual(["Slash"]);
+  });
+
+  it("keeps a value once when the new name is already on the project", async () => {
+    await addProject({ client: ["Anna", "Anna B."] });
+    await cascadeFieldRename("client", "Anna", "Anna B.");
+    expect((await readProjects())[0].client).toEqual(["Anna B."]);
+  });
+
+  it("converts legacy plain-text values and leaves empty ones alone", async () => {
+    await db().execute("INSERT INTO projects (id, client, createdAt) VALUES ('legacy', 'Anna', '1'), ('empty', '', '2')");
+    await cascadeFieldRename("client", "Anna", "Anna B.");
+    expect(await listOf("client")).toEqual(['["Anna B."]', ""]);
+  });
+
+  it("removes values from projects when asked, on both drive fields", async () => {
+    await addProject({ type: ["Video", "Drone"], archiveDrive: ["A"], backupDrive: ["A", "B"], client: ["Anna"] });
+    await saveSettings({
+      projectTypes: ["Drone"],
+      archiveDrives: ["B"],
+      clients: [],
+      removals: { projectTypes: ["Video"], archiveDrives: ["A"], clients: ["Anna"] },
+    });
+    const [project] = await readProjects();
+    expect(project).toMatchObject({ type: ["Drone"], archiveDrive: [], backupDrive: ["B"], client: [] });
+  });
+
+  it("keeps values that were removed from the list only", async () => {
+    await addProject({ type: ["Video"] });
+    await saveSettings({ projectTypes: [], archiveDrives: [] });
+    expect((await readProjects())[0].type).toEqual(["Video"]);
+  });
+
+  it("removes the new name when a value is renamed and then removed in one save", async () => {
+    await addProject({ type: ["Video"] });
+    await saveSettings({
+      projectTypes: [],
+      archiveDrives: [],
+      renames: { projectTypes: [{ from: "Video", to: "Film" }] },
+      removals: { projectTypes: ["Film"] },
+    });
+    expect((await readProjects())[0].type).toEqual([]);
+  });
+
+  it("does not remove a name that is back in the final list", async () => {
+    await addProject({ type: ["Video"] });
+    await saveSettings({ projectTypes: ["Video"], archiveDrives: [], removals: { projectTypes: ["Video"] } });
+    expect((await readProjects())[0].type).toEqual(["Video"]);
+  });
+});
+
 describe("settings", () => {
   it("keeps capacities only for drives that exist", async () => {
     await writeSettings({

@@ -58,6 +58,14 @@ export const settingsSaveSchema = z.object({
       clients: renameList.optional(),
     })
     .optional(),
+  /** Values removed from a list that are also removed from every project. */
+  removals: z
+    .object({
+      projectTypes: nameList.optional(),
+      archiveDrives: nameList.optional(),
+      clients: nameList.optional(),
+    })
+    .optional(),
   /** Final client list. When present, the client list is saved too. */
   clients: nameList.optional(),
 });

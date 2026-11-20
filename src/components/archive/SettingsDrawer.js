@@ -1,15 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Drawer } from "@/components/studio/ui/Drawer";
 import { ErrorBanner } from "@/components/studio/ui/ErrorBanner";
 import { apiFetch } from "@/components/studio/api";
 import { EditableList } from "./settings/EditableList";
 import { DrivesEditor } from "./settings/DrivesEditor";
+import { countUsage, originalName, unlistedNames } from "./settings/usage";
 
 const EMPTY_RENAMES = { projectTypes: [], archiveDrives: [], clients: [] };
+const EMPTY_REMOVALS = { projectTypes: [], archiveDrives: [], clients: [] };
 
-export function SettingsDrawer({ open, settings, clients, onClose, onSaved }) {
+export function SettingsDrawer({ open, settings, clients, projects = [], onClose, onSaved }) {
   const [projectTypes, setProjectTypes] = useState([]);
   const [archiveDrives, setArchiveDrives] = useState([]);
   const [driveCapacities, setDriveCapacities] = useState({});
@@ -17,10 +19,29 @@ export function SettingsDrawer({ open, settings, clients, onClose, onSaved }) {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
   const [renames, setRenames] = useState(EMPTY_RENAMES);
+  // Names removed from a list "and from its projects" in this session, as
+  // they are now: the server applies the renames first, then these removals.
+  const [removals, setRemovals] = useState(EMPTY_REMOVALS);
 
   function pushRename(key, from, to) {
     setRenames((prev) => ({ ...prev, [key]: [...prev[key], { from, to }] }));
   }
+
+  function pushRemoval(key, name) {
+    setRemovals((prev) => ({ ...prev, [key]: [...prev[key], name] }));
+  }
+
+  // Project counts per name, from the saved projects; a name renamed in this
+  // session is counted under its saved name.
+  const usage = useMemo(() => countUsage(projects), [projects]);
+  const usageFor = (key) => (name) => usage[key].get(originalName(name, renames[key])) ?? 0;
+  const unlistedFor = (key, items) =>
+    unlistedNames(
+      usage[key],
+      items,
+      renames[key],
+      removals[key].map((name) => originalName(name, renames[key]))
+    );
 
   // On opening (or when the saved data changes while open), start from the
   // saved values. Done during render, not in an effect.
@@ -38,6 +59,7 @@ export function SettingsDrawer({ open, settings, clients, onClose, onSaved }) {
       setLocalClients(clients ?? []);
       setSaveError(null);
       setRenames(EMPTY_RENAMES);
+      setRemovals(EMPTY_REMOVALS);
     }
   }
 
@@ -55,6 +77,7 @@ export function SettingsDrawer({ open, settings, clients, onClose, onSaved }) {
           archiveDrives,
           driveCapacities,
           renames,
+          removals,
           clients: localClients,
         },
         fallbackMessage: "Failed to save settings.",
@@ -85,6 +108,9 @@ export function SettingsDrawer({ open, settings, clients, onClose, onSaved }) {
             items={projectTypes}
             onChange={setProjectTypes}
             onRename={(from, to) => pushRename("projectTypes", from, to)}
+            usageOf={usageFor("projectTypes")}
+            unlisted={unlistedFor("projectTypes", projectTypes)}
+            onRemoveFromProjects={(name) => pushRemoval("projectTypes", name)}
           />
           <DrivesEditor
             drives={archiveDrives}
@@ -92,12 +118,18 @@ export function SettingsDrawer({ open, settings, clients, onClose, onSaved }) {
             onChangeDrives={setArchiveDrives}
             onChangeCapacities={setDriveCapacities}
             onRename={(from, to) => pushRename("archiveDrives", from, to)}
+            usageOf={usageFor("archiveDrives")}
+            unlisted={unlistedFor("archiveDrives", archiveDrives)}
+            onRemoveFromProjects={(name) => pushRemoval("archiveDrives", name)}
           />
           <EditableList
             label="Clients"
             items={localClients}
             onChange={setLocalClients}
             onRename={(from, to) => pushRename("clients", from, to)}
+            usageOf={usageFor("clients")}
+            unlisted={unlistedFor("clients", localClients)}
+            onRemoveFromProjects={(name) => pushRemoval("clients", name)}
           />
         </div>
 

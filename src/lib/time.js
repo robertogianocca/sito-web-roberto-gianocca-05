@@ -512,6 +512,16 @@ export async function listRecentTasks() {
   return [...map.values()];
 }
 
+/** How much time is logged on a project: `{ entryCount, totalSeconds }`. */
+export async function projectTimeSummary(projectId) {
+  const db = getTursoClient();
+  const { rows } = await db.execute({
+    sql: "SELECT COUNT(*) AS n, COALESCE(SUM(durationSeconds), 0) AS s FROM time_entries WHERE projectId = ?",
+    args: [projectId],
+  });
+  return { entryCount: Number(rows[0].n), totalSeconds: Number(rows[0].s) };
+}
+
 export async function deleteTimeEntry(id) {
   const db = getTursoClient();
   await db.execute({

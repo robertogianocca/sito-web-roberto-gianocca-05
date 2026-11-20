@@ -1,16 +1,54 @@
 "use client";
 
 import { sortAlpha, useListEditor } from "./listEditing";
-import { AddField, CrossIcon, RenameField, sectionLabelClass } from "./ListFields";
+import {
+  AddField,
+  CrossIcon,
+  ListNotice,
+  RemovalPrompt,
+  RenameField,
+  UnlistedNames,
+  UsageCount,
+  sectionLabelClass,
+} from "./ListFields";
 import { TOUCH_TARGET } from "@/components/studio/ui/touch";
 
-/** A list of names shown as pills: click a name to rename it, × to remove. */
-export function EditableList({ label, items, onChange, onRename }) {
-  const editor = useListEditor({ items, onChange, onRename });
+/**
+ * A list of names shown as pills: click a name to rename it, × to remove.
+ * `usageOf(name)` is how many projects use it; removing a used name asks
+ * whether to remove it from those projects too (`onRemoveFromProjects`).
+ * `unlisted` are names projects use that the list lacks.
+ */
+export function EditableList({
+  label,
+  items,
+  onChange,
+  onRename,
+  usageOf = () => 0,
+  unlisted = [],
+  onRemoveFromProjects,
+}) {
+  const editor = useListEditor({
+    items,
+    onChange,
+    onRename,
+    usageOf,
+    onRemoved: (name, { fromProjects }) => {
+      if (fromProjects) onRemoveFromProjects?.(name);
+    },
+  });
 
   return (
     <section>
       <p className={sectionLabelClass}>{label}</p>
+      {editor.pendingRemoval && (
+        <RemovalPrompt
+          name={editor.pendingRemoval}
+          count={usageOf(editor.pendingRemoval)}
+          onConfirm={editor.confirmRemoval}
+          onCancel={editor.cancelRemoval}
+        />
+      )}
       <div className="mb-2 flex flex-wrap gap-1.5">
         {items.length === 0 && <span className="text-xs italic text-zinc-400">No items yet</span>}
         {sortAlpha(items).map((item) =>
@@ -35,7 +73,7 @@ export function EditableList({ label, items, onChange, onRename }) {
                 onClick={() => editor.startEdit(item)}
                 className="transition hover:text-zinc-900"
               >
-                {item}
+                {item} <UsageCount count={usageOf(item)} />
               </button>
               <button
                 type="button"
@@ -49,6 +87,7 @@ export function EditableList({ label, items, onChange, onRename }) {
           )
         )}
       </div>
+      <UnlistedNames names={unlisted} usageOf={usageOf} onAdd={(name) => onChange([...items, name])} />
       <AddField
         value={editor.newValue}
         onChange={editor.setNewValue}
@@ -56,6 +95,7 @@ export function EditableList({ label, items, onChange, onRename }) {
         placeholder={`Add ${label.toLowerCase()}…`}
         label={`New ${label.toLowerCase()}`}
       />
+      <ListNotice>{editor.notice}</ListNotice>
     </section>
   );
 }

@@ -100,3 +100,74 @@ export function AddField({ value, onChange, onAdd, placeholder, label }) {
     </div>
   );
 }
+
+/** "· 3" next to a name: how many projects use it. */
+export function UsageCount({ count }) {
+  if (!count) return null;
+  return (
+    <span className="font-normal text-zinc-400" title={`Used by ${count} project${count === 1 ? "" : "s"}`}>
+      · {count}
+      <span className="sr-only"> projects</span>
+    </span>
+  );
+}
+
+/** A short message under a list (duplicate name, …). */
+export function ListNotice({ children }) {
+  if (!children) return null;
+  return (
+    <p role="status" className="mt-1.5 text-xs text-amber-700">
+      {children}
+    </p>
+  );
+}
+
+/**
+ * Asked when removing a value that projects use: remove it from those
+ * projects too, or only from the list (projects keep it).
+ */
+export function RemovalPrompt({ name, count, keepHint, onConfirm, onCancel }) {
+  const button = "rounded-md px-2 py-1 text-xs font-medium transition";
+  return (
+    <div role="alertdialog" aria-label={`Remove ${name}`} className="mb-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+      <p>
+        “{name}” is used by {count} project{count === 1 ? "" : "s"}.
+        {keepHint ? ` ${keepHint}` : ""}
+      </p>
+      <div className="mt-2 flex flex-wrap gap-1.5">
+        <button type="button" onClick={() => onConfirm({ fromProjects: true })} className={`${button} bg-amber-700 text-white hover:bg-amber-800`}>
+          Remove from projects too
+        </button>
+        <button type="button" onClick={() => onConfirm({ fromProjects: false })} className={`${button} border border-amber-300 bg-white hover:bg-amber-100`}>
+          Only from the list
+        </button>
+        <button type="button" onClick={onCancel} className={`${button} text-amber-800 hover:bg-amber-100`}>
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/** Names used by projects but missing from the list, each with "add back". */
+export function UnlistedNames({ names, usageOf, onAdd }) {
+  if (names.length === 0) return null;
+  return (
+    <div className="mb-2">
+      <p className="mb-1 text-2xs text-zinc-400">Used in projects but not in this list:</p>
+      <div className="flex flex-wrap gap-1.5">
+        {names.map((name) => (
+          <button
+            key={name}
+            type="button"
+            onClick={() => onAdd(name)}
+            className="flex items-center gap-1 rounded-full border border-dashed border-zinc-300 px-2.5 py-1 text-xs text-zinc-500 transition hover:border-zinc-400 hover:text-zinc-800"
+            aria-label={`Add ${name} back to the list`}
+          >
+            <span aria-hidden>＋</span> {name} <UsageCount count={usageOf(name)} />
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}

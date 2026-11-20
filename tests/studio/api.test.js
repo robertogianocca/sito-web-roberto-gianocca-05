@@ -5,6 +5,7 @@ import { ensureInit, getTursoClient } from "@/lib/turso";
 import { createSessionToken, STUDIO_SESSION_COOKIE } from "@/lib/studio-auth";
 import * as projectsRoute from "@/app/api/archive/route";
 import * as projectRoute from "@/app/api/archive/[id]/route";
+import * as projectTimeRoute from "@/app/api/archive/[id]/time/route";
 import * as settingsRoute from "@/app/api/archive/settings/route";
 import * as clientsRoute from "@/app/api/archive/clients/route";
 import * as timerRoute from "@/app/api/time/timer/route";
@@ -118,6 +119,22 @@ describe("archive API", () => {
     expect(res.body.projectTypes).toEqual(["Film"]);
     const projects = await call(projectsRoute.GET, request("GET", "/api/archive"));
     expect(projects.body[0]).toMatchObject({ type: ["Film"], client: ["Anna B."] });
+  });
+});
+
+describe("project time summary", () => {
+  it("reports the time logged on a project", async () => {
+    const created = await call(projectsRoute.POST, request("POST", "/api/archive", { title: "P" }));
+    const { id } = created.body;
+    for (const [start, end] of [["09:00", "10:30"], ["11:00", "11:30"]]) {
+      await call(entriesRoute.POST, request("POST", "/api/time/entries", {
+        projectId: id,
+        startedAt: `2026-11-20T${start}:00Z`,
+        endedAt: `2026-11-20T${end}:00Z`,
+      }));
+    }
+    const res = await call(projectTimeRoute.GET, request("GET", `/api/archive/${id}/time`), params({ id }));
+    expect(res.body).toEqual({ entryCount: 2, totalSeconds: 2 * 3600 });
   });
 });
 

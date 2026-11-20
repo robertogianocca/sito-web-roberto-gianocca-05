@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   addName,
+  findSameName,
   dropCapacity,
   moveCapacity,
   removeName,
@@ -39,5 +40,16 @@ describe("settings list editing", () => {
 
   it("sorts names alphabetically, ignoring case", () => {
     expect(sortAlpha(["b", "A", "c"])).toEqual(["A", "b", "c"]);
+  });
+
+  it("treats names that differ only in case as the same", () => {
+    const items = ["Anna"];
+    expect(findSameName(items, "anna")).toBe("Anna");
+    expect(addName(items, "ANNA")).toBe(items);
+    expect(renameName(["Anna", "Bea"], "Bea", "anna").to).toBeNull();
+  });
+
+  it("allows fixing the case of the same name", () => {
+    expect(renameName(["anna"], "anna", "Anna")).toEqual({ items: ["Anna"], to: "Anna" });
   });
 });
