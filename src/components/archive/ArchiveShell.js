@@ -1,23 +1,21 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { SearchBar } from "./SearchBar";
-import { FilterBar } from "./FilterBar";
-import { ExportButton } from "./ExportButton";
-import { StatusLegend } from "./StatusLegend";
+import { ArchiveHeader } from "./ArchiveHeader";
 import { ArchiveTable } from "./ArchiveTable";
 import { ProjectDrawer } from "./ProjectDrawer";
 import { SettingsDrawer } from "./SettingsDrawer";
-import { getStatus, formatProjectId } from "./archiveStatus";
-import { parseSize, formatBytes } from "@/lib/archiveSize";
+import { formatProjectId } from "./archiveStatus";
+import {
+  EMPTY_FILTERS,
+  availableYears,
+  defaultSortDir,
+  driveUsageSummary,
+  filterProjects,
+  sortProjects,
+} from "./archiveFilters";
 import { useStudioData } from "@/components/studio/StudioDataProvider";
 import { apiFetch } from "@/components/studio/api";
-
-function projectArchiveDrives(project) {
-  if (Array.isArray(project.archiveDrive)) return project.archiveDrive;
-  if (project.archiveDrive) return [project.archiveDrive];
-  return [];
-}
 
 export function ArchiveShell() {
   const {
@@ -34,13 +32,12 @@ export function ArchiveShell() {
   const [error, setError] = useState(null);
   const loading = projectsLoading;
 
-  const [search, setSearch] = useState("");
-  const [filterType, setFilterType] = useState("all");
-  const [filterYear, setFilterYear] = useState("all");
-  const [filterStatus, setFilterStatus] = useState("all");
-  const [filterArchiveDrive, setFilterArchiveDrive] = useState("all");
+  const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [sortKey, setSortKey] = useState("projectId");
   const [sortDir, setSortDir] = useState("asc");
+
+  const setFilter = (key) => (value) =>
+    setFilters((current) => ({ ...current, [key]: value }));
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingProject, setEditingProject] = useState(null);
@@ -55,106 +52,15 @@ export function ArchiveShell() {
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps -- once on mount
 
-  const availableYears = useMemo(() => {
-    const years = new Set(
-      projects
-        .map((p) => p.date?.match(/\d{4}/)?.[0])
-        .filter(Boolean)
-    );
-    return [...years].sort((a, b) => b.localeCompare(a));
-  }, [projects]);
-
-  const filtered = useMemo(() => {
-    let result = projects;
-
-    if (search) {
-      const q = search.toLowerCase();
-      result = result.filter(
-        (p) =>
-          p.title?.toLowerCase().includes(q) ||
-          (Array.isArray(p.client) ? p.client.some((c) => c.toLowerCase().includes(q)) : p.client?.toLowerCase().includes(q)) ||
-          p.projectId?.toLowerCase().includes(q) ||
-          formatProjectId(p.projectId).toLowerCase().includes(q) ||
-          p.invoiceNumber?.toLowerCase().includes(q) ||
-          p.tags?.some((t) => t.toLowerCase().includes(q))
-      );
-    }
-
-    if (filterType !== "all") {
-      result = result.filter((p) =>
-        Array.isArray(p.type) ? p.type.includes(filterType) : p.type === filterType
-      );
-    }
-
-    if (filterYear !== "all") {
-      result = result.filter((p) => p.date?.includes(filterYear));
-    }
-
-    if (filterStatus !== "all") {
-      result = result.filter((p) => getStatus(p) === filterStatus);
-    }
-
-    if (filterArchiveDrive !== "all") {
-      result = result.filter((p) =>
-        Array.isArray(p.archiveDrive)
-          ? p.archiveDrive.includes(filterArchiveDrive)
-          : p.archiveDrive === filterArchiveDrive
-      );
-    }
-
-    return [...result].sort((a, b) => {
-      const dir = sortDir === "asc" ? 1 : -1;
-      if (sortKey === "cleaned") {
-        return (Number(Boolean(a.cleaned)) - Number(Boolean(b.cleaned))) * dir;
-      }
-      if (sortKey === "backupType") {
-        const order = { "": 0, export: 1, full: 2 };
-        const av = order[a.backupType] ?? 0;
-        const bv = order[b.backupType] ?? 0;
-        return (av - bv) * dir;
-      }
-      const av = Array.isArray(a[sortKey])
-        ? a[sortKey].join(", ")
-        : sortKey === "projectId"
-          ? formatProjectId(a.projectId)
-          : (a[sortKey] ?? "");
-      const bv = Array.isArray(b[sortKey])
-        ? b[sortKey].join(", ")
-        : sortKey === "projectId"
-          ? formatProjectId(b.projectId)
-          : (b[sortKey] ?? "");
-      return String(av).localeCompare(String(bv), undefined, {
-        numeric: true,
-        sensitivity: "base",
-      }) * dir;
-    });
-  }, [projects, search, filterType, filterYear, filterStatus, filterArchiveDrive, sortKey, sortDir]);
-
-  const driveUsageSummary = useMemo(() => {
-    if (filterArchiveDrive === "all") return null;
-
-    let usedBytes = 0;
-    for (const project of filtered) {
-      const drives = projectArchiveDrives(project);
-      if (drives.length === 1 && drives[0] === filterArchiveDrive) {
-        usedBytes += parseSize(project.size);
-      }
-    }
-
-    const capacityStr = settings.driveCapacities?.[filterArchiveDrive] ?? "";
-    const capacityBytes = parseSize(capacityStr);
-    const usedLabel = formatBytes(usedBytes);
-
-    if (capacityBytes > 0) {
-      const freeBytes = capacityBytes - usedBytes;
-      if (freeBytes >= 0) {
-        return `${filterArchiveDrive} · ${usedLabel} used · ${formatBytes(freeBytes)} free of ${formatBytes(capacityBytes)}`;
-      }
-      return `${filterArchiveDrive} · ${usedLabel} used · ${formatBytes(-freeBytes)} over ${formatBytes(capacityBytes)}`;
-    }
-
-    return `${filterArchiveDrive} · ${usedLabel} used · capacity not set`;
-  }, [filterArchiveDrive, filtered, settings.driveCapacities]);
+  const years = useMemo(() => availableYears(projects), [projects]);
+  const shown = useMemo(
+    () => sortProjects(filterProjects(projects, filters), sortKey, sortDir),
+    [projects, filters, sortKey, sortDir]
+  );
+  const driveUsage = useMemo(
+    () => driveUsageSummary(shown, filters.archiveDrive, settings.driveCapacities),
+    [shown, filters.archiveDrive, settings.driveCapacities]
+  );
 
   const openNew = useCallback(() => {
     setEditingProject(null);
@@ -228,95 +134,20 @@ export function ArchiveShell() {
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
-      <header className="border-b border-zinc-200 bg-background px-6 py-4">
-        <div className="mb-3 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <h1 className="text-lg font-semibold text-foreground">Archive</h1>
-            {!loading && (
-              <span className="rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-medium text-zinc-500">
-                {filtered.length}
-                {filtered.length !== projects.length
-                  ? ` / ${projects.length}`
-                  : ""}
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            <ExportButton />
-            <button
-              onClick={() => setSettingsOpen(true)}
-              className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700"
-              title="Settings"
-              aria-label="Open settings"
-            >
-              <svg
-                className="h-4 w-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={1.75}
-                aria-hidden
-              >
-                <circle cx="12" cy="12" r="3" />
-                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-              </svg>
-            </button>
-            <button
-              onClick={openNew}
-              className="flex h-8 items-center gap-1.5 rounded-lg bg-zinc-900 px-3 text-sm font-medium text-zinc-50 transition hover:bg-zinc-700"
-            >
-              <svg
-                className="h-3.5 w-3.5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2.5}
-                aria-hidden
-              >
-                <path d="M12 5v14M5 12h14" />
-              </svg>
-              New
-            </button>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3">
-          <SearchBar value={search} onChange={setSearch} />
-          <div className="flex-1">
-            <FilterBar
-              filterType={filterType}
-              filterYear={filterYear}
-              filterStatus={filterStatus}
-              filterArchiveDrive={filterArchiveDrive}
-              search={search}
-              projectTypes={settings.projectTypes}
-              archiveDrives={settings.archiveDrives}
-              availableYears={availableYears}
-              onFilterType={setFilterType}
-              onFilterYear={setFilterYear}
-              onFilterStatus={setFilterStatus}
-              onFilterArchiveDrive={setFilterArchiveDrive}
-              onClear={() => {
-                setSearch("");
-                setFilterType("all");
-                setFilterYear("all");
-                setFilterStatus("all");
-                setFilterArchiveDrive("all");
-              }}
-            />
-          </div>
-        </div>
-
-        {driveUsageSummary && (
-          <p className="mt-3 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm font-medium text-zinc-800">
-            {driveUsageSummary}
-          </p>
-        )}
-
-        <div className="mt-3">
-          <StatusLegend />
-        </div>
-      </header>
+      <ArchiveHeader
+        loading={loading}
+        shownCount={shown.length}
+        totalCount={projects.length}
+        filters={filters}
+        setFilter={setFilter}
+        onClearFilters={() => setFilters(EMPTY_FILTERS)}
+        projectTypes={settings.projectTypes}
+        archiveDrives={settings.archiveDrives}
+        availableYears={years}
+        driveUsage={driveUsage}
+        onOpenSettings={() => setSettingsOpen(true)}
+        onNew={openNew}
+      />
 
       <main className="flex-1 overflow-y-auto">
         {loading && (
@@ -331,7 +162,7 @@ export function ArchiveShell() {
         )}
         {!loading && !error && (
           <ArchiveTable
-            projects={filtered}
+            projects={shown}
             onEdit={openEdit}
             sortKey={sortKey}
             sortDir={sortDir}
@@ -340,7 +171,7 @@ export function ArchiveShell() {
                 setSortDir((d) => (d === "asc" ? "desc" : "asc"));
               } else {
                 setSortKey(key);
-                setSortDir(key === "date" ? "desc" : "asc");
+                setSortDir(defaultSortDir(key));
               }
             }}
           />

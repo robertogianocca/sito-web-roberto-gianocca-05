@@ -1,6 +1,6 @@
 "use client";
 
-import { projectLabel } from "./ProjectCombobox";
+import { projectLabel } from "./projectLabel";
 import { RestartButton } from "./RestartButton";
 
 const RECENT_LIMIT = 5;

@@ -8,6 +8,7 @@ import {
   localDateRangeParams,
 } from "@/lib/timeFormat";
 import { useJsonResource } from "@/components/studio/hooks/useJsonResource";
+import { DateRangeFields } from "./DateRangeFields";
 import { ErrorBanner } from "@/components/studio/ui/ErrorBanner";
 
 export function ReportView() {
@@ -26,28 +27,7 @@ export function ReportView() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-end gap-3">
-        <label className="space-y-1">
-          <span className="text-2xs font-mono uppercase tracking-wider text-zinc-400">
-            From
-          </span>
-          <input
-            type="date"
-            value={from}
-            onChange={(e) => setFrom(e.target.value)}
-            className="block rounded-lg border border-zinc-300 bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-zinc-400"
-          />
-        </label>
-        <label className="space-y-1">
-          <span className="text-2xs font-mono uppercase tracking-wider text-zinc-400">
-            To
-          </span>
-          <input
-            type="date"
-            value={to}
-            onChange={(e) => setTo(e.target.value)}
-            className="block rounded-lg border border-zinc-300 bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-zinc-400"
-          />
-        </label>
+        <DateRangeFields from={from} to={to} onFromChange={setFrom} onToChange={setTo} />
         <a
           href={exportHref}
           className="flex h-9 items-center rounded-lg border border-zinc-200 px-3 text-sm text-zinc-600 hover:bg-zinc-100"

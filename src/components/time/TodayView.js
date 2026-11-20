@@ -1,7 +1,8 @@
 "use client";
 
 import { formatDuration } from "@/lib/timeFormat";
-import { projectLabel } from "./ProjectCombobox";
+import { projectLabel } from "./projectLabel";
+import { EntryActions } from "./EntryActions";
 import { RecentTasks } from "./RecentTasks";
 import { RestartButton } from "./RestartButton";
 
@@ -78,24 +79,7 @@ export function TodayView({
                 <p className="font-mono text-sm font-medium tabular-nums text-zinc-800">
                   {formatDuration(entry.durationSeconds)}
                 </p>
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => onEdit(entry)}
-                    className="rounded-lg px-2 py-1 text-xs text-zinc-500 hover:bg-zinc-100 hover:text-zinc-800"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (confirm("Delete this time entry?")) onDelete(entry.id);
-                    }}
-                    className="rounded-lg px-2 py-1 text-xs text-red-500 hover:bg-red-50"
-                  >
-                    Delete
-                  </button>
-                </div>
+                <EntryActions entry={entry} onEdit={onEdit} onDelete={onDelete} />
               </li>
             );
           })}
