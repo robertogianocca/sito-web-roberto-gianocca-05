@@ -140,10 +140,26 @@ export function unauthorizedJson() {
 /**
  * Wraps a route handler so it runs only for a signed-in request:
  * `export const GET = withStudioAuth(async (request, context) => { … })`.
+ *
+ * Errors with a 4xx `status` (InputError, NotFoundError, TimerConflictError,
+ * see lib/studio/errors.js) are answered with their message; anything else
+ * is logged and answered with a generic 500, so internal details never reach
+ * the browser.
  */
 export function withStudioAuth(handler) {
   return async function studioAuthHandler(request, context) {
     if (!(await isStudioAuthenticated(request))) return unauthorizedJson();
-    return handler(request, context);
+    try {
+      return await handler(request, context);
+    } catch (err) {
+      const status = Number(err?.status);
+      if (status >= 400 && status < 500) {
+        const body = { error: err.message };
+        if (err.issues?.length) body.issues = err.issues;
+        return NextResponse.json(body, { status });
+      }
+      console.error(`Studio API error: ${request.method} ${request.url}`, err);
+      return NextResponse.json({ error: "Internal error" }, { status: 500 });
+    }
   };
 }

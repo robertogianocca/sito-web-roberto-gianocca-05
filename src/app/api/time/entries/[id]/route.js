@@ -2,29 +2,21 @@ import { NextResponse } from "next/server";
 import { withStudioAuth } from "@/lib/studio-auth";
 import { ensureInit } from "@/lib/turso";
 import { updateTimeEntry, deleteTimeEntry } from "@/lib/time";
+import { NotFoundError } from "@/lib/studio/errors";
+import { parseJsonBody, timeEntryUpdateSchema } from "@/lib/studio/schemas";
 
 export const PUT = withStudioAuth(async (request, { params }) => {
-  await ensureInit();
-
   const { id } = await params;
-  let body;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
-  }
-
+  const body = await parseJsonBody(request, timeEntryUpdateSchema);
+  await ensureInit();
   const updated = await updateTimeEntry(id, body);
-  if (!updated) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
-  }
+  if (!updated) throw new NotFoundError();
   return NextResponse.json(updated);
 });
 
 export const DELETE = withStudioAuth(async (request, { params }) => {
-  await ensureInit();
-
   const { id } = await params;
+  await ensureInit();
   await deleteTimeEntry(id);
   return NextResponse.json({ ok: true });
 });

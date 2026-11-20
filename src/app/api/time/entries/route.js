@@ -10,54 +10,42 @@ import {
   listRecentTasks,
 } from "@/lib/time";
 import { zonedDayRange } from "@/lib/timeZone";
+import {
+  entriesQuerySchema,
+  parseJsonBody,
+  parseSearchParams,
+  renameDescriptionSchema,
+  timeEntryCreateSchema,
+} from "@/lib/studio/schemas";
 
 export const GET = withStudioAuth(async (request) => {
+  const query = parseSearchParams(request, entriesQuerySchema);
   await ensureInit();
 
-  const { searchParams } = new URL(request.url);
-  const view = searchParams.get("view");
-
-  if (view === "today") {
+  if (query.view === "today") {
     // "Today" in the studio time zone, not the server's (UTC on Vercel).
     const now = new Date();
     const { start, end } = zonedDayRange(now);
-    const entries = await listTimeEntries({
-      from: start.toISOString(),
-      to: end.toISOString(),
-    });
-    const [todayTotalSeconds, recentTasks] = await Promise.all([
+    const [entries, todayTotalSeconds, recentTasks] = await Promise.all([
+      listTimeEntries({ from: start.toISOString(), to: end.toISOString() }),
       getTodayTotalSeconds(now),
       listRecentTasks(),
     ]);
     return NextResponse.json({ entries, todayTotalSeconds, recentTasks });
   }
 
-  if (view === "week") {
-    const weekParam = searchParams.get("week");
-    const weekDate = weekParam ? new Date(weekParam) : new Date();
-    if (Number.isNaN(weekDate.getTime())) {
-      return NextResponse.json({ error: "Invalid week date" }, { status: 400 });
-    }
-    const summary = await getWeekSummary(weekDate);
+  if (query.view === "week") {
+    const summary = await getWeekSummary(query.week ? new Date(query.week) : new Date());
     return NextResponse.json(summary);
   }
 
-  const from = searchParams.get("from") || undefined;
-  const to = searchParams.get("to") || undefined;
-  const entries = await listTimeEntries({ from, to });
+  const entries = await listTimeEntries({ from: query.from, to: query.to });
   return NextResponse.json({ entries });
 });
 
 export const POST = withStudioAuth(async (request) => {
+  const body = await parseJsonBody(request, timeEntryCreateSchema);
   await ensureInit();
-
-  let body;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
-  }
-
   const entry = await createTimeEntry({
     projectId: body.projectId ?? "",
     description: body.description ?? "",
@@ -66,31 +54,12 @@ export const POST = withStudioAuth(async (request) => {
     durationSeconds: body.durationSeconds,
     source: "manual",
   });
-
   return NextResponse.json(entry, { status: 201 });
 });
 
+/** Renames a description on every entry of a project. */
 export const PATCH = withStudioAuth(async (request) => {
+  const body = await parseJsonBody(request, renameDescriptionSchema);
   await ensureInit();
-
-  let body;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
-  }
-
-  if (!String(body.to ?? "").trim()) {
-    return NextResponse.json(
-      { error: "The new description cannot be empty." },
-      { status: 400 }
-    );
-  }
-
-  const result = await renameDescription({
-    projectId: body.projectId ?? "",
-    from: body.from ?? "",
-    to: body.to,
-  });
-  return NextResponse.json(result);
+  return NextResponse.json(await renameDescription(body));
 });

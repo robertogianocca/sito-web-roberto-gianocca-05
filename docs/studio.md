@@ -83,6 +83,8 @@ La colonna legacy `activityType` resta nelle tabelle ma non è più usata: una m
 
 ### API (protette da cookie)
 
+Input validato con `src/lib/studio/schemas.js`: valori non validi → `400` con `{ error, issues }`; conflitti di stato del timer → `409`; voce inesistente → `404`. Dettagli in [archive.md](./archive.md#validazione).
+
 | Route | Metodi | Descrizione |
 |-------|--------|-------------|
 | `/api/time/timer` | GET, POST | GET: stato timer (sola lettura). POST `action`: `start` \| `pause` \| `resume` \| `stop` \| `update` \| `checkPomodoro`; `stop` e `checkPomodoro` accettano `description` opzionale (testo non ancora salvato nella barra). Conflitti di stato (timer già avviato, già fermato) → 409 |
@@ -102,7 +104,7 @@ Risposta timer arricchita con `status`, `elapsedSeconds`, `pomodoroEndsAt` (util
 | `src/lib/time.js` | Logica timer / entries / report |
 | `src/lib/timeFormat.js` | Formatter durata (client-safe) |
 | `src/lib/studio-auth.js` | Auth condivisa |
-| `src/lib/turso.js` | Schema tabelle time |
+| `src/lib/turso.js` | Client Turso e `ensureInit()` (migrazioni in `src/lib/studio/migrations.js`) |
 
 ### Roadmap app Mac / mobile
 
@@ -118,5 +120,5 @@ Risposta timer arricchita con `status`, `elapsedSeconds`, `pomodoroEndsAt` (util
 | Problema | Soluzione |
 |----------|-----------|
 | Redirect loop su `/archive` | Atteso: usa `/studio/login` |
-| Timer non persiste | Controlla Turso env; le tabelle si creano al primo `ensureInit()` |
+| Timer non persiste | Controlla Turso env; le tabelle si creano con le migrazioni al primo `ensureInit()` |
 | Pomodoro non avvisa | Concedi notifiche browser; c’è comunque un beep |

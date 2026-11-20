@@ -370,56 +370,24 @@ export function SettingsDrawer({ open, settings, clients, onClose, onSaved }) {
     setSaving(true);
     setSaveError(null);
     try {
-      const settingsRes = await fetch("/api/archive/settings", {
+      // One request, one transaction: lists, renames (applied to every
+      // project) and the client list. Either all of it is saved or nothing.
+      const res = await fetch("/api/archive/settings", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           projectTypes,
           archiveDrives,
           driveCapacities,
-          renames: {
-            projectTypes: renames.projectTypes,
-            archiveDrives: renames.archiveDrives,
-          },
+          renames,
+          clients: localClients,
         }),
       });
-      if (!settingsRes.ok) throw new Error("Failed to save settings.");
-
-      for (const { from, to } of renames.clients) {
-        const res = await fetch("/api/archive/clients", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ from, to }),
-        });
-        if (!res.ok) throw new Error("Failed to rename client.");
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to save settings.");
       }
-
-      const renamedFrom = new Set(renames.clients.map((r) => r.from));
-      const renamedTo = new Set(renames.clients.map((r) => r.to));
-      const currentClients = clients ?? [];
-      const toAdd = localClients.filter(
-        (c) => !currentClients.includes(c) && !renamedTo.has(c)
-      );
-      const toRemove = currentClients.filter(
-        (c) => !localClients.includes(c) && !renamedFrom.has(c)
-      );
-
-      for (const name of toAdd) {
-        await fetch("/api/archive/clients", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name }),
-        });
-      }
-      for (const name of toRemove) {
-        await fetch("/api/archive/clients", {
-          method: "DELETE",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name }),
-        });
-      }
-
-      const newSettings = await settingsRes.json();
+      const newSettings = await res.json();
       const clientsRes = await fetch("/api/archive/clients");
       const updatedClients = clientsRes.ok ? await clientsRes.json() : localClients;
       onSaved(newSettings, updatedClients);

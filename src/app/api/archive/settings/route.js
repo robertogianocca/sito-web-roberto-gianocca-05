@@ -1,74 +1,20 @@
 import { NextResponse } from "next/server";
-import { readSettings, writeSettings, cascadeFieldRename } from "@/lib/archive";
+import { readSettings, saveSettings } from "@/lib/archive";
 import { ensureInit } from "@/lib/turso";
 import { withStudioAuth } from "@/lib/studio-auth";
+import { parseJsonBody, settingsSaveSchema } from "@/lib/studio/schemas";
 
-
-function remapDriveCapacities(capacities, renames) {
-  const next =
-    capacities && typeof capacities === "object" && !Array.isArray(capacities)
-      ? { ...capacities }
-      : {};
-
-  for (const { from, to } of renames ?? []) {
-    if (typeof from !== "string" || typeof to !== "string") continue;
-    const fromName = from.trim();
-    const toName = to.trim();
-    if (!fromName || !toName || fromName === toName) continue;
-    if (Object.prototype.hasOwnProperty.call(next, fromName)) {
-      next[toName] = next[fromName];
-      delete next[fromName];
-    }
-  }
-
-  return next;
-}
-
-export const GET = withStudioAuth(async (request) => {
+export const GET = withStudioAuth(async () => {
   await ensureInit();
-  const settings = await readSettings();
-  return NextResponse.json(settings);
+  return NextResponse.json(await readSettings());
 });
 
+/**
+ * Saves lists, renames (cascaded to projects) and, when `clients` is sent,
+ * the client list, in one transaction. Answers with the saved settings.
+ */
 export const PUT = withStudioAuth(async (request) => {
-  let body;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
-  }
-
-  const driveRenames = body.renames?.archiveDrives ?? [];
-  const driveCapacities = remapDriveCapacities(
-    body.driveCapacities,
-    driveRenames
-  );
-
-  const settings = {
-    projectTypes: Array.isArray(body.projectTypes) ? body.projectTypes : [],
-    archiveDrives: Array.isArray(body.archiveDrives) ? body.archiveDrives : [],
-    driveCapacities,
-  };
-
+  const body = await parseJsonBody(request, settingsSaveSchema);
   await ensureInit();
-  await writeSettings(settings);
-
-  for (const { from, to } of body.renames?.projectTypes ?? []) {
-    if (typeof from === "string" && typeof to === "string") {
-      await cascadeFieldRename("type", from.trim(), to.trim());
-    }
-  }
-
-  // Shared drive vocabulary: rename cascades to both project fields
-  for (const { from, to } of driveRenames) {
-    if (typeof from === "string" && typeof to === "string") {
-      const fromName = from.trim();
-      const toName = to.trim();
-      await cascadeFieldRename("archiveDrive", fromName, toName);
-      await cascadeFieldRename("backupDrive", fromName, toName);
-    }
-  }
-
-  const saved = await readSettings();
-  return NextResponse.json(saved);
+  return NextResponse.json(await saveSettings(body));
 });

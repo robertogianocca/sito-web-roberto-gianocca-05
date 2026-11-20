@@ -172,64 +172,42 @@ export function ArchiveShell() {
 
   const handleSave = useCallback(async (form) => {
     const payload = { ...form, projectId: formatProjectId(form.projectId) };
+    const isUpdate = Boolean(payload.id);
 
-    const newClients = (Array.isArray(payload.client) ? payload.client : [])
-      .filter((name) => name && !clients.includes(name));
-    if (newClients.length > 0) {
-      let updated = clients;
-      for (const name of newClients) {
-        const res = await fetch("/api/archive/clients", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name }),
-        });
-        if (res.ok) updated = await res.json();
-      }
-      setClients(updated);
-    }
-
-    const existingTypes = settings.projectTypes ?? [];
-    const newTypes = (Array.isArray(payload.type) ? payload.type : [])
-      .filter((name) => name && !existingTypes.includes(name));
-
-    const existingDrives = settings.archiveDrives ?? [];
-    const newDrives = (Array.isArray(payload.archiveDrive) ? payload.archiveDrive : [])
-      .filter((name) => name && !existingDrives.includes(name));
-
-    if (newTypes.length > 0 || newDrives.length > 0) {
-      const nextSettings = {
-        ...settings,
-        projectTypes: [...existingTypes, ...newTypes],
-        archiveDrives: [...existingDrives, ...newDrives],
-      };
-      const res = await fetch("/api/archive/settings", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(nextSettings),
-      });
-      if (res.ok) setSettings(await res.json());
-    }
-
-    if (payload.id) {
-      const res = await fetch(`/api/archive/${payload.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) throw new Error("Failed to update project.");
-      const updated = await res.json();
-      setProjects((prev) =>
-        prev.map((p) => (p.id === updated.id ? updated : p))
+    // New clients/types/drives typed in the form are added to the lists by
+    // the server, in the same transaction as the project.
+    const knownTypes = settings.projectTypes ?? [];
+    const knownDrives = settings.archiveDrives ?? [];
+    const addsToLists =
+      (payload.client ?? []).some((name) => name && !clients.includes(name)) ||
+      (payload.type ?? []).some((name) => name && !knownTypes.includes(name)) ||
+      [...(payload.archiveDrive ?? []), ...(payload.backupDrive ?? [])].some(
+        (name) => name && !knownDrives.includes(name)
       );
-    } else {
-      const res = await fetch("/api/archive", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) throw new Error("Failed to create project.");
-      const created = await res.json();
-      setProjects((prev) => [...prev, created]);
+
+    const res = await fetch(isUpdate ? `/api/archive/${payload.id}` : "/api/archive", {
+      method: isUpdate ? "PATCH" : "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(
+        data.error || (isUpdate ? "Failed to update project." : "Failed to create project.")
+      );
+    }
+    const saved = await res.json();
+    setProjects((prev) =>
+      isUpdate ? prev.map((p) => (p.id === saved.id ? saved : p)) : [...prev, saved]
+    );
+
+    if (addsToLists) {
+      const [clientsRes, settingsRes] = await Promise.all([
+        fetch("/api/archive/clients"),
+        fetch("/api/archive/settings"),
+      ]);
+      if (clientsRes.ok) setClients(await clientsRes.json());
+      if (settingsRes.ok) setSettings(await settingsRes.json());
     }
   }, [clients, settings, setClients, setSettings, setProjects]);
 

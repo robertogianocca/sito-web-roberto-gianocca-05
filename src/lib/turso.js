@@ -1,5 +1,5 @@
 import { createClient } from "@libsql/client";
-import { ARCHIVE_DRIVES, PROJECT_TYPES } from "@/data/archive/config";
+import { runMigrations } from "./studio/migrations";
 
 let client = null;
 
@@ -19,137 +19,19 @@ export function getTursoClient() {
   return client;
 }
 
-let initialized = false;
+let initPromise = null;
 
-export async function ensureInit() {
-  if (initialized) return;
-  const db = getTursoClient();
-
-  await db.execute(`CREATE TABLE IF NOT EXISTS projects (
-    id TEXT PRIMARY KEY,
-    projectId TEXT NOT NULL DEFAULT '',
-    invoiceNumber TEXT NOT NULL DEFAULT '',
-    title TEXT NOT NULL DEFAULT '',
-    client TEXT NOT NULL DEFAULT '',
-    type TEXT NOT NULL DEFAULT '',
-    date TEXT NOT NULL DEFAULT '',
-    location TEXT NOT NULL DEFAULT '',
-    archiveDrive TEXT NOT NULL DEFAULT '',
-    backupDrive TEXT NOT NULL DEFAULT '',
-    cleaned INTEGER NOT NULL DEFAULT 0,
-    backupCompleted INTEGER NOT NULL DEFAULT 0,
-    backupType TEXT NOT NULL DEFAULT '',
-    contact TEXT NOT NULL DEFAULT '',
-    paid INTEGER NOT NULL DEFAULT 1,
-    notes TEXT NOT NULL DEFAULT '',
-    tags TEXT NOT NULL DEFAULT '[]',
-    createdAt TEXT NOT NULL DEFAULT '',
-    updatedAt TEXT NOT NULL DEFAULT ''
-  )`);
-
-  await db.execute(`CREATE TABLE IF NOT EXISTS clients (
-    name TEXT PRIMARY KEY
-  )`);
-
-  await db.execute(`CREATE TABLE IF NOT EXISTS settings (
-    key TEXT PRIMARY KEY,
-    value TEXT NOT NULL
-  )`);
-
-  await db.execute(`CREATE TABLE IF NOT EXISTS time_entries (
-    id TEXT PRIMARY KEY,
-    projectId TEXT NOT NULL DEFAULT '',
-    description TEXT NOT NULL DEFAULT '',
-    activityType TEXT NOT NULL DEFAULT '',
-    startedAt TEXT NOT NULL DEFAULT '',
-    endedAt TEXT NOT NULL DEFAULT '',
-    durationSeconds INTEGER NOT NULL DEFAULT 0,
-    source TEXT NOT NULL DEFAULT 'manual',
-    createdAt TEXT NOT NULL DEFAULT '',
-    updatedAt TEXT NOT NULL DEFAULT ''
-  )`);
-
-  await db.execute(`CREATE TABLE IF NOT EXISTS time_timer (
-    id TEXT PRIMARY KEY,
-    projectId TEXT NOT NULL DEFAULT '',
-    description TEXT NOT NULL DEFAULT '',
-    activityType TEXT NOT NULL DEFAULT '',
-    startedAt TEXT NOT NULL DEFAULT '',
-    pausedAt TEXT,
-    pauseSeconds INTEGER NOT NULL DEFAULT 0,
-    pomodoroEnabled INTEGER NOT NULL DEFAULT 0,
-    pomodoroMinutes INTEGER NOT NULL DEFAULT 25
-  )`);
-
-  // Failed studio logins per client (see lib/login-throttle.js).
-  await db.execute(`CREATE TABLE IF NOT EXISTS login_attempts (
-    key TEXT PRIMARY KEY,
-    failures INTEGER NOT NULL DEFAULT 0,
-    windowStart TEXT NOT NULL DEFAULT ''
-  )`);
-
-  await db
-    .execute("ALTER TABLE projects ADD COLUMN size TEXT NOT NULL DEFAULT ''")
-    .catch(() => {});
-
-  await db
-    .execute("ALTER TABLE projects ADD COLUMN backupType TEXT NOT NULL DEFAULT ''")
-    .catch(() => {});
-
-  await db
-    .execute("ALTER TABLE projects ADD COLUMN contact TEXT NOT NULL DEFAULT ''")
-    .catch(() => {});
-
-  await db
-    .execute("ALTER TABLE projects ADD COLUMN paid INTEGER NOT NULL DEFAULT 1")
-    .catch(() => {});
-
-  const { rows: migrationRows } = await db.execute(
-    "SELECT value FROM settings WHERE key = 'backupTypeLegacyMigrated'"
-  );
-  if (migrationRows.length === 0) {
-    await db.execute(
-      "UPDATE projects SET backupType = 'full' WHERE backupCompleted = 1 AND backupType = ''"
-    );
-    await db.execute({
-      sql: "INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)",
-      args: ["backupTypeLegacyMigrated", "1"],
+/**
+ * Makes sure the schema is up to date (see ./studio/migrations.js).
+ * Runs once per server instance; concurrent callers share the same run, and
+ * a failed run is retried by the next caller.
+ */
+export function ensureInit() {
+  if (!initPromise) {
+    initPromise = runMigrations(getTursoClient()).catch((err) => {
+      initPromise = null;
+      throw err;
     });
   }
-
-  // Default lists for a new database. INSERT OR IGNORE never touches lists
-  // that already exist (even emptied ones). This used to run only when the
-  // settings table was empty, but the migration flag above is written first,
-  // so a new database never got its default types and drives.
-  await db.batch(
-    [
-      {
-        sql: "INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)",
-        args: ["projectTypes", JSON.stringify(PROJECT_TYPES)],
-      },
-      {
-        sql: "INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)",
-        args: ["archiveDrives", JSON.stringify(ARCHIVE_DRIVES)],
-      },
-    ],
-    "write"
-  );
-
-  const { rows: activityMigrationRows } = await db.execute(
-    "SELECT value FROM settings WHERE key = 'activityToDescriptionMigrated'"
-  );
-  if (activityMigrationRows.length === 0) {
-    await db.execute(
-      "UPDATE time_entries SET description = activityType WHERE TRIM(description) = '' AND TRIM(activityType) != ''"
-    );
-    await db.execute(
-      "UPDATE time_timer SET description = activityType WHERE TRIM(description) = '' AND TRIM(activityType) != ''"
-    );
-    await db.execute({
-      sql: "INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)",
-      args: ["activityToDescriptionMigrated", "1"],
-    });
-  }
-
-  initialized = true;
+  return initPromise;
 }

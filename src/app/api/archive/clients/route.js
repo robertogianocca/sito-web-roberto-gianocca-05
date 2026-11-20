@@ -1,73 +1,33 @@
 import { NextResponse } from "next/server";
-import { readClients, addClient, deleteClient, cascadeFieldRename } from "@/lib/archive";
+import { readClients, addClient, deleteClient, renameClient } from "@/lib/archive";
 import { ensureInit } from "@/lib/turso";
 import { withStudioAuth } from "@/lib/studio-auth";
+import {
+  clientNameSchema,
+  clientRenameSchema,
+  parseJsonBody,
+} from "@/lib/studio/schemas";
 
-
-export const GET = withStudioAuth(async (request) => {
+export const GET = withStudioAuth(async () => {
   await ensureInit();
-  const clients = await readClients();
-  return NextResponse.json(clients);
+  return NextResponse.json(await readClients());
 });
 
 export const POST = withStudioAuth(async (request) => {
-  let body;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
-  }
-
-  const name = String(body.name ?? "").trim();
-  if (!name) {
-    return NextResponse.json({ error: "Name is required" }, { status: 400 });
-  }
-
+  const { name } = await parseJsonBody(request, clientNameSchema);
   await ensureInit();
-  const clients = await addClient(name);
-  return NextResponse.json(clients);
+  return NextResponse.json(await addClient(name));
 });
 
+/** Renames a client in the list and in every project, atomically. */
 export const PUT = withStudioAuth(async (request) => {
-  let body;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
-  }
-
-  const from = String(body.from ?? "").trim();
-  const to = String(body.to ?? "").trim();
-  if (!from || !to) {
-    return NextResponse.json({ error: "from and to are required" }, { status: 400 });
-  }
-  if (from === to) {
-    await ensureInit();
-    const clients = await readClients();
-    return NextResponse.json(clients);
-  }
-
+  const { from, to } = await parseJsonBody(request, clientRenameSchema);
   await ensureInit();
-  await deleteClient(from);
-  const clients = await addClient(to);
-  await cascadeFieldRename("client", from, to);
-  return NextResponse.json(clients);
+  return NextResponse.json(await renameClient(from, to));
 });
 
 export const DELETE = withStudioAuth(async (request) => {
-  let body;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
-  }
-
-  const name = String(body.name ?? "").trim();
-  if (!name) {
-    return NextResponse.json({ error: "Name is required" }, { status: 400 });
-  }
-
+  const { name } = await parseJsonBody(request, clientNameSchema);
   await ensureInit();
-  const clients = await deleteClient(name);
-  return NextResponse.json(clients);
+  return NextResponse.json(await deleteClient(name));
 });

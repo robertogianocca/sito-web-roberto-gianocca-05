@@ -4,10 +4,14 @@ import { ensureInit, getTursoClient } from "@/lib/turso";
 import {
   cascadeFieldRename,
   createProject,
+  createProjectWithVocabulary,
   generateId,
+  patchProject,
+  readClients,
   readProjects,
   readSettings,
-  updateProject,
+  renameClient,
+  saveSettings,
   writeSettings,
 } from "@/lib/archive";
 import { formatProjectId } from "@/lib/archiveFormat";
@@ -22,7 +26,8 @@ beforeAll(() => ensureInit());
 
 beforeEach(async () => {
   await db().execute("DELETE FROM projects");
-  await db().execute("DELETE FROM settings");
+  await db().execute("DELETE FROM clients");
+  await writeSettings({ projectTypes: ["Video"], archiveDrives: ["A"], driveCapacities: {} });
 });
 
 async function addProject(fields) {
@@ -42,13 +47,42 @@ describe("projects", () => {
     expect(project.paid).toBe(true);
   });
 
-  it("replaces every field on update (current behaviour of PUT)", async () => {
-    const id = await addProject({ title: "Old", paid: false, notes: "keep me?" });
-    await updateProject(id, { title: "New" });
-    const [project] = await readProjects();
-    expect(project.title).toBe("New");
-    expect(project.notes).toBe(""); // missing fields are reset
-    expect(project.paid).toBe(true); // missing `paid` becomes "paid"
+  it("updates only the fields given", async () => {
+    const id = await addProject({ title: "Old", paid: false, notes: "keep me", client: ["Anna"] });
+    const updated = await patchProject(id, { title: "New" });
+    expect(updated.title).toBe("New");
+    expect(updated.notes).toBe("keep me");
+    expect(updated.paid).toBe(false);
+    expect(updated.client).toEqual(["Anna"]);
+  });
+
+  it("keeps backupCompleted in step with backupType", async () => {
+    const id = await addProject({});
+    await patchProject(id, { backupType: "export" });
+    const { rows } = await db().execute({ sql: "SELECT backupCompleted FROM projects WHERE id = ?", args: [id] });
+    expect(Number(rows[0].backupCompleted)).toBe(1);
+  });
+
+  it("returns null for a project that does not exist, and adds nothing", async () => {
+    expect(await patchProject("missing", { client: ["Ghost"] })).toBeNull();
+    expect(await readClients()).toEqual([]);
+  });
+
+  it("adds new clients, types and drives together with the project", async () => {
+    const now = new Date().toISOString();
+    await createProjectWithVocabulary({
+      id: generateId(),
+      createdAt: now,
+      updatedAt: now,
+      client: ["New client"],
+      type: ["Video", "Drone"],
+      archiveDrive: ["A", "B"],
+      backupDrive: ["C"],
+    });
+    expect(await readClients()).toEqual(["New client"]);
+    const settings = await readSettings();
+    expect(settings.projectTypes).toEqual(["Video", "Drone"]);
+    expect(settings.archiveDrives).toEqual(["A", "B", "C"]);
   });
 
   it("renames a value in every project that uses it, and nothing else", async () => {
@@ -78,17 +112,61 @@ describe("settings", () => {
     expect(settings.driveCapacities).toEqual({ A: "4 TB" });
   });
 
-  it("merges the legacy backup drive list into archive drives", async () => {
-    await db().batch(
-      [
-        { sql: "INSERT INTO settings (key, value) VALUES ('archiveDrives', ?)", args: ['["A"]'] },
-        { sql: "INSERT INTO settings (key, value) VALUES ('backupDrives', ?)", args: ['["A","Backup 2"]'] },
-      ],
-      "write"
-    );
-    expect((await readSettings()).archiveDrives).toEqual(["A", "Backup 2"]);
-    const { rows } = await db().execute("SELECT key FROM settings WHERE key = 'backupDrives'");
-    expect(rows).toHaveLength(0);
+  it("returns only the editable lists, not internal rows", async () => {
+    await db().execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('backupTypeLegacyMigrated', '1')");
+    expect(Object.keys(await readSettings()).sort()).toEqual([
+      "archiveDrives",
+      "driveCapacities",
+      "projectTypes",
+    ]);
+  });
+
+  it("saves lists, renames and clients in one go", async () => {
+    await writeSettings({ projectTypes: ["Video"], archiveDrives: ["A"], driveCapacities: { A: "4 TB" } });
+    await saveSettings({ projectTypes: [], archiveDrives: [], clients: ["Anna", "Shop"] });
+    await addProject({ type: ["Video"], archiveDrive: ["A"], backupDrive: ["A"], client: ["Anna"] });
+
+    await saveSettings({
+      projectTypes: ["Film"],
+      archiveDrives: ["Main"],
+      driveCapacities: { A: "4 TB" },
+      renames: {
+        projectTypes: [{ from: "Video", to: "Film" }],
+        archiveDrives: [{ from: "A", to: "Main" }],
+        clients: [{ from: "Anna", to: "Anna B." }],
+      },
+      clients: ["Anna B.", "New"], // "Shop" removed, "New" added
+    });
+
+    const [project] = await readProjects();
+    expect(project.type).toEqual(["Film"]);
+    expect(project.archiveDrive).toEqual(["Main"]);
+    expect(project.backupDrive).toEqual(["Main"]);
+    expect(project.client).toEqual(["Anna B."]);
+    expect(await readClients()).toEqual(["Anna B.", "New"]);
+    expect((await readSettings()).driveCapacities).toEqual({ Main: "4 TB" });
+  });
+
+  it("saves nothing when one statement fails", async () => {
+    await addProject({ type: ["Video"] });
+    // A client name that is not a string makes the batch fail half-way.
+    await expect(
+      saveSettings({
+        projectTypes: ["Film"],
+        archiveDrives: [],
+        renames: { projectTypes: [{ from: "Video", to: "Film" }] },
+        clients: [{ not: "a string" }],
+      })
+    ).rejects.toThrow();
+    expect((await readSettings()).projectTypes).toEqual(["Video"]);
+    expect((await readProjects())[0].type).toEqual(["Video"]);
+  });
+
+  it("renames a client in the list and in its projects", async () => {
+    await saveSettings({ projectTypes: [], archiveDrives: [], clients: ["Anna"] });
+    await addProject({ client: ["Anna"] });
+    expect(await renameClient("Anna", "Anna B.")).toEqual(["Anna B."]);
+    expect((await readProjects())[0].client).toEqual(["Anna B."]);
   });
 });
 
