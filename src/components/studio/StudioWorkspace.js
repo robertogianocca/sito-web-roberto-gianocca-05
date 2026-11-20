@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { usePathname } from "@/i18n/navigation";
 import { ArchiveShell } from "@/components/archive/ArchiveShell";
 import { TimeShell } from "@/components/time/TimeShell";
@@ -20,15 +20,17 @@ export function StudioWorkspace({
   const pathname = usePathname();
   const activeTab = tabFromPath(pathname);
 
-  const [mountedArchive, setMountedArchive] = useState(
-    () => activeTab === "archive"
-  );
-  const [mountedTime, setMountedTime] = useState(() => activeTab === "time");
-
-  useEffect(() => {
-    if (activeTab === "archive") setMountedArchive(true);
-    if (activeTab === "time") setMountedTime(true);
-  }, [activeTab]);
+  // Each tab is mounted the first time it is visited, then kept alive.
+  // Updated during render, not in an effect.
+  const [mounted, setMounted] = useState(() => ({
+    archive: activeTab === "archive",
+    time: activeTab === "time",
+  }));
+  if (!mounted[activeTab]) {
+    setMounted((prev) => ({ ...prev, [activeTab]: true }));
+  }
+  const mountedArchive = mounted.archive;
+  const mountedTime = mounted.time;
 
   return (
     <div className="relative h-full min-h-0">

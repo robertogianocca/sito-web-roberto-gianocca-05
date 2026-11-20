@@ -1,65 +1,26 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import {
   formatDuration,
   formatDurationHours,
-  toLocalDateInput,
+  lastDaysRange,
+  localDateRangeParams,
 } from "@/lib/timeFormat";
-
-function defaultRange() {
-  const to = new Date();
-  const from = new Date();
-  from.setDate(from.getDate() - 30);
-  return {
-    from: toLocalDateInput(from),
-    to: toLocalDateInput(to),
-  };
-}
+import { useJsonResource } from "./useJsonResource";
 
 export function ReportView() {
-  const defaults = defaultRange();
-  const [from, setFrom] = useState(defaults.from);
-  const [to, setTo] = useState(defaults.to);
-  const [report, setReport] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [from, setFrom] = useState(() => lastDaysRange().from);
+  const [to, setTo] = useState(() => lastDaysRange().to);
+  const {
+    data: report,
+    loading,
+    error,
+  } = useJsonResource(`/api/time/report?${localDateRangeParams(from, to)}`, {
+    errorMessage: "Failed to load report.",
+  });
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const fromIso = from ? new Date(`${from}T00:00:00`).toISOString() : "";
-      const toEnd = to ? new Date(`${to}T00:00:00`) : null;
-      if (toEnd) toEnd.setDate(toEnd.getDate() + 1);
-      const toIso = toEnd ? toEnd.toISOString() : "";
-      const qs = new URLSearchParams();
-      if (fromIso) qs.set("from", fromIso);
-      if (toIso) qs.set("to", toIso);
-      const res = await fetch(`/api/time/report?${qs}`);
-      if (!res.ok) throw new Error("Failed to load report.");
-      setReport(await res.json());
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [from, to]);
-
-  useEffect(() => {
-    load();
-  }, [load]);
-
-  const exportHref = (() => {
-    const fromIso = from ? new Date(`${from}T00:00:00`).toISOString() : "";
-    const toEnd = to ? new Date(`${to}T00:00:00`) : null;
-    if (toEnd) toEnd.setDate(toEnd.getDate() + 1);
-    const toIso = toEnd ? toEnd.toISOString() : "";
-    const qs = new URLSearchParams({ format: "xlsx" });
-    if (fromIso) qs.set("from", fromIso);
-    if (toIso) qs.set("to", toIso);
-    return `/api/time/export?${qs}`;
-  })();
+  const exportHref = `/api/time/export?${localDateRangeParams(from, to, { format: "xlsx" })}`;
 
   return (
     <div className="space-y-6">

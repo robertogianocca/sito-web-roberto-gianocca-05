@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 
 const inputClass =
   "w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-foreground placeholder-zinc-400 outline-none transition focus:border-zinc-400 focus:ring-1 focus:ring-zinc-300";
 
 const labelClass = "mb-1 block text-xs font-semibold uppercase tracking-wider text-zinc-500";
+
+const EMPTY_RENAMES = { projectTypes: [], archiveDrives: [], clients: [] };
 
 function sortAlpha(list) {
   return [...(list ?? [])].sort((a, b) =>
@@ -330,30 +332,30 @@ export function SettingsDrawer({ open, settings, clients, onClose, onSaved }) {
   const [localClients, setLocalClients] = useState([]);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
-  const renamesRef = useRef({
-    projectTypes: [],
-    archiveDrives: [],
-    clients: [],
-  });
+  const [renames, setRenames] = useState(EMPTY_RENAMES);
 
   function pushRename(key, from, to) {
-    renamesRef.current[key].push({ from, to });
+    setRenames((prev) => ({ ...prev, [key]: [...prev[key], { from, to }] }));
   }
 
-  useEffect(() => {
+  // On opening (or when the saved data changes while open), start from the
+  // saved values. Done during render, not in an effect.
+  const [syncedFor, setSyncedFor] = useState({ open: false, settings: null, clients: null });
+  if (
+    syncedFor.open !== open ||
+    syncedFor.settings !== settings ||
+    syncedFor.clients !== clients
+  ) {
+    setSyncedFor({ open, settings, clients });
     if (open) {
       setProjectTypes(settings?.projectTypes ?? []);
       setArchiveDrives(settings?.archiveDrives ?? []);
       setDriveCapacities(settings?.driveCapacities ?? {});
       setLocalClients(clients ?? []);
       setSaveError(null);
-      renamesRef.current = {
-        projectTypes: [],
-        archiveDrives: [],
-        clients: [],
-      };
+      setRenames(EMPTY_RENAMES);
     }
-  }, [open, settings, clients]);
+  }
 
   useEffect(() => {
     if (!open) return;
@@ -368,7 +370,6 @@ export function SettingsDrawer({ open, settings, clients, onClose, onSaved }) {
     setSaving(true);
     setSaveError(null);
     try {
-      const renames = renamesRef.current;
       const settingsRes = await fetch("/api/archive/settings", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },

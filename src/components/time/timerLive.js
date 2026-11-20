@@ -1,6 +1,8 @@
-import { formatDuration, formatDurationHMS } from "@/lib/timeFormat";
-
-export function liveElapsedSeconds(timer) {
+/**
+ * Elapsed running seconds of a timer at `now` (ms), pauses excluded.
+ * Pass `now` from useNow() when rendering, so the value updates every second.
+ */
+export function liveElapsedSeconds(timer, now = Date.now()) {
   if (!timer?.startedAt) return 0;
   const startMs = new Date(timer.startedAt).getTime();
   if (Number.isNaN(startMs)) return 0;
@@ -10,13 +12,5 @@ export function liveElapsedSeconds(timer) {
     if (Number.isNaN(pausedMs)) return Number(timer.elapsedSeconds ?? 0);
     return Math.max(0, Math.floor((pausedMs - startMs) / 1000) - pauseSeconds);
   }
-  return Math.max(0, Math.floor((Date.now() - startMs) / 1000) - pauseSeconds);
-}
-
-export function formatLiveDuration(timer) {
-  return formatDuration(liveElapsedSeconds(timer));
-}
-
-export function formatLiveDurationHMS(timer) {
-  return formatDurationHMS(timer ? liveElapsedSeconds(timer) : 0);
+  return Math.max(0, Math.floor((now - startMs) / 1000) - pauseSeconds);
 }

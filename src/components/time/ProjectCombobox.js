@@ -31,7 +31,6 @@ export function ProjectCombobox({
 
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const [highlight, setHighlight] = useState(0);
 
   const sorted = useMemo(
     () =>
@@ -66,9 +65,24 @@ export function ProjectCombobox({
     return () => document.removeEventListener("mousedown", onDoc);
   }, [open]);
 
-  useEffect(() => {
-    setHighlight(0);
-  }, [query, open]);
+  // The highlighted option resets whenever the list changes (typing, opening).
+  // Stored with the state it belongs to, so no effect is needed to reset it.
+  const highlightKey = `${open}|${query}`;
+  const [highlightState, setHighlightState] = useState({
+    key: highlightKey,
+    index: 0,
+  });
+  const highlight =
+    highlightState.key === highlightKey ? highlightState.index : 0;
+  function setHighlight(next) {
+    setHighlightState((prev) => {
+      const current = prev.key === highlightKey ? prev.index : 0;
+      return {
+        key: highlightKey,
+        index: typeof next === "function" ? next(current) : next,
+      };
+    });
+  }
 
   function select(id) {
     onChange(id);

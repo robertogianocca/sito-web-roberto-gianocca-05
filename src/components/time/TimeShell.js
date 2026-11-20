@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { liveElapsedSeconds } from "./timerLive";
+import { useNow } from "./useNow";
 import { TimerBar } from "./TimerBar";
 import { TodayView } from "./TodayView";
 import { WeekView } from "./WeekView";
@@ -48,6 +49,12 @@ function playPomodoroBeep() {
   }
 }
 
+async function fetchToday() {
+  const res = await fetch("/api/time/entries?view=today");
+  if (!res.ok) throw new Error("Failed to load today's entries.");
+  return res.json();
+}
+
 function notifyPomodoro() {
   playPomodoroBeep();
   if (
@@ -83,7 +90,6 @@ export function TimeShell({
   const [error, setError] = useState(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
-  const [tick, setTick] = useState(0);
   const [listVersion, setListVersion] = useState(0);
   const pomodoroNotifiedRef = useRef(false);
   const timerCheckInFlightRef = useRef(false);
@@ -99,22 +105,23 @@ export function TimeShell({
     setListVersion((v) => v + 1);
   }, []);
 
+  const applyToday = useCallback((data) => {
+    setTodayEntries(data.entries ?? []);
+    setTodayTotalSeconds(data.todayTotalSeconds ?? 0);
+    setRecentTasks(data.recentTasks ?? []);
+  }, []);
+
   const refreshToday = useCallback(async () => {
     setLoadingToday(true);
     setError(null);
     try {
-      const res = await fetch("/api/time/entries?view=today");
-      if (!res.ok) throw new Error("Failed to load today's entries.");
-      const data = await res.json();
-      setTodayEntries(data.entries ?? []);
-      setTodayTotalSeconds(data.todayTotalSeconds ?? 0);
-      setRecentTasks(data.recentTasks ?? []);
+      applyToday(await fetchToday());
     } catch (err) {
       setError(err.message);
     } finally {
       setLoadingToday(false);
     }
-  }, []);
+  }, [applyToday]);
 
   // Syncs the timer with the server and lets the server complete a due
   // Pomodoro. One request at a time: the server records the entry only once
@@ -153,16 +160,26 @@ export function TimeShell({
     }
   }, [refreshToday, bumpLists]);
 
+  // First load. State is set only when the response arrives.
   useEffect(() => {
-    refreshToday();
-  }, [refreshToday]);
+    let ignore = false;
+    fetchToday()
+      .then((data) => {
+        if (!ignore) applyToday(data);
+      })
+      .catch((err) => {
+        if (!ignore) setError(err.message);
+      })
+      .finally(() => {
+        if (!ignore) setLoadingToday(false);
+      });
+    return () => {
+      ignore = true;
+    };
+  }, [applyToday]);
 
-  useEffect(() => {
-    if (!active) return undefined;
-    if (!timer || timer.status !== "running") return undefined;
-    const id = setInterval(() => setTick((t) => t + 1), 1000);
-    return () => clearInterval(id);
-  }, [active, timer?.status, timer?.startedAt]);
+  // Live clock while the timer runs and this tab is visible.
+  const now = useNow(active && timer?.status === "running");
 
   useEffect(() => {
     // Still poll while hidden so Pomodoro can complete in background
@@ -284,20 +301,18 @@ export function TimeShell({
     bumpLists();
   }
 
-  const displayTodayTotal = useMemo(() => {
-    const entriesSum = todayEntries.reduce(
-      (s, e) => s + (e.durationSeconds || 0),
-      0
-    );
-    const running = timer ? liveElapsedSeconds(timer) : 0;
-    return entriesSum + running;
-  }, [todayEntries, timer, tick]);
+  const entriesTotalSeconds = useMemo(
+    () => todayEntries.reduce((s, e) => s + (e.durationSeconds || 0), 0),
+    [todayEntries]
+  );
+  const displayTodayTotal =
+    entriesTotalSeconds + (timer ? liveElapsedSeconds(timer, now) : 0);
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
       <TimerBar
         timer={timer}
-        tick={tick}
+        now={now}
         projects={projects}
         recentTasks={recentTasks}
         todayTotalSeconds={displayTodayTotal}
@@ -332,6 +347,7 @@ export function TimeShell({
               Add hours
             </button>
           )}
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- file download from an API route, not a page */}
           <a
             href="/api/time/export?format=xlsx"
             className="flex h-8 items-center rounded-lg border border-zinc-200 px-3 text-sm text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-700"

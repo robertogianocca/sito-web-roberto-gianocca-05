@@ -52,7 +52,7 @@ export function ArchiveShell() {
     } else {
       refreshProjects({ silent: true }).catch(() => {});
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps — once on mount
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- once on mount
 
   const availableYears = useMemo(() => {
     const years = new Set(

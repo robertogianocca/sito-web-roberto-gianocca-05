@@ -23,7 +23,7 @@ export function EntryDrawer({
   const initialStart = entry?.startedAt ? new Date(entry.startedAt) : new Date();
   const initialEnd = entry?.endedAt
     ? new Date(entry.endedAt)
-    : new Date(Date.now() + 60 * 60 * 1000);
+    : new Date(initialStart.getTime() + 60 * 60 * 1000);
 
   const [projectId, setProjectId] = useState(entry?.projectId ?? "");
   const [description, setDescription] = useState(entry?.description ?? "");
