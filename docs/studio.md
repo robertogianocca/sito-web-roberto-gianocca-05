@@ -55,7 +55,8 @@ Timer persistente sul server (Turso), inserimento manuale, Pomodoro 25 min, Toda
 | Feature | Dettaglio |
 |---------|-----------|
 | Timer | Start / Pause / Resume / Stop; un solo timer alla volta; dopo lo stop restano progetto/descrizione |
-| Persistenza | Stato in tabella `time_timer`; elapsed da timestamp UTC |
+| Persistenza | Stato in tabella `time_timer`; elapsed da timestamp UTC. Lo stop è atomico: anche con richieste simultanee (doppio clic, due schede, controllo Pomodoro) si registra una sola voce |
+| Fuso orario | “Oggi” e settimana sono calcolati in `Europe/Zurich` (`src/lib/timeZone.js`), indipendentemente dal fuso del server (UTC su Vercel) |
 | Pomodoro | Opzionale; stop automatico dopo 25 min di tempo effettivo (le pause non contano); notifica browser + beep multi-tono |
 | Manuale | Drawer: data + start/end oppure durata in ore |
 | Progetti | Collegati ai progetti Archivio (`projectId`); selettore con ricerca |
@@ -80,7 +81,7 @@ La colonna legacy `activityType` resta nelle tabelle ma non è più usata: una m
 
 | Route | Metodi | Descrizione |
 |-------|--------|-------------|
-| `/api/time/timer` | GET, POST | Stato timer; POST `action`: `start` \| `pause` \| `resume` \| `stop` \| `update` \| `checkPomodoro` |
+| `/api/time/timer` | GET, POST | GET: stato timer (sola lettura). POST `action`: `start` \| `pause` \| `resume` \| `stop` \| `update` \| `checkPomodoro`; `stop` e `checkPomodoro` accettano `description` opzionale (testo non ancora salvato nella barra). Conflitti di stato (timer già avviato, già fermato) → 409 |
 | `/api/time/entries` | GET, POST, PATCH | Lista (`view=today` \| `week`, oppure `from`/`to`; `today` include anche `recentTasks`); crea voce manuale; PATCH `{ projectId, from, to }` rinomina una descrizione su tutte le voci del progetto |
 | `/api/time/entries/[id]` | PUT, DELETE | Aggiorna / elimina |
 | `/api/time/report` | GET | Report aggregato (`from`, `to`) |

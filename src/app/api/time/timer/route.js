@@ -9,23 +9,20 @@ import {
   stopTimer,
   updateRunningTimer,
   checkAndCompletePomodoro,
+  TimerConflictError,
 } from "@/lib/time";
 
+/** Read-only: completing a Pomodoro goes through POST `checkPomodoro`. */
 export async function GET(request) {
   if (!isStudioAuthenticated(request)) return unauthorizedJson();
   await ensureInit();
 
-  const pomodoro = await checkAndCompletePomodoro();
-  if (pomodoro.completed) {
-    return NextResponse.json({
-      timer: null,
-      pomodoroCompleted: true,
-      entry: pomodoro.entry,
-    });
-  }
-
   const timer = await getTimer();
   return NextResponse.json({ timer, pomodoroCompleted: false, entry: null });
+}
+
+function optionalString(value) {
+  return typeof value === "string" ? value : undefined;
 }
 
 export async function POST(request) {
@@ -62,7 +59,10 @@ export async function POST(request) {
     }
 
     if (action === "stop") {
-      const result = await stopTimer({ source: body.source });
+      const result = await stopTimer({
+        source: body.source,
+        description: optionalString(body.description),
+      });
       return NextResponse.json(result);
     }
 
@@ -72,7 +72,9 @@ export async function POST(request) {
     }
 
     if (action === "checkPomodoro") {
-      const result = await checkAndCompletePomodoro();
+      const result = await checkAndCompletePomodoro({
+        description: optionalString(body.description),
+      });
       return NextResponse.json({
         timer: result.timer,
         pomodoroCompleted: result.completed,
@@ -82,9 +84,10 @@ export async function POST(request) {
 
     return NextResponse.json({ error: "Unknown action" }, { status: 400 });
   } catch (err) {
-    return NextResponse.json(
-      { error: err.message || "Timer error" },
-      { status: 409 }
-    );
+    if (err instanceof TimerConflictError) {
+      return NextResponse.json({ error: err.message }, { status: 409 });
+    }
+    console.error("Timer action failed", action, err);
+    return NextResponse.json({ error: "Timer error" }, { status: 500 });
   }
 }

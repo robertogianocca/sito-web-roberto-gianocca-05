@@ -86,6 +86,7 @@ export function TimeShell({
   const [tick, setTick] = useState(0);
   const [listVersion, setListVersion] = useState(0);
   const pomodoroNotifiedRef = useRef(false);
+  const timerCheckInFlightRef = useRef(false);
   const draftRef = useRef(null);
 
   const projectMap = useMemo(() => {
@@ -115,9 +116,22 @@ export function TimeShell({
     }
   }, []);
 
+  // Syncs the timer with the server and lets the server complete a due
+  // Pomodoro. One request at a time: the server records the entry only once
+  // anyway, but there is no point in piling up requests every second.
   const refreshTimer = useCallback(async () => {
+    if (timerCheckInFlightRef.current) return;
+    timerCheckInFlightRef.current = true;
     try {
-      const res = await fetch("/api/time/timer");
+      const res = await fetch("/api/time/timer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "checkPomodoro",
+          // Unsaved text in the timer bar goes into the entry if it completes.
+          description: draftRef.current?.description,
+        }),
+      });
       if (!res.ok) return;
       const data = await res.json();
       if (data.pomodoroCompleted) {
@@ -133,7 +147,9 @@ export function TimeShell({
       setTimer(data.timer);
       if (data.timer) pomodoroNotifiedRef.current = false;
     } catch {
-      // ignore
+      // Network error: the next poll retries.
+    } finally {
+      timerCheckInFlightRef.current = false;
     }
   }, [refreshToday, bumpLists]);
 
@@ -158,30 +174,20 @@ export function TimeShell({
   }, [timer, refreshTimer]);
 
   useEffect(() => {
-    if (!active) return;
-    if (!timer || !timer.pomodoroEnabled || timer.status !== "running") return;
-    const elapsed = liveElapsedSeconds(timer);
-    if (elapsed >= timer.pomodoroMinutes * 60) {
-      (async () => {
-        const res = await fetch("/api/time/timer", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "checkPomodoro" }),
-        });
-        if (!res.ok) return;
-        const data = await res.json();
-        if (data.pomodoroCompleted) {
-          setTimer(null);
-          if (!pomodoroNotifiedRef.current) {
-            pomodoroNotifiedRef.current = true;
-            notifyPomodoro();
-          }
-          await refreshToday();
-          bumpLists();
-        }
-      })();
+    // Ask the server to complete the Pomodoro when it is due. If the server's
+    // clock says "not yet", the timer state comes back and this re-arms, at
+    // most once per second.
+    if (!active) return undefined;
+    if (!timer || !timer.pomodoroEnabled || timer.status !== "running") {
+      return undefined;
     }
-  }, [active, timer, tick, refreshToday, bumpLists]);
+    const remainingMs =
+      (timer.pomodoroMinutes * 60 - liveElapsedSeconds(timer)) * 1000;
+    const id = setTimeout(() => {
+      refreshTimer();
+    }, Math.max(1000, remainingMs));
+    return () => clearTimeout(id);
+  }, [active, timer, refreshTimer]);
 
   async function timerAction(action, payload = {}) {
     setError(null);

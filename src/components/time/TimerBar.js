@@ -200,7 +200,8 @@ export function TimerBar({
             <button
               type="button"
               disabled={busy}
-              onClick={() => run("stop")}
+              // Send the field's text so an unsaved edit is not lost.
+              onClick={() => run("stop", { description })}
               className={`${btnBase} bg-zinc-900 text-zinc-50 hover:bg-zinc-700`}
             >
               Stop
