@@ -7,7 +7,7 @@ import { StudioWorkspace } from "@/components/studio/StudioWorkspace";
 import { logoutAction } from "../actions";
 import { ensureInit } from "@/lib/turso";
 import { readClients, readProjects, readSettings } from "@/lib/archive";
-import { getTimer, getTodayTotalSeconds } from "@/lib/time";
+import { getTimer } from "@/lib/time";
 
 export default async function StudioAppLayout({ children, params }) {
   const { locale } = await params;
@@ -20,14 +20,12 @@ export default async function StudioAppLayout({ children, params }) {
   }
 
   await ensureInit();
-  const [projects, clients, settings, timer, todayTotalSeconds] =
-    await Promise.all([
-      readProjects(),
-      readClients(),
-      readSettings(),
-      getTimer(),
-      getTodayTotalSeconds(),
-    ]);
+  const [projects, clients, settings, timer] = await Promise.all([
+    readProjects(),
+    readClients(),
+    readSettings(),
+    getTimer(),
+  ]);
 
   return (
     <div className="h-full">
@@ -40,7 +38,6 @@ export default async function StudioAppLayout({ children, params }) {
           <StudioWorkspace
             locale={locale}
             initialTimer={timer}
-            initialTodayTotalSeconds={todayTotalSeconds}
           />
           {/* Keep route children for RSC/metadata; UI is keep-alive workspace */}
           <div className="hidden" aria-hidden>

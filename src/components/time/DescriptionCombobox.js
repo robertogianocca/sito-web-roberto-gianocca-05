@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef } from "react";
+import { useListbox } from "@/components/studio/hooks/useListbox";
+import { useOutsideClick } from "@/components/studio/hooks/useOutsideClick";
 
 const MAX_SUGGESTIONS = 8;
 
@@ -11,6 +13,10 @@ export function descriptionsForProject(recentTasks, projectId) {
     .map((t) => t.description);
 }
 
+/**
+ * Free-text field with suggestions (descriptions already used). Nothing is
+ * highlighted until ↓ is pressed, so Enter keeps the typed text.
+ */
 export function DescriptionCombobox({
   id,
   value,
@@ -20,9 +26,7 @@ export function DescriptionCombobox({
   placeholder,
   inputClassName,
 }) {
-  const listId = `${id}-list`;
   const rootRef = useRef(null);
-  const [open, setOpen] = useState(false);
 
   const matches = useMemo(() => {
     const q = value.trim().toLowerCase();
@@ -34,66 +38,27 @@ export function DescriptionCombobox({
       .slice(0, MAX_SUGGESTIONS);
   }, [suggestions, value]);
 
-  const showList = open && !disabled && matches.length > 0;
-
-  useEffect(() => {
-    if (!open) return undefined;
-    function onDoc(e) {
-      if (rootRef.current && !rootRef.current.contains(e.target)) {
-        setOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", onDoc);
-    return () => document.removeEventListener("mousedown", onDoc);
-  }, [open]);
-
-  // The highlighted option resets whenever the list changes (typing, opening).
-  // Stored with the state it belongs to, so no effect is needed to reset it.
-  const highlightKey = `${open}|${value}`;
-  const [highlightState, setHighlightState] = useState({
-    key: highlightKey,
-    index: -1,
+  const listbox = useListbox({
+    items: matches,
+    resetKey: value,
+    initialIndex: -1,
+    disabled,
+    onPick: (text) => {
+      onChange(text);
+      listbox.closeList();
+    },
   });
-  const highlight =
-    highlightState.key === highlightKey ? highlightState.index : -1;
-  function setHighlight(next) {
-    setHighlightState((prev) => {
-      const current = prev.key === highlightKey ? prev.index : -1;
-      return {
-        key: highlightKey,
-        index: typeof next === "function" ? next(current) : next,
-      };
-    });
-  }
+  const showList = listbox.open && !disabled && matches.length > 0;
 
-  function select(text) {
-    onChange(text);
-    setOpen(false);
-  }
+  useOutsideClick(rootRef, listbox.closeList, listbox.open);
 
   function onKeyDown(e) {
-    if (e.key === "Escape") {
-      // Close the suggestions first; with none shown, Escape reaches the drawer.
-      if (showList) {
-        e.preventDefault();
-        setOpen(false);
-      }
+    // Nothing shown: let Escape reach a surrounding drawer.
+    if (e.key === "Escape" && !showList) {
+      listbox.closeList();
       return;
     }
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      setOpen(true);
-      setHighlight((h) => Math.min(h + 1, matches.length - 1));
-      return;
-    }
-    if (!showList) return;
-    if (e.key === "ArrowUp") {
-      e.preventDefault();
-      setHighlight((h) => Math.max(h - 1, -1));
-    } else if (e.key === "Enter" && highlight >= 0) {
-      e.preventDefault();
-      select(matches[highlight]);
-    }
+    listbox.inputProps.onKeyDown(e);
   }
 
   return (
@@ -101,45 +66,35 @@ export function DescriptionCombobox({
       <input
         id={id}
         type="text"
+        {...listbox.inputProps}
         role="combobox"
+        aria-controls={listbox.listProps.id}
         aria-expanded={showList}
-        aria-controls={listId}
-        aria-autocomplete="list"
-        autoComplete="off"
+        onKeyDown={onKeyDown}
         value={value}
         onChange={(e) => {
           onChange(e.target.value);
-          setOpen(true);
+          listbox.openList();
         }}
-        onFocus={() => setOpen(true)}
-        onKeyDown={onKeyDown}
+        onFocus={() => listbox.openList()}
         disabled={disabled}
         placeholder={placeholder}
         className={inputClassName}
       />
       {showList && (
         <ul
-          id={listId}
-          role="listbox"
+          {...listbox.listProps}
           className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-zinc-200 bg-background py-1 shadow-lg"
         >
           {matches.map((text, i) => (
-            <li key={text} role="option" aria-selected={i === highlight}>
-              <button
-                type="button"
-                className={`block w-full truncate px-3 py-2 text-left text-sm ${
-                  i === highlight
-                    ? "bg-zinc-100 text-zinc-900"
-                    : "text-zinc-700 hover:bg-zinc-50"
-                }`}
-                onMouseEnter={() => setHighlight(i)}
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  select(text);
-                }}
-              >
-                {text}
-              </button>
+            <li
+              key={text}
+              {...listbox.optionProps(i, { selected: i === listbox.active })}
+              className={`block cursor-pointer truncate px-3 py-2 text-sm ${
+                i === listbox.active ? "bg-zinc-100 text-zinc-900" : "text-zinc-700"
+              }`}
+            >
+              {text}
             </li>
           ))}
         </ul>

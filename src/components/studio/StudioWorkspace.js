@@ -12,11 +12,7 @@ function tabFromPath(pathname) {
   return "archive";
 }
 
-export function StudioWorkspace({
-  locale,
-  initialTimer = null,
-  initialTodayTotalSeconds = 0,
-}) {
+export function StudioWorkspace({ locale, initialTimer = null }) {
   const pathname = usePathname();
   const activeTab = tabFromPath(pathname);
 
@@ -62,7 +58,6 @@ export function StudioWorkspace({
             locale={locale}
             active={activeTab === "time"}
             initialTimer={initialTimer}
-            initialTodayTotalSeconds={initialTodayTotalSeconds}
           />
         </div>
       ) : null}
