@@ -6,6 +6,34 @@ import { MultiCombobox } from "@/components/studio/ui/MultiCombobox";
 import { ErrorBanner } from "@/components/studio/ui/ErrorBanner";
 import { formatProjectId } from "./archiveStatus";
 import { BackupTypeSelect, TagInput, ToggleCheckbox } from "./ProjectFields";
+import { apiFetch } from "@/components/studio/api";
+import { formatDurationHours, plural } from "@/lib/timeFormat";
+
+/** Shown while confirming a delete: what happens to the project's hours. */
+function DeleteWarning({ loggedTime }) {
+  let text;
+  if (loggedTime === "loading") text = "Checking logged time…";
+  else if (!loggedTime) text = "Could not check the time logged on this project.";
+  else if (loggedTime.entryCount === 0) text = "No time is logged on this project.";
+  else {
+    text = `This project has ${formatDurationHours(loggedTime.totalSeconds)} h logged in ${plural(
+      loggedTime.entryCount,
+      "time entry",
+      "time entries"
+    )}. They will stay, listed under “No project”.`;
+  }
+  const warn = loggedTime && loggedTime !== "loading" && loggedTime.entryCount > 0;
+  return (
+    <p
+      role="status"
+      className={`mb-3 rounded-lg px-3 py-2 text-xs ${
+        warn ? "border border-amber-200 bg-amber-50 text-amber-900" : "text-zinc-500"
+      }`}
+    >
+      {text}
+    </p>
+  );
+}
 
 const EMPTY_FORM = {
   projectId: "",
@@ -57,6 +85,9 @@ export function ProjectDrawer({
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  // Time logged on the project, fetched when Delete is first clicked:
+  // "loading", `{ entryCount, totalSeconds }`, or null if it could not load.
+  const [loggedTime, setLoggedTime] = useState(null);
   const [error, setError] = useState(null);
 
   // On opening (or when another project is passed while open), load its
@@ -67,6 +98,7 @@ export function ProjectDrawer({
     if (open) {
       setForm(formFromProject(project));
       setConfirmDelete(false);
+      setLoggedTime(null);
       setError(null);
     }
   }
@@ -96,6 +128,10 @@ export function ProjectDrawer({
   async function handleDelete() {
     if (!confirmDelete) {
       setConfirmDelete(true);
+      setLoggedTime("loading");
+      apiFetch(`/api/archive/${project.id}/time`)
+        .then(setLoggedTime)
+        .catch(() => setLoggedTime(null));
       return;
     }
     setSaving(true);
@@ -335,11 +371,8 @@ export function ProjectDrawer({
           </div>
 
           <div className="border-t border-zinc-200 px-6 py-4">
-            {error && (
-<ErrorBanner className="mb-3">
-                {error}
-              </ErrorBanner>
-            )}
+            <ErrorBanner className="mb-3">{error}</ErrorBanner>
+            {confirmDelete && <DeleteWarning loggedTime={loggedTime} />}
             <div className="flex items-center gap-2">
               {isEditing && (
                 <button
@@ -358,7 +391,10 @@ export function ProjectDrawer({
               {confirmDelete && (
                 <button
                   type="button"
-                  onClick={() => setConfirmDelete(false)}
+                  onClick={() => {
+                    setConfirmDelete(false);
+                    setLoggedTime(null);
+                  }}
                   className="text-sm text-zinc-400 transition hover:text-zinc-600"
                 >
                   Cancel

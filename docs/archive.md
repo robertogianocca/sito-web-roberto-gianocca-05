@@ -121,6 +121,12 @@ Ogni lista: pill rimovibili, rinomina inline (click sul nome), aggiunta con inpu
 
 **Rinomina a cascata:** quando rinomini un elemento e clicchi Save, tutti i progetti che usano il vecchio nome vengono aggiornati automaticamente (es. `Drone` → `Drone Video` su tutti i progetti con quel type). La rinomina di un disco aggiorna sia `archiveDrive` sia `backupDrive`.
 
+**Uso delle voci:** accanto a ogni tipo, disco e cliente c'è il numero di progetti che lo usano (contato dai progetti già caricati). Togliendo una voce in uso viene chiesto se toglierla **anche dai progetti** o **solo dalla lista** (per un disco, tenerla sui progetti conserva dove sono stati archiviati). I nomi usati dai progetti ma assenti dalla lista compaiono sotto "Used in projects but not in this list", con un pulsante per rimetterli. Un nome già presente con maiuscole diverse ("anna" / "Anna") non viene aggiunto e un messaggio lo segnala.
+
+**Rinomine e rimozioni esatte:** nei progetti i valori si sostituiscono o tolgono elemento per elemento con le funzioni JSON di SQLite (`json_each`), quindi funzionano anche con nomi che contengono virgolette o barre; un progetto che aveva già il nuovo nome lo tiene una volta sola.
+
+**Eliminare un progetto:** prima della conferma viene mostrato quanto tempo è registrato sul progetto (`GET /api/archive/[id]/time`); le voci di tempo restano, sotto "No project".
+
 **Salvataggio in un'unica transazione:** il Save delle impostazioni invia liste, rinomine e lista clienti in una sola richiesta; il server salva tutto o niente. Allo stesso modo, salvando un progetto con un cliente, tipo o disco nuovo, il valore viene aggiunto alla lista insieme al progetto.
 
 ### Export
@@ -171,9 +177,10 @@ Ogni API valida l'input con gli schemi di `src/lib/studio/schemas.js`. I campi s
 | Route | Metodi | Descrizione |
 |-------|--------|-------------|
 | `/api/archive` | GET, POST | Lista / crea progetti |
+| `/api/archive/[id]/time` | GET | Tempo registrato sul progetto: `{ entryCount, totalSeconds }` |
 | `/api/archive/[id]` | PATCH, PUT, DELETE | Aggiorna solo i campi inviati (PUT è un alias di PATCH) / elimina progetto |
 | `/api/archive/clients` | GET, POST, PUT, DELETE | Clienti; PUT `{ from, to }` rinomina nella lista e nei progetti, in una transazione |
-| `/api/archive/settings` | GET, PUT | Impostazioni (`projectTypes`, `archiveDrives`, `driveCapacities`). PUT accetta anche `renames` (`projectTypes`, `archiveDrives`, `clients`) e la lista finale `clients`, salvati in una transazione |
+| `/api/archive/settings` | GET, PUT | Impostazioni (`projectTypes`, `archiveDrives`, `driveCapacities`). PUT accetta anche `renames` (`projectTypes`, `archiveDrives`, `clients`), `removals` (valori da togliere anche dai progetti) e la lista finale `clients`, salvati in una transazione |
 | `/api/archive/export` | GET | Export `?format=xlsx` o `?format=csv` |
 
 ---

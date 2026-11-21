@@ -200,6 +200,7 @@ export function ArchiveShell() {
         open={settingsOpen}
         settings={settings}
         clients={clients}
+        projects={projects}
         onClose={() => setSettingsOpen(false)}
         onSaved={handleSettingsSaved}
       />

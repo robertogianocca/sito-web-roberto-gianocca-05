@@ -1,27 +1,58 @@
 "use client";
 
 import { dropCapacity, moveCapacity, sortAlpha, useListEditor } from "./listEditing";
-import { AddField, CrossIcon, RenameField, sectionLabelClass } from "./ListFields";
+import {
+  AddField,
+  CrossIcon,
+  ListNotice,
+  RemovalPrompt,
+  RenameField,
+  UnlistedNames,
+  UsageCount,
+  sectionLabelClass,
+} from "./ListFields";
 import { TOUCH_TARGET } from "@/components/studio/ui/touch";
 
 /**
  * Drives with their capacity ("4 TB"). Renaming or removing a drive carries
  * its capacity along.
  */
-export function DrivesEditor({ drives, capacities, onChangeDrives, onChangeCapacities, onRename }) {
+export function DrivesEditor({
+  drives,
+  capacities,
+  onChangeDrives,
+  onChangeCapacities,
+  onRename,
+  usageOf = () => 0,
+  unlisted = [],
+  onRemoveFromProjects,
+}) {
   const editor = useListEditor({
     items: drives,
     onChange: onChangeDrives,
+    usageOf,
     onRename: (from, to) => {
       onRename?.(from, to);
       onChangeCapacities(moveCapacity(capacities, from, to));
     },
-    onRemoved: (name) => onChangeCapacities(dropCapacity(capacities, name)),
+    onRemoved: (name, { fromProjects }) => {
+      onChangeCapacities(dropCapacity(capacities, name));
+      if (fromProjects) onRemoveFromProjects?.(name);
+    },
   });
 
   return (
     <section>
       <p className={sectionLabelClass}>Drives</p>
+      {editor.pendingRemoval && (
+        <RemovalPrompt
+          name={editor.pendingRemoval}
+          count={usageOf(editor.pendingRemoval)}
+          keepHint="Keeping it on the projects records where they were archived."
+          onConfirm={editor.confirmRemoval}
+          onCancel={editor.cancelRemoval}
+        />
+      )}
       <div className="mb-2 space-y-2">
         {drives.length === 0 && <span className="text-xs italic text-zinc-400">No items yet</span>}
         {sortAlpha(drives).map((item) => (
@@ -45,7 +76,7 @@ export function DrivesEditor({ drives, capacities, onChangeDrives, onChangeCapac
                     onClick={() => editor.startEdit(item)}
                     className="truncate text-left text-xs font-medium text-zinc-700 transition hover:text-zinc-900"
                   >
-                    {item}
+                    {item} <UsageCount count={usageOf(item)} />
                   </button>
                   <button
                     type="button"
@@ -68,6 +99,7 @@ export function DrivesEditor({ drives, capacities, onChangeDrives, onChangeCapac
           </div>
         ))}
       </div>
+      <UnlistedNames names={unlisted} usageOf={usageOf} onAdd={(name) => onChangeDrives([...drives, name])} />
       <AddField
         value={editor.newValue}
         onChange={editor.setNewValue}
@@ -75,6 +107,7 @@ export function DrivesEditor({ drives, capacities, onChangeDrives, onChangeCapac
         placeholder="Add drive…"
         label="New drive"
       />
+      <ListNotice>{editor.notice}</ListNotice>
     </section>
   );
 }

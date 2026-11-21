@@ -330,14 +330,16 @@ function remapDriveCapacities(capacities, renames) {
 /**
  * Saves the settings drawer in one transaction: the lists, the renames
  * cascaded to every project (types, drives on both drive fields, clients),
- * and, when `clients` is given, the final client list (clients not in it are
- * removed, new ones added).
+ * the values to remove from projects too (`removals`), and, when `clients` is
+ * given, the final client list (clients not in it are removed, new ones
+ * added).
  */
 export async function saveSettings({
   projectTypes,
   archiveDrives,
   driveCapacities = {},
   renames = {},
+  removals = {},
   clients,
 }) {
   const typeRenames = renames.projectTypes ?? [];
@@ -358,6 +360,19 @@ export async function saveSettings({
   ];
 
   statements.push(...clientRenames.flatMap(({ from, to }) => renameClientStatements(from, to)));
+
+  // Values removed from a list "and from its projects". Skipped when the name
+  // is back in the final list (removed, then added again before saving).
+  const removed = (names, finalList) =>
+    (names ?? []).filter((name) => !(finalList ?? []).includes(name));
+  statements.push(
+    ...removed(removals.projectTypes, projectTypes).map((name) => removeValueStatement("type", name)),
+    ...removed(removals.archiveDrives, archiveDrives).flatMap((name) => [
+      removeValueStatement("archiveDrive", name),
+      removeValueStatement("backupDrive", name),
+    ]),
+    ...removed(removals.clients, clients).map((name) => removeValueStatement("client", name))
+  );
   if (clients) {
     const finalClients = [...new Set(clients)];
     statements.push(
@@ -389,14 +404,44 @@ const RENAMEABLE_FIELDS = new Set([
 ]);
 
 /**
- * Statement renaming a value inside a JSON list column of every project, or
- * null when there is nothing to do. The column name comes from a fixed list.
+ * WHERE clause: the list column holds the value ?1. Uses SQLite's JSON
+ * functions, so whole values match whatever characters they contain (quotes
+ * included). A legacy row holding a plain string instead of a JSON list
+ * matches when the string equals ?1. CASE (not AND) guarantees json_each never
+ * runs on text that is not JSON.
+ */
+function listContains(column) {
+  return `CASE WHEN json_valid(${column})
+    THEN json_type(${column}) = 'array' AND EXISTS (SELECT 1 FROM json_each(projects.${column}) WHERE value = ?1)
+    ELSE ${column} = ?1 END`;
+}
+
+/**
+ * Statement renaming value `from` to `to` in a list column of every project,
+ * or null when there is nothing to do. A project that already had `to` keeps
+ * it once. The column name comes from a fixed list.
  */
 function cascadeRenameStatement(dbField, from, to) {
   if (!RENAMEABLE_FIELDS.has(dbField) || !from || !to || from === to) return null;
   return {
-    sql: `UPDATE projects SET ${dbField} = REPLACE(${dbField}, ?, ?) WHERE ${dbField} LIKE ?`,
-    args: [`"${from}"`, `"${to}"`, `%"${from}"%`],
+    sql: `UPDATE projects SET ${dbField} = CASE WHEN json_valid(${dbField})
+        THEN (SELECT json_group_array(DISTINCT CASE WHEN value = ?1 THEN ?2 ELSE value END)
+              FROM json_each(projects.${dbField}))
+        ELSE json_array(?2) END
+      WHERE ${listContains(dbField)}`,
+    args: [from, to],
+  };
+}
+
+/** Statement removing value `name` from a list column of every project. */
+function removeValueStatement(dbField, name) {
+  if (!RENAMEABLE_FIELDS.has(dbField) || !name) return null;
+  return {
+    sql: `UPDATE projects SET ${dbField} = CASE WHEN json_valid(${dbField})
+        THEN (SELECT json_group_array(value) FROM json_each(projects.${dbField}) WHERE value != ?1)
+        ELSE '[]' END
+      WHERE ${listContains(dbField)}`,
+    args: [name],
   };
 }
 
