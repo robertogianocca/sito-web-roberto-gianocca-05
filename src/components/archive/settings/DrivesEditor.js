@@ -2,6 +2,7 @@
 
 import { dropCapacity, moveCapacity, sortAlpha, useListEditor } from "./listEditing";
 import { AddField, CrossIcon, RenameField, sectionLabelClass } from "./ListFields";
+import { TOUCH_TARGET } from "@/components/studio/ui/touch";
 
 /**
  * Drives with their capacity ("4 TB"). Renaming or removing a drive carries
@@ -50,7 +51,7 @@ export function DrivesEditor({ drives, capacities, onChangeDrives, onChangeCapac
                     type="button"
                     aria-label={`Remove ${item}`}
                     onClick={() => editor.remove(item)}
-                    className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-zinc-400 transition hover:bg-zinc-200 hover:text-zinc-700"
+                    className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-zinc-400 transition hover:bg-zinc-200 hover:text-zinc-700 ${TOUCH_TARGET}`}
                   >
                     <CrossIcon className="h-2.5 w-2.5" />
                   </button>

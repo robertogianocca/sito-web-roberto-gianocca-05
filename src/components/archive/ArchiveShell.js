@@ -147,6 +147,13 @@ export function ArchiveShell() {
         driveUsage={driveUsage}
         onOpenSettings={() => setSettingsOpen(true)}
         onNew={openNew}
+        sortKey={sortKey}
+        sortDir={sortDir}
+        onSortKey={(key) => {
+          setSortKey(key);
+          setSortDir(defaultSortDir(key));
+        }}
+        onToggleSortDir={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}
       />
 
       <main className="flex-1 overflow-y-auto">

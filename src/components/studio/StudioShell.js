@@ -1,6 +1,7 @@
 "use client";
 
 import { Link, usePathname } from "@/i18n/navigation";
+import { TimerBadge } from "@/components/time/TimerBadge";
 
 const TABS = [
   { href: "/studio/archive", label: "Archive" },
@@ -12,9 +13,9 @@ export function StudioShell({ locale, logoutAction, children }) {
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
-      <div className="flex shrink-0 items-center justify-between gap-4 border-b border-zinc-200 bg-background px-6 py-2">
+      <div className="flex shrink-0 items-center justify-between gap-4 border-b border-zinc-200 bg-background px-4 py-2 sm:px-6">
         <div className="flex items-center gap-4">
-          <p className="text-2xs font-mono uppercase tracking-widest text-zinc-400">
+          <p className="hidden text-2xs font-mono uppercase tracking-widest text-zinc-400 sm:block">
             Studio
           </p>
           <nav className="flex items-center gap-1" aria-label="Studio sections">
@@ -25,13 +26,15 @@ export function StudioShell({ locale, logoutAction, children }) {
                 <Link
                   key={tab.href}
                   href={tab.href}
-                  className={`rounded-lg px-3 py-1.5 text-sm font-medium transition ${
+                  aria-current={active ? "page" : undefined}
+                  className={`flex items-center rounded-lg px-3 py-1.5 text-sm font-medium transition ${
                     active
                       ? "bg-zinc-900 text-zinc-50"
                       : "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-800"
                   }`}
                 >
                   {tab.label}
+                  {tab.href === "/studio/time" && <TimerBadge />}
                 </Link>
               );
             })}
@@ -41,8 +44,9 @@ export function StudioShell({ locale, logoutAction, children }) {
           <input type="hidden" name="locale" value={locale} />
           <button
             type="submit"
-            className="flex h-8 items-center gap-1.5 rounded-lg border border-zinc-200 px-3 text-sm text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-600"
+            className="flex h-8 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border border-zinc-200 px-2.5 text-sm text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-600 sm:px-3"
             title="Log out"
+            aria-label="Log out"
           >
             <svg
               className="h-3.5 w-3.5"
@@ -56,7 +60,7 @@ export function StudioShell({ locale, logoutAction, children }) {
               <polyline points="16 17 21 12 16 7" />
               <line x1="21" y1="12" x2="9" y2="12" />
             </svg>
-            Log out
+            <span className="hidden sm:inline">Log out</span>
           </button>
         </form>
       </div>

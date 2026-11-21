@@ -2,6 +2,7 @@
 
 import { sortAlpha, useListEditor } from "./listEditing";
 import { AddField, CrossIcon, RenameField, sectionLabelClass } from "./ListFields";
+import { TOUCH_TARGET } from "@/components/studio/ui/touch";
 
 /** A list of names shown as pills: click a name to rename it, × to remove. */
 export function EditableList({ label, items, onChange, onRename }) {
@@ -40,7 +41,7 @@ export function EditableList({ label, items, onChange, onRename }) {
                 type="button"
                 aria-label={`Remove ${item}`}
                 onClick={() => editor.remove(item)}
-                className="ml-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full text-zinc-400 transition hover:bg-zinc-300 hover:text-zinc-700"
+                className={`ml-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full text-zinc-400 transition hover:bg-zinc-300 hover:text-zinc-700 ${TOUCH_TARGET}`}
               >
                 <CrossIcon className="h-2.5 w-2.5" />
               </button>

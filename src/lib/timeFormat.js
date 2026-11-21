@@ -1,3 +1,15 @@
+/**
+ * The studio is English-only by choice (it is a private tool). Dates and
+ * times use one locale everywhere: en-GB, i.e. 24-hour times and day before
+ * month ("20 Nov", "15:05").
+ */
+export const STUDIO_LOCALE = "en-GB";
+
+/** "1 entry", "3 entries": the count with the right form of the word. */
+export function plural(count, singular, pluralForm = `${singular}s`) {
+  return `${count} ${count === 1 ? singular : pluralForm}`;
+}
+
 export function formatDuration(totalSeconds) {
   const s = Math.max(0, Math.floor(Number(totalSeconds) || 0));
   const h = Math.floor(s / 3600);

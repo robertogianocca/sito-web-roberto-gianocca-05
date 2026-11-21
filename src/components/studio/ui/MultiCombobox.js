@@ -3,6 +3,7 @@
 import { useId, useMemo, useRef, useState } from "react";
 import { useListbox } from "../hooks/useListbox";
 import { useOutsideClick } from "../hooks/useOutsideClick";
+import { TOUCH_TARGET } from "./touch";
 
 function sortAlpha(list) {
   return [...list].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
@@ -117,7 +118,7 @@ export function MultiCombobox({
             <button
               type="button"
               onClick={() => onChange(selected.filter((s) => s !== name))}
-              className="ml-0.5 rounded text-zinc-400 transition hover:text-zinc-700 focus-visible:outline-2 focus-visible:outline-zinc-500"
+              className={`ml-0.5 rounded text-zinc-400 transition hover:text-zinc-700 focus-visible:outline-2 focus-visible:outline-zinc-500 ${TOUCH_TARGET}`}
               aria-label={`Remove ${name}`}
             >
               ×

@@ -1,8 +1,9 @@
 "use client";
 
 import { ArchiveRow } from "./ArchiveRow";
+import { ArchiveCard } from "./ArchiveCard";
 
-const COLUMNS = [
+export const COLUMNS = [
   { key: "projectId", label: "ID", align: "left" },
   { key: "title", label: "Title", align: "left" },
   { key: "client", label: "Client", align: "left" },
@@ -75,7 +76,14 @@ export function ArchiveTable({ projects, onEdit, sortKey, sortDir, onSort }) {
   }
 
   return (
-    <div className="overflow-x-auto">
+    <>
+      {/* Small screens: cards; the sort order is chosen in the header. */}
+      <ul className="md:hidden">
+        {projects.map((project) => (
+          <ArchiveCard key={project.id} project={project} onEdit={onEdit} />
+        ))}
+      </ul>
+      <div className="hidden overflow-x-auto md:block">
       <table className="w-full min-w-[900px] border-collapse">
         <thead className="sticky top-0 z-10 border-b border-zinc-200 bg-zinc-50/95 backdrop-blur-sm">
           <tr>
@@ -96,6 +104,7 @@ export function ArchiveTable({ projects, onEdit, sortKey, sortDir, onSort }) {
           ))}
         </tbody>
       </table>
-    </div>
+      </div>
+    </>
   );
 }

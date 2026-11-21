@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { formatDuration } from "@/lib/timeFormat";
+import { formatDuration, plural, STUDIO_LOCALE } from "@/lib/timeFormat";
 import { RestartButton } from "../RestartButton";
 import { EntryActions } from "../EntryActions";
 import { ExpandToggle } from "./ExpandToggle";
@@ -12,11 +12,11 @@ function formatEntryMeta(entry) {
   const start = entry.startedAt ? new Date(entry.startedAt) : null;
   const end = entry.endedAt ? new Date(entry.endedAt) : null;
   const datePart = start
-    ? start.toLocaleDateString(undefined, dateOpts)
+    ? start.toLocaleDateString(STUDIO_LOCALE, dateOpts)
     : "—";
   const timePart = start
-    ? `${start.toLocaleTimeString(undefined, opts)}${
-        end ? ` – ${end.toLocaleTimeString(undefined, opts)}` : ""
+    ? `${start.toLocaleTimeString(STUDIO_LOCALE, opts)}${
+        end ? ` – ${end.toLocaleTimeString(STUDIO_LOCALE, opts)}` : ""
       }`
     : "";
   return [datePart, timePart].filter(Boolean).join(" · ");
@@ -149,8 +149,7 @@ export function DescriptionGroup({
                 {group.label}
               </span>
               <span className="text-xs text-zinc-400">
-                {group.entries.length} entr
-                {group.entries.length === 1 ? "y" : "ies"}
+                {plural(group.entries.length, "entry", "entries")}
               </span>
               <span className="font-mono text-sm font-medium tabular-nums text-zinc-800">
                 {formatDuration(group.totalSeconds)}
